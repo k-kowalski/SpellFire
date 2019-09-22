@@ -54,8 +54,8 @@ namespace SpellFire.Primer
 				var key = Console.ReadKey();
 				if (key.Key == ConsoleKey.W)
 				{
-					StartSolution(new Fishing(ctrlInterface.remoteControl, wowMemory));
-					//StartSolution(new BalanceDruidFarm(ctrlInterface.remoteControl, wowMemory));
+					//StartSolution(new Fishing(ctrlInterface.remoteControl, wowMemory));
+					StartSolution(new BalanceDruidFarm(ctrlInterface.remoteControl, wowMemory));
 				}
 				if (key.Key == ConsoleKey.Q)
 				{

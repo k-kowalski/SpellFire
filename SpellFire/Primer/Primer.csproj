@@ -56,8 +56,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BalanceDruidFarm.cs" />
-    <Compile Include="Fishing.cs" />
+    <Compile Include="Solutions\BalanceDruidFarm.cs" />
+    <Compile Include="Solutions\Fishing.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -123,5 +123,6 @@
     </Content>
     <Content Include="SpellFire.ico" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

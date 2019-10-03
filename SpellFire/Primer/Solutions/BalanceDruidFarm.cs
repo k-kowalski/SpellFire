@@ -9,7 +9,7 @@ using SpellFire.Well.Controller;
 using SpellFire.Well.Model;
 using SpellFire.Well.Util;
 
-namespace SpellFire.Primer
+namespace SpellFire.Primer.Solutions
 {
 	public class BalanceDruidFarm : Solution
 	{

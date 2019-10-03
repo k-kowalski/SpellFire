@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using EasyHook;
 using Primer;
 using SpellFire.Well.Controller;
+using SpellFire.Primer.Solutions;
 
 namespace SpellFire.Primer
 {

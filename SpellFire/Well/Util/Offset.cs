@@ -4,6 +4,10 @@ namespace SpellFire.Well.Util
 {
 	/// <summary>
 	/// Offsets for WoW 3.3.5a 12340
+	///
+	/// Docs directly above offsets tell
+	/// from what given offset should be calculated
+	/// 
 	/// </summary>
 	public static class Offset
 	{
@@ -13,13 +17,15 @@ namespace SpellFire.Well.Util
 		public const Int32 CGPlayer_C__ClickToMoveStop = 0x72B3A0;
 		public const Int32 ClntObjMgrGetActivePlayerObj = 0x4038F0;
 		public const Int32 SelectUnit = 0x524BF0;
-		public const Int32 InvalidPtrCheck = 0x86B5A0;
 		/// <summary>
 		/// game object
 		/// </summary>
 		public const Int32 InteractUnit = 0xB0;
+		public const Int32 InvalidPtrCheck = 0x86B5A0;
+		public const Int32 LuaGetTop = 0x84DBD0;
+		public const Int32 LuaToString = 0x84E0E0;
 		public const Int32 FrameScript__RegisterFunction = 0x817F90;
-		public const Int32 FrameScript__SignalEvent = 0x817F90;
+		public const Int32 FrameScript__UnregisterFunction = 0x817FD0;
 
 		/*============================================*/
 

@@ -1,7 +1,8 @@
-﻿using System;
-using System.Runtime.InteropServices;
-using SpellFire.Well.Model;
+﻿using SpellFire.Well.Model;
 using SpellFire.Well.Util;
+using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace SpellFire.Well.Controller
 {
@@ -16,6 +17,8 @@ namespace SpellFire.Well.Controller
 		public readonly HostControl hostControl;
 		public class HostControl : MarshalByRefObject
 		{
+			public event Action<List<string>> LuaEvent;
+
 			public void ReportMessages(string[] messages)
 			{
 				foreach (string message in messages)
@@ -25,6 +28,14 @@ namespace SpellFire.Well.Controller
 			}
 
 			public void Ping() {/* used to check connection */}
+
+			public void LuaEventTrigger(List<string> luaEventArgs)
+			{
+				if (LuaEvent != null)
+				{
+					LuaEvent.Invoke(luaEventArgs);
+				}
+			}
 		}
 
 

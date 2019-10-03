@@ -1,6 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using SpellFire.Well.Controller;
 using SpellFire.Well.Model;
 using SpellFire.Well.Util;
@@ -13,25 +17,44 @@ namespace SpellFire.Primer
 		private bool lootTargeted;
 		private Int64 currentlyOccupiedMobGUID;
 
-		private readonly ControlInterface.RemoteControl rc;
+		private readonly ControlInterface ci;
 		private readonly Memory memory;
 
 		private readonly GameObject player;
 		private readonly GameObjectManager objectManager;
 
-		public BalanceDruidFarm(ControlInterface.RemoteControl rc, Memory memory)
+		public BalanceDruidFarm(ControlInterface ci, Memory memory)
 		{
 			this.memory = memory;
-			this.rc = rc;
+			this.ci = ci;
+
+			this.ci.hostControl.LuaEvent += LootOpenedHandler;
 
 			IntPtr clientConnection = memory.ReadPointer86(IntPtr.Zero + Offset.ClientConnection);
 			IntPtr objectManagerAddress = memory.ReadPointer86(clientConnection + Offset.GameObjectManager);
-			
-			player = new GameObject(memory, rc.ClntObjMgrGetActivePlayerObj());
+
+			player = new GameObject(memory, ci.remoteControl.ClntObjMgrGetActivePlayerObj());
 			objectManager = new GameObjectManager(memory, objectManagerAddress);
 
 			loot = false;
 			lootTargeted = false;
+		}
+
+		private void LootOpenedHandler(List<string> luaEventArgs)
+		{
+			if (luaEventArgs[1] == "LOOT_OPENED")
+			{
+				Task.Run(() =>
+				{
+					if (loot && lootTargeted)
+					{
+						ci.remoteControl.FrameScript__Execute("for i = 1, GetNumLootItems() do LootSlot(i) ConfirmLootSlot(i) end", 0, 0);
+						loot = false;
+						lootTargeted = false;
+						ci.remoteControl.SelectUnit(0);
+					}
+				});
+			}
 		}
 
 		public override void Tick()
@@ -62,7 +85,7 @@ namespace SpellFire.Primer
 				}
 
 				//Console.WriteLine($"Selecting GUID {GUID}");
-				rc.SelectUnit(GUID);
+				ci.remoteControl.SelectUnit(GUID);
 			}
 			else
 			{
@@ -77,22 +100,22 @@ namespace SpellFire.Primer
 					{
 						if (IsAlive(targetObject))
 						{
-							rc.CGPlayer_C__ClickToMoveStop(player.GetAddress());
+							ci.remoteControl.CGPlayer_C__ClickToMoveStop(player.GetAddress());
 							float angle = (float)Math.Atan2(targetObjectCoords.y - playerObjectCoords.y, targetObjectCoords.x - playerObjectCoords.x);
-							rc.CGPlayer_C__ClickToMove(player.GetAddress(), ClickToMoveType.Face, ref targetGUID, ref targetObjectCoords, angle);
-							CastSpell("Wrath");
+							ci.remoteControl.CGPlayer_C__ClickToMove(player.GetAddress(), ClickToMoveType.Face, ref targetGUID, ref targetObjectCoords, angle);
+							CastSpell("Fireball");
 							loot = true;
 							currentlyOccupiedMobGUID = targetGUID;
 						}
 					}
 					else
 					{
-						rc.CGPlayer_C__ClickToMove(player.GetAddress(), ClickToMoveType.Move, ref targetGUID, ref targetObjectCoords, 1f);
+						ci.remoteControl.CGPlayer_C__ClickToMove(player.GetAddress(), ClickToMoveType.Move, ref targetGUID, ref targetObjectCoords, 1f);
 					}
 				}
 				else if (targetGUID == 0 && loot && (!lootTargeted))
 				{
-					rc.SelectUnit(currentlyOccupiedMobGUID);
+					ci.remoteControl.SelectUnit(currentlyOccupiedMobGUID);
 					targetGUID = GetTargetGUID();
 					lootTargeted = true;
 				}
@@ -103,19 +126,37 @@ namespace SpellFire.Primer
 					distance = GetDistance(player, targetObject);
 					if (distance < 5f && (!IsMoving(player))) // loot
 					{
-						rc.InteractUnit(targetObject.GetAddress());
-
-						loot = false;
-						lootTargeted = false;
-						rc.SelectUnit(0);
+						ci.remoteControl.InteractUnit(targetObject.GetAddress());
+						FinishLooting();
 					}
 					else
 					{
 						targetGUID = GetTargetGUID();
 						targetObjectCoords = GetCoords(targetObject);
-						rc.CGPlayer_C__ClickToMove(player.GetAddress(), ClickToMoveType.Move, ref targetGUID, ref targetObjectCoords, 1f);
+						ci.remoteControl.CGPlayer_C__ClickToMove(player.GetAddress(), ClickToMoveType.Move, ref targetGUID, ref targetObjectCoords, 1f);
 					}
 				}
+			}
+		}
+
+		private void FinishLooting()
+		{
+			/*
+             * looting is done in answer for Lua event
+             * here we timeout when it takes too much time
+             */
+			DateTime interactTime = DateTime.Now;
+			Func<Int32, bool> lootingTimeout = (timeoutSeconds) => (DateTime.Now - interactTime).Seconds < timeoutSeconds;
+			while (loot && lootTargeted && lootingTimeout(2))
+			{
+				Thread.Sleep(100);
+			}
+
+			if (loot && lootTargeted)
+			{
+				loot = false;
+				lootTargeted = false;
+				ci.remoteControl.SelectUnit(0);
 			}
 		}
 
@@ -126,6 +167,7 @@ namespace SpellFire.Primer
 
 		public override void Stop()
 		{
+			ci.hostControl.LuaEvent -= LootOpenedHandler;
 			this.Active = false;
 		}
 
@@ -157,7 +199,7 @@ namespace SpellFire.Primer
 
 		private void CastSpell(string spellName)
 		{
-			rc.FrameScript__Execute($"CastSpellByName('{spellName}')", 0, 0);
+			ci.remoteControl.FrameScript__Execute($"CastSpellByName('{spellName}')", 0, 0);
 		}
 
 		private Int64 GetTargetGUID()

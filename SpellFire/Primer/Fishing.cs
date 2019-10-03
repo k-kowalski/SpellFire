@@ -9,7 +9,7 @@ namespace SpellFire.Primer
 {
 	public class Fishing : Solution
 	{
-		private readonly ControlInterface.RemoteControl rc;
+		private readonly ControlInterface ci;
 		private readonly Memory memory;
 
 		private readonly IntPtr playerObject;
@@ -19,15 +19,15 @@ namespace SpellFire.Primer
 		private LinkedList<Int64> lastBobberGUIDs = new LinkedList<long>();
 		private bool fishing;
 
-		public Fishing(ControlInterface.RemoteControl rc, Memory memory)
+		public Fishing(ControlInterface ci, Memory memory)
 		{
 			this.memory = memory;
-			this.rc = rc;
+			this.ci = ci;
 
 			IntPtr clientConnection = memory.ReadPointer86(IntPtr.Zero + Offset.ClientConnection);
 			IntPtr objectManagerAddress = memory.ReadPointer86(clientConnection + Offset.GameObjectManager);
 
-			playerObject = rc.ClntObjMgrGetActivePlayerObj();
+			playerObject = ci.remoteControl.ClntObjMgrGetActivePlayerObj();
 			objectManager = new GameObjectManager(memory, objectManagerAddress);
 
 			rand = new Random();
@@ -52,7 +52,7 @@ namespace SpellFire.Primer
 						{
 							RandomSleep();
 							memory.Write(IntPtr.Zero + Offset.MouseoverGUID, BitConverter.GetBytes(gameObjectGUID));
-							rc.FrameScript__Execute("InteractUnit('mouseover')", 0, 0);
+							ci.remoteControl.FrameScript__Execute("InteractUnit('mouseover')", 0, 0);
 							RandomSleep();
 							CastSpell("Fishing");
 
@@ -88,7 +88,7 @@ namespace SpellFire.Primer
 
 		private void CastSpell(string spellName)
 		{
-			rc.FrameScript__Execute($"CastSpellByName('{spellName}')", 0, 0);
+			ci.remoteControl.FrameScript__Execute($"CastSpellByName('{spellName}')", 0, 0);
 		}
 	}
 }

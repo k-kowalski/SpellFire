@@ -1,4 +1,6 @@
-﻿using System;
+﻿using EasyHook;
+using SpellFire.Well.Util;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -6,18 +8,15 @@ using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Ipc;
 using System.Runtime.Serialization.Formatters;
 using System.Threading;
-using EasyHook;
-using SpellFire.Well.Util;
 
 namespace SpellFire.Well.Controller
 {
 	public class RemoteMain : IEntryPoint
 	{
-		ControlInterface ctrlInterface = null;
-		Queue<string> messageQueue = new Queue<string>();
+		private ControlInterface ctrlInterface = null;
+		private Queue<string> messageQueue = new Queue<string>();
 		private CommandHandler commandHandler;
 		private IntPtr EndSceneAddress;
-		private LocalHook endScenePatch;
 
 		public RemoteMain(RemoteHooking.IContext context, string channelName)
 		{
@@ -32,8 +31,39 @@ namespace SpellFire.Well.Controller
 
 		public void Run(RemoteHooking.IContext context, string channelName)
 		{
-			PatchEndScene();
+			LocalHook endScenePatch = null;
+			LocalHook invalidPtrPatch = null;
+			LocalHook unregisterPatch = null;
 
+			try
+			{
+				endScenePatch = LocalHook.Create(
+					EndSceneAddress,
+					new CommandCallback.EndScene(commandHandler.EndScenePatch),
+					this);
+
+				endScenePatch.ThreadACL.SetExclusiveACL(new Int32[] { });
+			}
+			catch (Exception e)
+			{
+				this.messageQueue.Enqueue(e.ToString());
+			}
+
+			try
+			{
+				invalidPtrPatch = LocalHook.Create(
+					IntPtr.Zero + Offset.InvalidPtrCheck,
+					new CommandCallback.InvalidPtrCheck(commandHandler.InvalidPtrCheckPatch),
+					this);
+
+				invalidPtrPatch.ThreadACL.SetExclusiveACL(new Int32[] { });
+			}
+			catch (Exception e)
+			{
+				this.messageQueue.Enqueue(e.ToString());
+			}
+
+			commandHandler.RegisterLuaEventHandling();
 			try
 			{
 				while (true)
@@ -58,27 +88,15 @@ namespace SpellFire.Well.Controller
 				}
 			}
 			catch
+			{ }
+			finally
 			{
-			}
+				commandHandler.UnregisterLuaEventHandling();
 
-			endScenePatch.Dispose();
-			LocalHook.Release();
-		}
-
-		public void PatchEndScene()
-		{
-			try
-			{
-				endScenePatch = LocalHook.Create(
-					EndSceneAddress,
-					new CommandCallback.EndScene(commandHandler.EndScenePatch),
-					this);
-
-				endScenePatch.ThreadACL.SetExclusiveACL(new Int32[] { });
-			}
-			catch (Exception e)
-			{
-				this.messageQueue.Enqueue(e.ToString());
+				endScenePatch.Dispose();
+				unregisterPatch.Dispose();
+				invalidPtrPatch.Dispose();
+				LocalHook.Release();
 			}
 		}
 
@@ -103,9 +121,9 @@ namespace SpellFire.Well.Controller
 			IntPtr vTableData = Marshal.ReadIntPtr(vTablePointer);
 
 			/*
-			 * virtual method table consists of pointers so multiply by pointer size
-			 * since Marshal.ReadIntPtr counts in bytes 
-			 */
+             * virtual method table consists of pointers so multiply by pointer size
+             * since Marshal.ReadIntPtr counts in bytes 
+             */
 			return Marshal.ReadIntPtr(vTableData + (Offset.EndSceneVMTableIndex * IntPtr.Size));
 		}
 	}

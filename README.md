@@ -35,6 +35,8 @@ Following technologies were used for implementation:
 ### **Credits**
 Developed by Krzysztof Kowalski
 
+Shared under MIT license
+
 This project is made possible thanks to:
 - Community at OwnedCore.com, GitHub.com and other sites
 - Reversing and development software

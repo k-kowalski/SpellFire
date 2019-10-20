@@ -3,6 +3,7 @@ using SpellFire.Well.Util;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using SpellFire.Well.LuaEvents;
 
 namespace SpellFire.Well.Controller
 {
@@ -44,7 +45,7 @@ namespace SpellFire.Well.Controller
 		public delegate Int32 FrameScript__UnregisterFunction(string luaFunctionName);
 
 		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-		public delegate Int32 LuaEvent(IntPtr luaState);
+		public delegate Int32 LuaEventCallback(IntPtr luaState);
 	}
 
 	class CommandHandler : MarshalByRefObject
@@ -68,7 +69,8 @@ namespace SpellFire.Well.Controller
 		private CommandCallback.LuaToString LuaToString;
 		private CommandCallback.FrameScript__RegisterFunction FrameScript__RegisterFunction;
 		private CommandCallback.FrameScript__UnregisterFunction FrameScript__UnregisterFunction;
-		private CommandCallback.LuaEvent LuaEvent;
+
+		private CommandCallback.LuaEventCallback eventCallback;
 
 		private IntPtr luaEventPtr;
 
@@ -103,13 +105,13 @@ namespace SpellFire.Well.Controller
 			ctrlInterface.remoteControl.SelectUnitEvent += SelectUnitHandler;
 			ctrlInterface.remoteControl.InteractUnitEvent += InteractUnitHandler;
 
-			LuaEvent += LuaEventHandler;
+			eventCallback += LuaEventHandler;
 		}
 
 
 		public void RegisterLuaEventHandling()
 		{
-			luaEventPtr = Marshal.GetFunctionPointerForDelegate(LuaEvent);
+			luaEventPtr = Marshal.GetFunctionPointerForDelegate(eventCallback);
 
 			commandQueue.Submit<object>((() =>
 			{
@@ -152,15 +154,20 @@ namespace SpellFire.Well.Controller
 		public Int32 LuaEventHandler(IntPtr luaState)
 		{
 			Int32 argCount = LuaGetTop(luaState);
+			/*
+			 * LuaToString takes parameters starting from 1
+			 * but we discard first event argument, hence
+			 * we start from 2
+			 */
 			List<string> luaEventArgs = new List<string>(argCount - 1);
-			for (Int32 i = 1; i <= argCount; i++)
+			for (Int32 i = 2; i <= argCount; i++)
 			{
 				luaEventArgs.Add(LuaToString(luaState, i, 0));
 			}
 
 			try
 			{
-				ctrlInterface.hostControl.LuaEventTrigger(luaEventArgs);
+				ctrlInterface.hostControl.LuaEventTrigger( new LuaEventArgs(luaEventArgs) );
 			}
 			catch (Exception e)
 			{

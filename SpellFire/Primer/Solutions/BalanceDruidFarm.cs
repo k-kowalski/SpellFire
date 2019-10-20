@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using SpellFire.Well.Controller;
+using SpellFire.Well.LuaEvents;
 using SpellFire.Well.Model;
 using SpellFire.Well.Util;
 
@@ -23,12 +24,15 @@ namespace SpellFire.Primer.Solutions
 		private readonly GameObject player;
 		private readonly GameObjectManager objectManager;
 
+		private readonly LuaEventListener eventListener;
+
 		public BalanceDruidFarm(ControlInterface ci, Memory memory)
 		{
 			this.memory = memory;
 			this.ci = ci;
 
-			this.ci.hostControl.LuaEvent += LootOpenedHandler;
+			eventListener = new LuaEventListener(ci.hostControl);
+			eventListener.Bind("LOOT_OPENED", LootOpenedHandler);
 
 			IntPtr clientConnection = memory.ReadPointer86(IntPtr.Zero + Offset.ClientConnection);
 			IntPtr objectManagerAddress = memory.ReadPointer86(clientConnection + Offset.GameObjectManager);
@@ -40,20 +44,14 @@ namespace SpellFire.Primer.Solutions
 			lootTargeted = false;
 		}
 
-		private void LootOpenedHandler(List<string> luaEventArgs)
+		private void LootOpenedHandler(LuaEventArgs luaEventArgs)
 		{
-			if (luaEventArgs[1] == "LOOT_OPENED")
+			if (loot && lootTargeted)
 			{
-				Task.Run(() =>
-				{
-					if (loot && lootTargeted)
-					{
-						ci.remoteControl.FrameScript__Execute("for i = 1, GetNumLootItems() do LootSlot(i) ConfirmLootSlot(i) end", 0, 0);
-						loot = false;
-						lootTargeted = false;
-						ci.remoteControl.SelectUnit(0);
-					}
-				});
+				ci.remoteControl.FrameScript__Execute("for i = 1, GetNumLootItems() do LootSlot(i) ConfirmLootSlot(i) end", 0, 0);
+				loot = false;
+				lootTargeted = false;
+				ci.remoteControl.SelectUnit(0);
 			}
 		}
 
@@ -167,7 +165,6 @@ namespace SpellFire.Primer.Solutions
 
 		public override void Stop()
 		{
-			ci.hostControl.LuaEvent -= LootOpenedHandler;
 			this.Active = false;
 		}
 

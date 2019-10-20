@@ -3,6 +3,7 @@ using SpellFire.Well.Util;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using SpellFire.Well.LuaEvents;
 
 namespace SpellFire.Well.Controller
 {
@@ -17,7 +18,7 @@ namespace SpellFire.Well.Controller
 		public readonly HostControl hostControl;
 		public class HostControl : MarshalByRefObject
 		{
-			public event Action<List<string>> LuaEvent;
+			public event Action<LuaEventArgs> LuaEventFired;
 
 			public void ReportMessages(string[] messages)
 			{
@@ -29,11 +30,11 @@ namespace SpellFire.Well.Controller
 
 			public void Ping() {/* used to check connection */}
 
-			public void LuaEventTrigger(List<string> luaEventArgs)
+			public void LuaEventTrigger(LuaEventArgs luaEventArgs)
 			{
-				if (LuaEvent != null)
+				if (LuaEventFired != null)
 				{
-					LuaEvent.Invoke(luaEventArgs);
+					LuaEventFired.Invoke(luaEventArgs);
 				}
 			}
 		}

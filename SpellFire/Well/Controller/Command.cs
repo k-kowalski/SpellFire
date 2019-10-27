@@ -169,7 +169,7 @@ namespace SpellFire.Well.Controller
 			{
 				ctrlInterface.hostControl.LuaEventTrigger( new LuaEventArgs(luaEventArgs) );
 			}
-			catch (Exception e)
+			catch (Exception)
 			{
 				/* host connection broken, ignore exception and die */
 				//TODO: Lua message queue and there catch connection exceptions

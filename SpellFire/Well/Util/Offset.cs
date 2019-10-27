@@ -27,7 +27,11 @@ namespace SpellFire.Well.Util
 		public const Int32 FrameScript__RegisterFunction = 0x817F90;
 		public const Int32 FrameScript__UnregisterFunction = 0x817FD0;
 
-		/*============================================*/
+
+
+
+
+
 
 		public const Int32 TargetGUID = 0xBD07B0;
 		public const Int32 ClientConnection = 0xC79CE0;
@@ -63,6 +67,18 @@ namespace SpellFire.Well.Util
 		/// game object
 		/// </summary>
 		public const Int32 Type = 0x14;
+		/// <summary>
+		/// game object
+		/// </summary>
+		public const Int32 CastingSpellId = 0xA6C;
+		/// <summary>
+		/// game object
+		/// </summary>
+		public const Int32 ChannelSpellId = 0xA80;
+
+
+
+
 
 		public const Int32 EndSceneVMTableIndex = 42;
 		public const Int32 dxDevice = 0xC5DF88;
@@ -70,8 +86,6 @@ namespace SpellFire.Well.Util
 		/// dxDevice
 		/// </summary>
 		public const Int32 dxVirtualMethodTable = 0x397C;
-
-		public const Int32 LootFrame = 0xBFA8D8;
 		public const Int32 MouseoverGUID = 0xBD07A0;
 	}
 }

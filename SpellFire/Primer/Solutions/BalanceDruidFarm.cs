@@ -101,7 +101,10 @@ namespace SpellFire.Primer.Solutions
 							ci.remoteControl.CGPlayer_C__ClickToMoveStop(player.GetAddress());
 							float angle = (float)Math.Atan2(targetObjectCoords.y - playerObjectCoords.y, targetObjectCoords.x - playerObjectCoords.x);
 							ci.remoteControl.CGPlayer_C__ClickToMove(player.GetAddress(), ClickToMoveType.Face, ref targetGUID, ref targetObjectCoords, angle);
-							CastSpell("Fireball");
+							if ( ! player.IsCastingOrChanneling())
+							{
+								CastSpell("Wrath");
+							}
 							loot = true;
 							currentlyOccupiedMobGUID = targetGUID;
 						}
@@ -119,7 +122,14 @@ namespace SpellFire.Primer.Solutions
 				}
 				if (lootTargeted)
 				{
-					targetObject = objectManager.First(gameObj => gameObj.GUID == targetGUID);
+					if (targetGUID != 0)
+					{
+						targetObject = objectManager.First(gameObj => gameObj.GUID == targetGUID);
+					}
+					else
+					{
+						return;
+					}
 
 					distance = GetDistance(player, targetObject);
 					if (distance < 5f && (!IsMoving(player))) // loot

@@ -21,6 +21,12 @@ namespace SpellFire.Primer
 			NameProbeLength) );
 		public string WorldObjectName => Encoding.UTF8.GetString(memory.Read(memory.ReadPointer86(memory.ReadPointer86(address + 0x1A4) + 0x90),
 			NameProbeLength));
+		public Int32 CastingSpellId => memory.ReadInt32(address + Offset.CastingSpellId);
+		public Int32 ChannelSpellId => memory.ReadInt32(address + Offset.ChannelSpellId);
+		public bool IsCastingOrChanneling() 
+		{
+			return this.CastingSpellId != 0 || this.ChannelSpellId != 0;
+		}
 
 		public GameObject(Memory memory, IntPtr address) : base(memory, address) { }
 	}

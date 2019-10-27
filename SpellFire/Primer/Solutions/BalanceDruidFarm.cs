@@ -71,9 +71,9 @@ namespace SpellFire.Primer.Solutions
 				foreach (GameObject gameObject in objectManager)
 				{
 					//Console.WriteLine($"checking: {currentGameObject.ToString("X")} .. has guid: {currentGameObjectGUID} ");
-					if (gameObject.Type == GameObjectType.Unit && IsAlive(gameObject))
+					if (gameObject.Type == GameObjectType.Unit && gameObject.IsAlive())
 					{
-						distance = GetDistance(gameObject, player);
+						distance = player.GetDistance(gameObject);
 						if (distance < minDistance && (!gameObject.UnitName.Contains("Gryph")))
 						{
 							minDistance = distance;
@@ -90,16 +90,16 @@ namespace SpellFire.Primer.Solutions
 				if (targetGUID != 0 && (!lootTargeted))
 				{
 					targetObject = objectManager.First(gameObj => gameObj.GUID == targetGUID);
-					targetObjectCoords = GetCoords(targetObject);
-					Vector3 playerObjectCoords = GetCoords(player);
+					targetObjectCoords = targetObject.Coordinates;
+					Vector3 playerObjectCoords = player.Coordinates;
 
-					distance = GetDistance(player, targetObject);
+					distance = player.GetDistance(targetObject);
 					if (distance < 35f)
 					{
-						if (IsAlive(targetObject))
+						if (targetObject.IsAlive())
 						{
 							ci.remoteControl.CGPlayer_C__ClickToMoveStop(player.GetAddress());
-							float angle = (float)Math.Atan2(targetObjectCoords.y - playerObjectCoords.y, targetObjectCoords.x - playerObjectCoords.x);
+							float angle = playerObjectCoords.AngleBetween(targetObjectCoords);
 							ci.remoteControl.CGPlayer_C__ClickToMove(player.GetAddress(), ClickToMoveType.Face, ref targetGUID, ref targetObjectCoords, angle);
 							if ( ! player.IsCastingOrChanneling())
 							{
@@ -120,19 +120,12 @@ namespace SpellFire.Primer.Solutions
 					targetGUID = GetTargetGUID();
 					lootTargeted = true;
 				}
-				if (lootTargeted)
+				if (targetGUID != 0 && lootTargeted)
 				{
-					if (targetGUID != 0)
-					{
-						targetObject = objectManager.First(gameObj => gameObj.GUID == targetGUID);
-					}
-					else
-					{
-						return;
-					}
+					targetObject = objectManager.First(gameObj => gameObj.GUID == targetGUID);
 
-					distance = GetDistance(player, targetObject);
-					if (distance < 5f && (!IsMoving(player))) // loot
+					distance = player.GetDistance(targetObject);
+					if (distance < 5f && ( ! player.IsMoving())) // loot
 					{
 						ci.remoteControl.InteractUnit(targetObject.GetAddress());
 						FinishLooting();
@@ -140,7 +133,7 @@ namespace SpellFire.Primer.Solutions
 					else
 					{
 						targetGUID = GetTargetGUID();
-						targetObjectCoords = GetCoords(targetObject);
+						targetObjectCoords = targetObject.Coordinates;
 						ci.remoteControl.CGPlayer_C__ClickToMove(player.GetAddress(), ClickToMoveType.Move, ref targetGUID, ref targetObjectCoords, 1f);
 					}
 				}
@@ -176,32 +169,6 @@ namespace SpellFire.Primer.Solutions
 		public override void Stop()
 		{
 			this.Active = false;
-		}
-
-		private Vector3 GetCoords(GameObject gameObject)
-		{
-			return memory.ReadStruct<Vector3>(gameObject.GetAddress() + Offset.PositionX);
-		}
-
-		private float GetDistance(GameObject first, GameObject other)
-		{
-			Vector3 firstCoords = GetCoords(first);
-			Vector3 otherCoords = GetCoords(other);
-			return (firstCoords - otherCoords).Length();
-		}
-
-		private bool IsMoving(GameObject gameObject)
-		{
-			IntPtr movInfo = memory.ReadPointer86(gameObject.GetAddress() + 216);
-			return memory.ReadInt32(movInfo + 96) != 0;
-		}
-
-		private bool IsAlive(GameObject gameObject)
-		{
-			IntPtr unitInfo = memory.ReadPointer86(gameObject.GetAddress() + 0x8);
-			Int32 health = memory.ReadInt32(unitInfo + (0x18 * 4));
-			//Console.WriteLine($"h:{health}");
-			return health != 0;
 		}
 
 		private void CastSpell(string spellName)

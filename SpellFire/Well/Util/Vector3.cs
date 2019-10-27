@@ -27,5 +27,10 @@ namespace SpellFire.Well.Util
 		{
 			return (float) Math.Sqrt(x *x + y*y + z*z);
 		}
+
+		public float AngleBetween(Vector3 other)
+		{
+			return (float) Math.Atan2(other.y - this.y, other.x - this.x);
+		}
 	}
 }

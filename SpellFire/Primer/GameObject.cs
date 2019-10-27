@@ -27,6 +27,23 @@ namespace SpellFire.Primer
 		{
 			return this.CastingSpellId != 0 || this.ChannelSpellId != 0;
 		}
+		public Vector3 Coordinates => memory.ReadStruct<Vector3>(address + Offset.PositionX);
+		public float GetDistance(GameObject other)
+		{
+			return (this.Coordinates - other.Coordinates).Length();
+		}
+		public bool IsMoving()
+		{
+			IntPtr movInfo = memory.ReadPointer86(address + 216);
+			return memory.ReadInt32(movInfo + 96) != 0;
+		}
+
+		public bool IsAlive()
+		{
+			IntPtr unitInfo = memory.ReadPointer86(address + 0x8);
+			Int32 health = memory.ReadInt32(unitInfo + (0x18 * 4));
+			return health != 0;
+		}
 
 		public GameObject(Memory memory, IntPtr address) : base(memory, address) { }
 	}

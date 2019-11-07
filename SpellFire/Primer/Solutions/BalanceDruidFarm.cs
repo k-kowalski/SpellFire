@@ -166,11 +166,6 @@ namespace SpellFire.Primer.Solutions
 			/* no finish logic */
 		}
 
-		public override void Stop()
-		{
-			this.Active = false;
-		}
-
 		private void CastSpell(string spellName)
 		{
 			ci.remoteControl.FrameScript__Execute($"CastSpellByName('{spellName}')", 0, 0);

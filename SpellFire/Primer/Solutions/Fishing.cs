@@ -72,11 +72,6 @@ namespace SpellFire.Primer.Solutions
 			/* no finish logic */
 		}
 
-		public override void Stop()
-		{
-			this.Active = false;
-		}
-
 		/*
 		 * simulate humane behaviour
 		 */

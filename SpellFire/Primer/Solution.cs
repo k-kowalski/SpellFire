@@ -5,7 +5,10 @@
 		public bool Active { get; set; } = true;
 
 		public abstract void Tick();
-		public abstract void Stop();
+		public virtual void Stop()
+		{
+			this.Active = false;
+		}
 		public abstract void Finish();
 	}
 }

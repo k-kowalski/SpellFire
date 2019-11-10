@@ -168,7 +168,7 @@ namespace SpellFire.Primer.Solutions
 
 		public override void Finish()
 		{
-			/* no finish logic */
+			eventListener.Dispose();
 		}
 
 		private void CastSpell(string spellName)

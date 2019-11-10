@@ -9,7 +9,7 @@ using LuaEventHandler = System.Action<SpellFire.Well.LuaEvents.LuaEventArgs>;
 
 namespace SpellFire.Well.LuaEvents
 {
-	public class LuaEventListener
+	public class LuaEventListener : IDisposable
 	{
 		private readonly IDictionary<string, LuaEventHandler> eventHandlers;
 		private readonly ControlInterface.HostControl hostControl;
@@ -22,8 +22,8 @@ namespace SpellFire.Well.LuaEvents
 
 			hostControl.LuaEventFired += DispatchLuaEvent;
 		}
-		
-		~LuaEventListener()
+
+		public void Dispose()
 		{
 			hostControl.LuaEventFired -= DispatchLuaEvent;
 		}

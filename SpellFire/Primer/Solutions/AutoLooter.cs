@@ -22,10 +22,6 @@ namespace SpellFire.Primer.Solutions
 		private readonly GameObject player;
 		private readonly GameObjectManager objectManager;
 
-		/*
-		 * it has to be kept alive for the full duration of using solution
-		 */
-		// ReSharper disable once PrivateFieldCanBeConvertedToLocalVariable
 		private readonly LuaEventListener eventListener;
 
 		public AutoLooter(ControlInterface ci, Memory memory)
@@ -94,7 +90,7 @@ namespace SpellFire.Primer.Solutions
 
 		public override void Finish()
 		{
-
+			eventListener.Dispose();
 		}
 	}
 }

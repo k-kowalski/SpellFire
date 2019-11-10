@@ -15,12 +15,8 @@ namespace SpellFire.Primer.Solutions
 		private readonly ControlInterface ci;
 		private readonly Memory memory;
 
-		private readonly IntPtr playerObject;
 		private readonly GameObjectManager objectManager;
-
-		private readonly Random rand;
 		private LinkedList<Int64> lastBobberGUIDs = new LinkedList<long>();
-		private bool fishing;
 
 		public Fishing(ControlInterface ci, Memory memory)
 		{
@@ -30,10 +26,7 @@ namespace SpellFire.Primer.Solutions
 			IntPtr clientConnection = memory.ReadPointer86(IntPtr.Zero + Offset.ClientConnection);
 			IntPtr objectManagerAddress = memory.ReadPointer86(clientConnection + Offset.GameObjectManager);
 
-			playerObject = ci.remoteControl.ClntObjMgrGetActivePlayerObj();
 			objectManager = new GameObjectManager(memory, objectManagerAddress);
-
-			rand = new Random();
 
 			// start fishing initially
 			CastSpell("Fishing");
@@ -80,7 +73,7 @@ namespace SpellFire.Primer.Solutions
 		 */
 		private void RandomSleep()
 		{
-			Int32 fluctuation = rand.Next(500) * (rand.Next(0, 2) == 0 ? -1 : 1);
+			Int32 fluctuation = SFUtil.RandomGenerator.Next(500) * (SFUtil.RandomGenerator.Next(0, 2) == 0 ? -1 : 1);
 			Thread.Sleep(1000 + fluctuation);
 		}
 

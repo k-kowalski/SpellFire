@@ -63,7 +63,6 @@ namespace SpellFire.Well.Controller
 				this.messageQueue.Enqueue(e.ToString());
 			}
 
-			commandHandler.RegisterLuaEventHandling();
 			try
 			{
 				while (true)
@@ -91,7 +90,7 @@ namespace SpellFire.Well.Controller
 			{ }
 			finally
 			{
-				commandHandler.UnregisterLuaEventHandling();
+				commandHandler.Dispose();
 
 				endScenePatch.Dispose();
 				unregisterPatch.Dispose();

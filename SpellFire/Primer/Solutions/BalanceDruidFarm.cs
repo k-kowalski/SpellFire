@@ -35,7 +35,7 @@ namespace SpellFire.Primer.Solutions
 			this.memory = memory;
 			this.ci = ci;
 
-			eventListener = new LuaEventListener(ci.hostControl);
+			eventListener = new LuaEventListener(ci);
 			eventListener.Bind("LOOT_OPENED", LootOpenedHandler);
 
 			IntPtr clientConnection = memory.ReadPointer86(IntPtr.Zero + Offset.ClientConnection);
@@ -129,7 +129,7 @@ namespace SpellFire.Primer.Solutions
 					targetObject = objectManager.First(gameObj => gameObj.GUID == targetGUID);
 
 					distance = player.GetDistance(targetObject);
-					if (distance < 5f && ( ! player.IsMoving())) // loot
+					if (distance < 6f && ( ! player.IsMoving())) // loot
 					{
 						ci.remoteControl.InteractUnit(targetObject.GetAddress());
 						FinishLooting();

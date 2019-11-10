@@ -41,6 +41,13 @@ namespace SpellFire.Well.Controller
 		public class RemoteControl : MarshalByRefObject
 		{
 			#region Control
+			public event Action InitializeLuaEventFrameEvent;
+			public void InitializeLuaEventFrame() =>
+				InitializeLuaEventFrameEvent?.Invoke();
+
+			public event Action DestroyLuaEventFrameEvent;
+			public void DestroyLuaEventFrame() =>
+				DestroyLuaEventFrameEvent?.Invoke();
 			#endregion
 
 			#region WoW Engine API

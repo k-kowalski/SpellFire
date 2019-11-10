@@ -29,7 +29,7 @@ namespace SpellFire.Primer.Solutions
 			Console.WriteLine($"Starting solution {nameof(AutoLooter)}");
 			this.ci = ci;
 
-			eventListener = new LuaEventListener(ci.hostControl);
+			eventListener = new LuaEventListener(ci);
 			eventListener.Bind("LOOT_OPENED", LootOpenedHandler);
 
 			IntPtr clientConnection = memory.ReadPointer86(IntPtr.Zero + Offset.ClientConnection);
@@ -68,7 +68,7 @@ namespace SpellFire.Primer.Solutions
 			{
 				Console.WriteLine($"[{DateTime.Now}] closest target away {minDistance}y, checked {lootables.Count()} lootable/s.");
 
-				if (minDistance < 5f && (!player.IsMoving()) && (!player.IsCastingOrChanneling()))
+				if (minDistance < 6f && (!player.IsMoving()) && (!player.IsCastingOrChanneling()))
 				{
 					Console.WriteLine($"[{DateTime.Now}] interacting");
 

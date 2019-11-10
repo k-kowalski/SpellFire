@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using SpellFire.Well.Controller;
-
+using SpellFire.Well.Util;
 using LuaEventHandler = System.Action<SpellFire.Well.LuaEvents.LuaEventArgs>;
 
 namespace SpellFire.Well.LuaEvents
@@ -12,20 +12,22 @@ namespace SpellFire.Well.LuaEvents
 	public class LuaEventListener : IDisposable
 	{
 		private readonly IDictionary<string, LuaEventHandler> eventHandlers;
-		private readonly ControlInterface.HostControl hostControl;
+		private readonly ControlInterface ci;
 
-		public LuaEventListener(ControlInterface.HostControl hostControl)
+		public LuaEventListener(ControlInterface ci)
 		{
 			eventHandlers = new Dictionary<string, LuaEventHandler>();
 
-			this.hostControl = hostControl;
+			this.ci = ci;
 
-			hostControl.LuaEventFired += DispatchLuaEvent;
+			ci.remoteControl.InitializeLuaEventFrame();
+			ci.hostControl.LuaEventFired += DispatchLuaEvent;
 		}
 
 		public void Dispose()
 		{
-			hostControl.LuaEventFired -= DispatchLuaEvent;
+			ci.hostControl.LuaEventFired -= DispatchLuaEvent;
+			ci.remoteControl.DestroyLuaEventFrame();
 		}
 
 		public void Bind(string eventName, LuaEventHandler handler)

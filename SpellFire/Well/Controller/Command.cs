@@ -48,10 +48,8 @@ namespace SpellFire.Well.Controller
 		public delegate Int32 LuaEventCallback(IntPtr luaState);
 	}
 
-	class CommandHandler : MarshalByRefObject
+	public class CommandHandler : MarshalByRefObject, IDisposable
 	{
-		private const string LuaFunctionName = "LuaEventHandler";
-
 		[NonSerialized]
 		private CommandQueue commandQueue;
 		[NonSerialized]
@@ -71,8 +69,10 @@ namespace SpellFire.Well.Controller
 		private CommandCallback.FrameScript__UnregisterFunction FrameScript__UnregisterFunction;
 
 		private CommandCallback.LuaEventCallback eventCallback;
+		private IntPtr luaEventCallbackPtr;
 
-		private IntPtr luaEventPtr;
+		private string luaEventFunctionName;
+		private string frameName;
 
 		public CommandHandler(ControlInterface ctrlInterface, IntPtr EndSceneAddress)
 		{
@@ -84,6 +84,7 @@ namespace SpellFire.Well.Controller
 
 		private void RegisterFunctions(ControlInterface ctrlInterface, IntPtr EndSceneAddress)
 		{
+			#region WoW Engine API initialization
 			EndScene = Marshal.GetDelegateForFunctionPointer<CommandCallback.EndScene>(EndSceneAddress);
 			FrameScript__Execute = Marshal.GetDelegateForFunctionPointer<CommandCallback.FrameScript__Execute>(IntPtr.Zero + Offset.FrameScript__Execute);
 			FrameScript__GetLocalizedText = Marshal.GetDelegateForFunctionPointer<CommandCallback.FrameScript__GetLocalizedText>(IntPtr.Zero + Offset.FrameScript__GetLocalizedText);
@@ -104,37 +105,43 @@ namespace SpellFire.Well.Controller
 			ctrlInterface.remoteControl.ClntObjMgrGetActivePlayerObjEvent += ClntObjMgrGetActivePlayerObjHandler;
 			ctrlInterface.remoteControl.SelectUnitEvent += SelectUnitHandler;
 			ctrlInterface.remoteControl.InteractUnitEvent += InteractUnitHandler;
+			#endregion
 
-			eventCallback += LuaEventHandler;
+			ctrlInterface.remoteControl.InitializeLuaEventFrameEvent += InitializeLuaEventFrame;
+			ctrlInterface.remoteControl.DestroyLuaEventFrameEvent += DestroyLuaEventFrame;
 		}
 
 
-		public void RegisterLuaEventHandling()
+		public void InitializeLuaEventFrame()
 		{
-			luaEventPtr = Marshal.GetFunctionPointerForDelegate(eventCallback);
+			eventCallback = LuaEventHandler;
+			luaEventCallbackPtr = Marshal.GetFunctionPointerForDelegate(eventCallback);
+
+			luaEventFunctionName = SFUtil.GetRandomAsciiString(4);
+			frameName = SFUtil.GetRandomAsciiString(5);
 
 			commandQueue.Submit<object>((() =>
 			{
-				FrameScript__RegisterFunction(LuaFunctionName, luaEventPtr);
-				FrameScript__Execute($"frame = CreateFrame('Frame'); frame:SetScript('OnEvent', {LuaFunctionName}); frame:RegisterAllEvents();", 0, 0);
+				FrameScript__RegisterFunction(luaEventFunctionName, luaEventCallbackPtr);
+				FrameScript__Execute($"{frameName} = CreateFrame('Frame'); {frameName}:SetScript('OnEvent', {luaEventFunctionName}); {frameName}:RegisterAllEvents();", 0, 0);
 
 				return null;
 			}));
 		}
 
-		public void UnregisterLuaEventHandling()
+		public void DestroyLuaEventFrame()
 		{
 			commandQueue.Submit<object>((() =>
 			{
-				FrameScript__Execute("frame:UnregisterAllEvents(); frame:SetScript('OnEvent', nil);", 0, 0);
-				FrameScript__UnregisterFunction(LuaFunctionName);
+				FrameScript__Execute($"{frameName}:UnregisterAllEvents(); {frameName}:SetScript('OnEvent', nil);", 0, 0);
+				FrameScript__UnregisterFunction(luaEventFunctionName);
 				return null;
 			}));
 		}
 
 		public Int32 InvalidPtrCheckPatch(IntPtr ptr)
 		{
-			if (ptr == luaEventPtr)
+			if (ptr == luaEventCallbackPtr)
 			{
 				/*
                  * skip check for injected pointer
@@ -156,7 +163,7 @@ namespace SpellFire.Well.Controller
 			Int32 argCount = LuaGetTop(luaState);
 			/*
 			 * LuaToString takes parameters starting from 1
-			 * but we discard first event argument, hence
+			 * and we discard first event argument, hence
 			 * we start from 2
 			 */
 			List<string> luaEventArgs = new List<string>(argCount - 1);
@@ -178,6 +185,7 @@ namespace SpellFire.Well.Controller
 			return 0;
 		}
 
+		#region WoW Engine API
 		public Int32 FrameScript__ExecuteHandler(String command, Int32 a1, Int32 a2)
 		{
 			return commandQueue.Submit<Int32>((() => FrameScript__Execute(command, a1, a2)));
@@ -216,6 +224,12 @@ namespace SpellFire.Well.Controller
 		{
 			CommandCallback.InteractUnit InteractUnit = Marshal.GetDelegateForFunctionPointer<CommandCallback.InteractUnit>(Marshal.ReadIntPtr(Marshal.ReadIntPtr(thisObject) + Offset.InteractUnit));
 			return commandQueue.Submit<Int32>((() => InteractUnit(thisObject)));
+		}
+		#endregion
+
+		public void Dispose()
+		{
+			DestroyLuaEventFrame();
 		}
 	}
 }

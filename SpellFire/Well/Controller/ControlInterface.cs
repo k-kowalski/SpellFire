@@ -32,10 +32,7 @@ namespace SpellFire.Well.Controller
 
 			public void LuaEventTrigger(LuaEventArgs luaEventArgs)
 			{
-				if (LuaEventFired != null)
-				{
-					LuaEventFired.Invoke(luaEventArgs);
-				}
+				LuaEventFired?.Invoke(luaEventArgs);
 			}
 		}
 
@@ -43,33 +40,38 @@ namespace SpellFire.Well.Controller
 		public readonly RemoteControl remoteControl;
 		public class RemoteControl : MarshalByRefObject
 		{
+			#region Control
+			#endregion
+
+			#region WoW Engine API
 			public event CommandCallback.FrameScript__Execute FrameScript__ExecuteEvent;
 			public Int32 FrameScript__Execute(String command, int a1, int a2) =>
-				FrameScript__ExecuteEvent(command, a1, a2);
+				FrameScript__ExecuteEvent?.Invoke(command, a1, a2) ?? 0;
 
 			public event CommandCallback.FrameScript__GetLocalizedText FrameScript__GetLocalizedTextEvent;
 			public String FrameScript__GetLocalizedText(IntPtr thisActivePlayerObject, String luaVariable, Int32 a1) =>
-				FrameScript__GetLocalizedTextEvent(thisActivePlayerObject, luaVariable, a1);
+				FrameScript__GetLocalizedTextEvent?.Invoke(thisActivePlayerObject, luaVariable, a1);
 
 			public event CommandCallback.CGPlayer_C__ClickToMove CGPlayer_C__ClickToMoveEvent;
 			public bool CGPlayer_C__ClickToMove(IntPtr thisActivePlayerObject, ClickToMoveType clickType, [In] ref Int64 interactGUID, [In] ref Vector3 clickPosition, float precision) =>
-				CGPlayer_C__ClickToMoveEvent(thisActivePlayerObject, clickType, ref interactGUID, ref clickPosition, precision);
+				CGPlayer_C__ClickToMoveEvent?.Invoke(thisActivePlayerObject, clickType, ref interactGUID, ref clickPosition, precision) ?? false;
 
 			public event CommandCallback.CGPlayer_C__ClickToMoveStop CGPlayer_C__ClickToMoveStopEvent;
 			public IntPtr CGPlayer_C__ClickToMoveStop(IntPtr thisActivePlayerObject) =>
-				CGPlayer_C__ClickToMoveStopEvent(thisActivePlayerObject);
+				CGPlayer_C__ClickToMoveStopEvent?.Invoke(thisActivePlayerObject) ?? IntPtr.Zero;
 
 			public event CommandCallback.ClntObjMgrGetActivePlayerObj ClntObjMgrGetActivePlayerObjEvent;
 			public IntPtr ClntObjMgrGetActivePlayerObj() =>
-				ClntObjMgrGetActivePlayerObjEvent();
+				ClntObjMgrGetActivePlayerObjEvent?.Invoke() ?? IntPtr.Zero;
 
 			public event CommandCallback.SelectUnit SelectUnitEvent;
 			public Int32 SelectUnit(Int64 GUID) =>
-				SelectUnitEvent(GUID);
+				SelectUnitEvent?.Invoke(GUID) ?? 0;
 
 			public event CommandCallback.InteractUnit InteractUnitEvent;
 			public Int32 InteractUnit(IntPtr thisObject) =>
-				InteractUnitEvent(thisObject);
+				InteractUnitEvent?.Invoke(thisObject) ?? 0;
+			#endregion
 		}
 	}
 }

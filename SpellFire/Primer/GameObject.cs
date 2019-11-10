@@ -40,9 +40,16 @@ namespace SpellFire.Primer
 
 		public bool IsAlive()
 		{
-			IntPtr unitInfo = memory.ReadPointer86(address + 0x8);
-			Int32 health = memory.ReadInt32(unitInfo + (0x18 * 4));
+			IntPtr unitInfo = memory.ReadPointer86(address + Offset.Info);
+			Int32 health = memory.ReadInt32(unitInfo + Offset.Health);
 			return health != 0;
+		}
+
+		public bool IsLootable()
+		{
+			IntPtr unitInfo = memory.ReadPointer86(address + Offset.Info);
+			Int32 flags = memory.ReadInt32(unitInfo + Offset.Flags);
+			return (flags & 1) != 0;
 		}
 
 		public GameObject(Memory memory, IntPtr address) : base(memory, address) { }

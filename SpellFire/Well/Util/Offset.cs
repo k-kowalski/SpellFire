@@ -36,13 +36,25 @@ namespace SpellFire.Well.Util
 		public const Int32 TargetGUID = 0xBD07B0;
 		public const Int32 ClientConnection = 0xC79CE0;
 		/// <summary>
-		/// ClientConnection
+		/// client connection
 		/// </summary>
 		public const Int32 GameObjectManager = 0x2ED0;
 		/// <summary>
-		/// GameObjectManager
+		/// game object manager
 		/// </summary>
 		public const Int32 FirstGameObject = 0xAC;
+		/// <summary>
+		/// game object
+		/// </summary>
+		public const Int32 Info = 0x8;
+		/// <summary>
+		/// info
+		/// </summary>
+		public const Int32 Flags = 0x13C;
+		/// <summary>
+		/// info
+		/// </summary>
+		public const Int32 Health = 0x60;
 		/// <summary>
 		/// game object
 		/// </summary>

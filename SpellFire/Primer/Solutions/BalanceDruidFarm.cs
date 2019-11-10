@@ -12,6 +12,10 @@ using SpellFire.Well.Util;
 
 namespace SpellFire.Primer.Solutions
 {
+	/// <summary>
+	/// Find closest enemy, kill, loot, repeat
+	/// as Balance Druid
+	/// </summary>
 	public class BalanceDruidFarm : Solution
 	{
 		private bool loot;
@@ -153,6 +157,7 @@ namespace SpellFire.Primer.Solutions
 				Thread.Sleep(100);
 			}
 
+			/* timeout reached, reset state */
 			if (loot && lootTargeted)
 			{
 				loot = false;

@@ -7,6 +7,9 @@ using SpellFire.Well.Util;
 
 namespace SpellFire.Primer.Solutions
 {
+	/// <summary>
+	/// Fishbot
+	/// </summary>
 	public class Fishing : Solution
 	{
 		private readonly ControlInterface ci;

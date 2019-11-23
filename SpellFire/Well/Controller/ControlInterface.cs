@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using SpellFire.Well.LuaEvents;
+using SpellFire.Well.Net;
 
 namespace SpellFire.Well.Controller
 {
@@ -41,6 +42,10 @@ namespace SpellFire.Well.Controller
 		public class RemoteControl : MarshalByRefObject
 		{
 			#region Control
+			public event Action<Packet> SendPacketEvent;
+			public void SendPacket(Packet packet) =>
+				SendPacketEvent?.Invoke(packet);
+
 			public event Action InitializeLuaEventFrameEvent;
 			public void InitializeLuaEventFrame() =>
 				InitializeLuaEventFrameEvent?.Invoke();

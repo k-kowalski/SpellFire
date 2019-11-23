@@ -4,11 +4,15 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using SpellFire.Well.LuaEvents;
+using SpellFire.Well.Net;
 
 namespace SpellFire.Well.Controller
 {
 	public static class CommandCallback
 	{
+		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+		public delegate Int32 LuaEventCallback(IntPtr luaState);
+
 		public delegate Int32 EndScene(IntPtr thisDevice);
 
 		public delegate Int32 FrameScript__Execute(String command, int a1, int a2);
@@ -45,7 +49,12 @@ namespace SpellFire.Well.Controller
 		public delegate Int32 FrameScript__UnregisterFunction(string luaFunctionName);
 
 		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-		public delegate Int32 LuaEventCallback(IntPtr luaState);
+		public delegate void WorldSendPacket(IntPtr data);
+
+		[UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+		public delegate void ClientSendPacket(IntPtr thisObject, DataStore data);
+
+		public delegate IntPtr NetGetCurrentConnection();
 	}
 
 	public class CommandHandler : MarshalByRefObject, IDisposable
@@ -67,6 +76,9 @@ namespace SpellFire.Well.Controller
 		private CommandCallback.LuaToString LuaToString;
 		private CommandCallback.FrameScript__RegisterFunction FrameScript__RegisterFunction;
 		private CommandCallback.FrameScript__UnregisterFunction FrameScript__UnregisterFunction;
+		private CommandCallback.WorldSendPacket WorldSendPacket;
+		private CommandCallback.ClientSendPacket ClientSendPacket;
+		public CommandCallback.NetGetCurrentConnection NetGetCurrentConnection;
 
 		private CommandCallback.LuaEventCallback eventCallback;
 		private IntPtr luaEventCallbackPtr;
@@ -97,6 +109,9 @@ namespace SpellFire.Well.Controller
 			LuaToString = Marshal.GetDelegateForFunctionPointer<CommandCallback.LuaToString>(IntPtr.Zero + Offset.LuaToString);
 			FrameScript__RegisterFunction = Marshal.GetDelegateForFunctionPointer<CommandCallback.FrameScript__RegisterFunction>(IntPtr.Zero + Offset.FrameScript__RegisterFunction);
 			FrameScript__UnregisterFunction = Marshal.GetDelegateForFunctionPointer<CommandCallback.FrameScript__UnregisterFunction>(IntPtr.Zero + Offset.FrameScript__UnregisterFunction);
+			WorldSendPacket = Marshal.GetDelegateForFunctionPointer<CommandCallback.WorldSendPacket>(IntPtr.Zero + Offset.WorldSendPacket);
+			ClientSendPacket = Marshal.GetDelegateForFunctionPointer<CommandCallback.ClientSendPacket>(IntPtr.Zero + Offset.ClientSendPacket);
+			NetGetCurrentConnection = Marshal.GetDelegateForFunctionPointer<CommandCallback.NetGetCurrentConnection>(IntPtr.Zero + Offset.NetGetCurrentConnection);
 
 			ctrlInterface.remoteControl.FrameScript__ExecuteEvent += FrameScript__ExecuteHandler;
 			ctrlInterface.remoteControl.FrameScript__GetLocalizedTextEvent += FrameScript__GetLocalizedTextHandler;
@@ -133,8 +148,16 @@ namespace SpellFire.Well.Controller
 		{
 			commandQueue.Submit<object>((() =>
 			{
-				FrameScript__Execute($"{frameName}:UnregisterAllEvents(); {frameName}:SetScript('OnEvent', nil);", 0, 0);
-				FrameScript__UnregisterFunction(luaEventFunctionName);
+				if (frameName != null)
+				{
+					FrameScript__Execute($"{frameName}:UnregisterAllEvents(); {frameName}:SetScript('OnEvent', nil);", 0, 0);
+				}
+
+				if (luaEventFunctionName != null)
+				{
+					FrameScript__UnregisterFunction(luaEventFunctionName);
+				}
+
 				return null;
 			}));
 		}
@@ -224,6 +247,24 @@ namespace SpellFire.Well.Controller
 		{
 			CommandCallback.InteractUnit InteractUnit = Marshal.GetDelegateForFunctionPointer<CommandCallback.InteractUnit>(Marshal.ReadIntPtr(Marshal.ReadIntPtr(thisObject) + Offset.InteractUnit));
 			return commandQueue.Submit<Int32>((() => InteractUnit(thisObject)));
+		}
+
+		public void WorldSendPacketHandler(IntPtr data)
+		{
+			_ = commandQueue.Submit<object>(() =>
+			{
+				WorldSendPacket(data);
+				return null;
+			});
+		}
+
+		public void ClientSendPacketHandler(IntPtr thisObject, DataStore data)
+		{
+			_ = commandQueue.Submit<object>(() =>
+			{
+				ClientSendPacket(thisObject, data);
+				return null;
+			});
 		}
 		#endregion
 

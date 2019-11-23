@@ -72,6 +72,7 @@
     <Compile Include="Primer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Solution.cs" />
+    <Compile Include="Solutions\PacketManip.cs" />
     <Compile Include="SystemWin32.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

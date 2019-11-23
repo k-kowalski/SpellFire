@@ -26,6 +26,9 @@ namespace SpellFire.Well.Util
 		public const Int32 LuaToString = 0x84E0E0;
 		public const Int32 FrameScript__RegisterFunction = 0x817F90;
 		public const Int32 FrameScript__UnregisterFunction = 0x817FD0;
+		public const Int32 WorldSendPacket = 0x406F40;
+		public const Int32 ClientSendPacket = 0x632B50;
+		public const Int32 NetGetCurrentConnection = 0x6B0970;
 
 
 

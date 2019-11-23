@@ -8,6 +8,7 @@ using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Ipc;
 using System.Runtime.Serialization.Formatters;
 using System.Threading;
+using SpellFire.Well.Net;
 
 namespace SpellFire.Well.Controller
 {
@@ -16,6 +17,7 @@ namespace SpellFire.Well.Controller
 		private ControlInterface ctrlInterface = null;
 		private Queue<string> messageQueue = new Queue<string>();
 		private CommandHandler commandHandler;
+		private PacketManager packetManager;
 		private IntPtr EndSceneAddress;
 
 		public RemoteMain(RemoteHooking.IContext context, string channelName)
@@ -27,6 +29,8 @@ namespace SpellFire.Well.Controller
 
 			EndSceneAddress = GetEndSceneAddress();
 			commandHandler = new CommandHandler(ctrlInterface, EndSceneAddress);
+
+			packetManager = new PacketManager(ctrlInterface, commandHandler);
 		}
 
 		public void Run(RemoteHooking.IContext context, string channelName)

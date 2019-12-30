@@ -12,17 +12,11 @@ namespace SpellFire.Primer.Solutions
 	/// </summary>
 	public class Fishing : Solution
 	{
-		private readonly ControlInterface ci;
-		private readonly Memory memory;
-
 		private readonly GameObjectManager objectManager;
 		private LinkedList<Int64> lastBobberGUIDs = new LinkedList<long>();
 
-		public Fishing(ControlInterface ci, Memory memory)
+		public Fishing(ControlInterface ci, Memory memory) : base(ci, memory)
 		{
-			this.memory = memory;
-			this.ci = ci;
-
 			IntPtr clientConnection = memory.ReadPointer86(IntPtr.Zero + Offset.ClientConnection);
 			IntPtr objectManagerAddress = memory.ReadPointer86(clientConnection + Offset.GameObjectManager);
 
@@ -30,6 +24,8 @@ namespace SpellFire.Primer.Solutions
 
 			// start fishing initially
 			CastSpell("Fishing");
+
+			this.Active = true;
 		}
 
 		public override void Tick()

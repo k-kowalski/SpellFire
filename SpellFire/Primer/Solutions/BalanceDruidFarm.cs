@@ -22,19 +22,13 @@ namespace SpellFire.Primer.Solutions
 		private bool lootTargeted;
 		private Int64 currentlyOccupiedMobGUID;
 
-		private readonly ControlInterface ci;
-		private readonly Memory memory;
-
 		private readonly GameObject player;
 		private readonly GameObjectManager objectManager;
 
 		private readonly LuaEventListener eventListener;
 
-		public BalanceDruidFarm(ControlInterface ci, Memory memory)
+		public BalanceDruidFarm(ControlInterface ci, Memory memory) : base(ci, memory)
 		{
-			this.memory = memory;
-			this.ci = ci;
-
 			eventListener = new LuaEventListener(ci);
 			eventListener.Bind("LOOT_OPENED", LootOpenedHandler);
 
@@ -46,6 +40,8 @@ namespace SpellFire.Primer.Solutions
 
 			loot = false;
 			lootTargeted = false;
+
+			this.Active = true;
 		}
 
 		private void LootOpenedHandler(LuaEventArgs luaEventArgs)

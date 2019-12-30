@@ -17,18 +17,14 @@ namespace SpellFire.Primer.Solutions
 	/// </summary>
 	class AutoLooter : Solution
 	{
-		private readonly ControlInterface ci;
 
 		private readonly GameObject player;
 		private readonly GameObjectManager objectManager;
 
 		private readonly LuaEventListener eventListener;
 
-		public AutoLooter(ControlInterface ci, Memory memory)
+		public AutoLooter(ControlInterface ci, Memory memory) : base(ci, memory)
 		{
-			Console.WriteLine($"Starting solution {nameof(AutoLooter)}");
-			this.ci = ci;
-
 			eventListener = new LuaEventListener(ci);
 			eventListener.Bind("LOOT_OPENED", LootOpenedHandler);
 
@@ -37,6 +33,8 @@ namespace SpellFire.Primer.Solutions
 
 			player = new GameObject(memory, ci.remoteControl.ClntObjMgrGetActivePlayerObj());
 			objectManager = new GameObjectManager(memory, objectManagerAddress);
+
+			this.Active = true;
 		}
 
 		private void LootOpenedHandler(LuaEventArgs luaEventArgs)

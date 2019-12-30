@@ -11,12 +11,8 @@ namespace SpellFire.Primer.Solutions
 {
 	class PacketManip : Solution
 	{
-		private readonly ControlInterface ci;
-
-		public PacketManip(ControlInterface ci, Memory memory)
+		public PacketManip(ControlInterface ci, Memory memory) : base(ci, memory)
 		{
-			this.ci = ci;
-
 
 			SpellPacket spellPacket = new SpellPacket
 			{
@@ -27,6 +23,8 @@ namespace SpellFire.Primer.Solutions
 
 
 			ci.remoteControl.SendPacket(spellPacket);
+
+			this.Active = false;
 		}
 
 		public override void Tick()

@@ -21,5 +21,8 @@ namespace SpellFire.Well.Util
 
 		[DllImport("user32.dll")]
 		public static extern Int32 SendMessage(IntPtr hWnd, Int32 Msg, UInt32 wParam, UInt32 lParam);
+
+		[DllImport("kernel32.dll")]
+		public static extern Int32 AllocConsole();
 	}
 }

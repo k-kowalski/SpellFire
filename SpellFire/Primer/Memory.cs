@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using SpellFire.Well.Util;
 
 namespace SpellFire.Primer
 {

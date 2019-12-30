@@ -1,8 +1,20 @@
-﻿namespace SpellFire.Primer
+﻿using SpellFire.Well.Controller;
+
+namespace SpellFire.Primer
 {
 	public abstract class Solution
 	{
-		public bool Active { get; set; } = true;
+		public const string SolutionAssemblyQualifier = "SpellFire.Primer.Solutions.";
+
+		public bool Active { get; set; }
+		protected readonly ControlInterface ci;
+		protected readonly Memory memory;
+
+		protected Solution(ControlInterface ci, Memory memory)
+		{
+			this.ci = ci;
+			this.memory = memory;
+		}
 
 		public abstract void Tick();
 		public virtual void Stop()

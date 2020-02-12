@@ -10,6 +10,8 @@ Right now only supported WoW verison is **3.3.5a (build 12340)**, however struct
 
 Project goal is to provide clean and maintainable API of a game instrumentation.
 
+[You can see it in action here.](https://kkovs.github.io/SpellFire/Resources/Demo/SpellFire_demo.mp4)
+
 ## **How does it work?**
 The system entails **two** components working together, their general description:
 

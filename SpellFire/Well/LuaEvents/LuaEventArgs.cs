@@ -4,10 +4,11 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SpellFire.Well.Util;
 
 namespace SpellFire.Well.LuaEvents
 {
-	public class LuaEventArgs : MarshalByRefObject
+	public class LuaEventArgs : TimelessMarshalByRefObject
 	{
 		public string Name { get; }
 

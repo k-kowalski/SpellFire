@@ -8,7 +8,7 @@ using SpellFire.Well.Net;
 
 namespace SpellFire.Well.Controller
 {
-	public class ControlInterface : MarshalByRefObject
+	public class ControlInterface : TimelessMarshalByRefObject
 	{
 		public ControlInterface()
 		{
@@ -17,7 +17,7 @@ namespace SpellFire.Well.Controller
 		}
 
 		public readonly HostControl hostControl;
-		public class HostControl : MarshalByRefObject
+		public class HostControl : TimelessMarshalByRefObject
 		{
 			public event Action<LuaEventArgs> LuaEventFired;
 
@@ -39,7 +39,7 @@ namespace SpellFire.Well.Controller
 
 
 		public readonly RemoteControl remoteControl;
-		public class RemoteControl : MarshalByRefObject
+		public class RemoteControl : TimelessMarshalByRefObject
 		{
 			#region Control
 			public event Action<Packet> SendPacketEvent;

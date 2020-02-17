@@ -57,7 +57,7 @@ namespace SpellFire.Well.Controller
 		public delegate IntPtr NetGetCurrentConnection();
 	}
 
-	public class CommandHandler : MarshalByRefObject, IDisposable
+	public class CommandHandler : TimelessMarshalByRefObject, IDisposable
 	{
 		[NonSerialized]
 		private CommandQueue commandQueue;

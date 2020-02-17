@@ -5,10 +5,11 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using SpellFire.Well.Controller;
+using SpellFire.Well.Util;
 
 namespace SpellFire.Well.Net
 {
-	public class PacketManager : MarshalByRefObject
+	public class PacketManager : TimelessMarshalByRefObject
 	{
 		[NonSerialized]
 		private readonly ControlInterface ci;

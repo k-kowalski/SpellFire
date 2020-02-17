@@ -63,6 +63,7 @@
     <Compile Include="Util\Offset.cs" />
     <Compile Include="Util\SFUtil.cs" />
     <Compile Include="Util\SystemWin32.cs" />
+    <Compile Include="Util\TimelessMarshalByRefObject.cs" />
     <Compile Include="Util\Vector3.cs" />
   </ItemGroup>
   <ItemGroup>

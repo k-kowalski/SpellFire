@@ -41,13 +41,15 @@ namespace SpellFire.Primer
 
 		public Ty ReadStruct<Ty>(IntPtr address) where Ty : struct
 		{
-			byte[] data = Read(address, Marshal.SizeOf(typeof(Ty)));
+			Type type = typeof(Ty).IsEnum ? Enum.GetUnderlyingType(typeof(Ty)) : typeof(Ty);
+
+			byte[] data = Read(address, Marshal.SizeOf(type));
 
 			Ty result;
 			GCHandle handle = GCHandle.Alloc(data, GCHandleType.Pinned);
 			try
 			{
-				result = (Ty) Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(Ty));
+				result = (Ty) Marshal.PtrToStructure(handle.AddrOfPinnedObject(), type);
 			}
 			finally
 			{

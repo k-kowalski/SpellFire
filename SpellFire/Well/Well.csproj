@@ -55,6 +55,7 @@
     <Compile Include="LuaEvents\LuaEventListener.cs" />
     <Compile Include="Model\ClickToMoveType.cs" />
     <Compile Include="Model\GameObjectType.cs" />
+    <Compile Include="Model\CreatureType.cs" />
     <Compile Include="Net\DataStore.cs" />
     <Compile Include="Net\Opcode.cs" />
     <Compile Include="Net\PacketManager.cs" />

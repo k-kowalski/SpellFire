@@ -90,6 +90,14 @@ namespace SpellFire.Well.Util
 		/// game object
 		/// </summary>
 		public const Int32 ChannelSpellId = 0xA80;
+		/// <summary>
+		/// game object
+		/// </summary>
+		public const Int32 CreatureEntryAddress = 0x964;
+		/// <summary>
+		/// creature entry
+		/// </summary>
+		public const Int32 CreatureType = 0x10;
 
 
 

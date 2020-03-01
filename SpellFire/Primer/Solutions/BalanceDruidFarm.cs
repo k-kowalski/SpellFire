@@ -71,10 +71,12 @@ namespace SpellFire.Primer.Solutions
 				foreach (GameObject gameObject in objectManager)
 				{
 					//Console.WriteLine($"checking: {currentGameObject.ToString("X")} .. has guid: {currentGameObjectGUID} ");
-					if (gameObject.Type == GameObjectType.Unit && gameObject.IsAlive())
+					if (gameObject.Type == GameObjectType.Unit
+						&& gameObject.IsAlive()
+						&& gameObject.UnitType != CreatureType.Critter)
 					{
 						distance = player.GetDistance(gameObject);
-						if (distance < minDistance && (!gameObject.UnitName.Contains("Gryph")))
+						if (distance < minDistance)
 						{
 							minDistance = distance;
 							GUID = gameObject.GUID;

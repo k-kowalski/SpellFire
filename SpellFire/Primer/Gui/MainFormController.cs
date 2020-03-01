@@ -35,6 +35,7 @@ namespace SpellFire.Primer.Gui
 				nameof(AutoLooter),
 				nameof(BalanceDruidFarm),
 				nameof(Fishing),
+				nameof(AutoLogin),
 			};
 
 			listBoxSolutions.DataSource = solutionTypes;

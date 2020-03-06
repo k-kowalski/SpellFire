@@ -18,7 +18,7 @@ namespace SpellFire.Primer.Gui
 	{
 		private MainForm mainForm;
 		private ControlInterface ctrlInterface;
-		private ProcessEntry processEntry;
+		private ProcessEntry currentProcessEntry;
 
 		private Solution solution;
 		private Task solutionTask;
@@ -55,26 +55,26 @@ namespace SpellFire.Primer.Gui
 			comboBoxProcesses.DataSource = entries;
 		}
 
-		public void AttachToProcess(object selectedItem)
+		public bool AttachToProcess(ProcessEntry processEntry)
 		{
-			if (processEntry != null)
-			{
-				MessageBox.Show("Already attached to process.");
-				return;
-			}
-
-			this.processEntry = selectedItem as ProcessEntry;
-
-			if (this.processEntry == null)
+			if (processEntry == null)
 			{
 				MessageBox.Show("No WoW process selected.");
-				return;
+				return false;
+			}
+
+			if (processEntry.Equals(currentProcessEntry))
+			{
+				/* do not reinject the same process */
+				return true;
 			}
 
 			/* establish connection to remote agent */
 			InjectProcess(processEntry.GetProcess());
 
-			mainForm.PostInfo($"Attached to process of pid: {processEntry.GetProcess().Id}", Color.LightGreen);
+			currentProcessEntry = processEntry;
+
+			return true;
 		}
 
 		private void InjectProcess(Process process)
@@ -95,13 +95,10 @@ namespace SpellFire.Primer.Gui
 				Console.WriteLine("There was an error while injecting into target:");
 				Console.ResetColor();
 				Console.WriteLine(e.ToString());
-
-
-				this.processEntry = null;
 			}
 		}
 
-		public void ToggleRunState(ListBox listBoxSolutions)
+		public void ToggleRunState(string solutionType, ProcessEntry processEntry)
 		{
 			if (solution != null)
 			{
@@ -114,20 +111,16 @@ namespace SpellFire.Primer.Gui
 				return;
 			}
 
-			if (listBoxSolutions.SelectedIndex == -1)
+			if (String.IsNullOrEmpty(solutionType))
 			{
 				MessageBox.Show("Select solution to run.");
 				return;
 			}
 
-			if (processEntry == null)
+			if ( ! AttachToProcess(processEntry))
 			{
-				MessageBox.Show("Select WoW process to attach to.");
 				return;
 			}
-
-			string solutionType = listBoxSolutions.SelectedItem as string;
-
 
 			solution = Activator.CreateInstance(
 				Type.GetType(Solution.SolutionAssemblyQualifier + solutionType),

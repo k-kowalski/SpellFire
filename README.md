@@ -6,7 +6,7 @@
 System that lets you chime into World of Warcraft inner mechanisms
 and command game using programming language.
 
-Right now only supported WoW verison is **3.3.5a (build 12340)**, however structure of the project should easily let you adapt to other version.
+Right now only supported WoW version is **3.3.5a (build 12340)**, however structure of the project should easily let you adapt to other version.
 
 Project goal is to provide clean and maintainable API of a game instrumentation.
 

@@ -25,5 +25,17 @@ namespace SpellFire.Primer.Gui
 		{
 			return $"pid: {process.Id}";
 		}
+
+		public override bool Equals(object obj)
+		{
+			var processEntry = obj as ProcessEntry;
+
+			if (processEntry == null)
+			{
+				return false;
+			}
+
+			return this.process.Equals(processEntry.process);
+		}
 	}
 }

@@ -36,7 +36,6 @@
 			this.label1 = new System.Windows.Forms.Label();
 			this.listBoxSolutions = new System.Windows.Forms.ListBox();
 			this.buttonToggle = new System.Windows.Forms.Button();
-			this.buttonAttach = new System.Windows.Forms.Button();
 			this.comboBoxProcesses = new System.Windows.Forms.ComboBox();
 			this.panel1.SuspendLayout();
 			this.SuspendLayout();
@@ -50,7 +49,6 @@
 			this.panel1.Controls.Add(this.label1);
 			this.panel1.Controls.Add(this.listBoxSolutions);
 			this.panel1.Controls.Add(this.buttonToggle);
-			this.panel1.Controls.Add(this.buttonAttach);
 			this.panel1.Controls.Add(this.comboBoxProcesses);
 			this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.panel1.Location = new System.Drawing.Point(0, 0);
@@ -92,7 +90,7 @@
 			// label1
 			// 
 			this.label1.AutoSize = true;
-			this.label1.Location = new System.Drawing.Point(12, 90);
+			this.label1.Location = new System.Drawing.Point(12, 135);
 			this.label1.Name = "label1";
 			this.label1.Size = new System.Drawing.Size(108, 13);
 			this.label1.TabIndex = 7;
@@ -117,21 +115,10 @@
 			this.buttonToggle.UseVisualStyleBackColor = true;
 			this.buttonToggle.Click += new System.EventHandler(this.buttonToggle_Click);
 			// 
-			// buttonAttach
-			// 
-			this.buttonAttach.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-			this.buttonAttach.Location = new System.Drawing.Point(11, 136);
-			this.buttonAttach.Name = "buttonAttach";
-			this.buttonAttach.Size = new System.Drawing.Size(136, 39);
-			this.buttonAttach.TabIndex = 1;
-			this.buttonAttach.Text = "Attach to process";
-			this.buttonAttach.UseVisualStyleBackColor = true;
-			this.buttonAttach.Click += new System.EventHandler(this.buttonAttach_Click);
-			// 
 			// comboBoxProcesses
 			// 
 			this.comboBoxProcesses.FormattingEnabled = true;
-			this.comboBoxProcesses.Location = new System.Drawing.Point(12, 109);
+			this.comboBoxProcesses.Location = new System.Drawing.Point(12, 154);
 			this.comboBoxProcesses.Name = "comboBoxProcesses";
 			this.comboBoxProcesses.Size = new System.Drawing.Size(121, 21);
 			this.comboBoxProcesses.TabIndex = 0;
@@ -158,7 +145,6 @@
 		#endregion
 
 		private System.Windows.Forms.Panel panel1;
-		private System.Windows.Forms.Button buttonAttach;
 		private System.Windows.Forms.ComboBox comboBoxProcesses;
 		private System.Windows.Forms.Button buttonToggle;
 		private System.Windows.Forms.ListBox listBoxSolutions;

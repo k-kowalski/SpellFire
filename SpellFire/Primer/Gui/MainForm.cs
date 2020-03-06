@@ -36,14 +36,11 @@ namespace SpellFire.Primer.Gui
 			e.Handled = true;
 		}
 
-		private void buttonAttach_Click(object sender, EventArgs e)
-		{
-			this.mfController.AttachToProcess(comboBoxProcesses.SelectedItem);
-		}
-
 		private void buttonToggle_Click(object sender, EventArgs e)
 		{
-			this.mfController.ToggleRunState(listBoxSolutions);
+			this.mfController.ToggleRunState(
+				listBoxSolutions.SelectedItem as string,
+				comboBoxProcesses.SelectedItem as ProcessEntry);
 		}
 
 		public void SetToggleButtonText(string text)

@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using SpellFire.Well.Util;
 
-namespace SpellFire.Well.LuaEvents
+namespace SpellFire.Well.Lua
 {
 	public class LuaEventArgs : TimelessMarshalByRefObject
 	{

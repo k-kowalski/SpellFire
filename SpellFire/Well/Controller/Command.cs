@@ -3,7 +3,7 @@ using SpellFire.Well.Util;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using SpellFire.Well.LuaEvents;
+using SpellFire.Well.Lua;
 using SpellFire.Well.Net;
 
 namespace SpellFire.Well.Controller

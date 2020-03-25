@@ -45,6 +45,36 @@ namespace SpellFire.Primer
 			}
 		}
 
+		public Int32 Health
+		{
+			get
+			{
+				IntPtr unitInfo = memory.ReadPointer86(address + Offset.Info);
+				return memory.ReadInt32(unitInfo + Offset.Health);
+			}
+		}
+
+		public Int32 HealthPct
+		{
+			get
+			{
+				IntPtr unitInfo = memory.ReadPointer86(address + Offset.Info);
+				Int32 currentHealth = memory.ReadInt32(unitInfo + Offset.Health);
+				Int32 maxHealth = memory.ReadInt32(unitInfo + Offset.MaxHealth);
+
+				return (currentHealth * 100) / maxHealth;
+			}
+		}
+
+		public Int32 RunicPower
+		{
+			get
+			{
+				IntPtr unitInfo = memory.ReadPointer86(address + Offset.Info);
+				return memory.ReadInt32(unitInfo + Offset.RunicPower) / 10;
+			}
+		}
+
 		public bool IsCastingOrChanneling() 
 		{
 			return this.CastingSpellId != 0 || this.ChannelSpellId != 0;
@@ -58,13 +88,6 @@ namespace SpellFire.Primer
 		{
 			IntPtr movInfo = memory.ReadPointer86(address + 216);
 			return memory.ReadInt32(movInfo + 96) != 0;
-		}
-
-		public bool IsAlive()
-		{
-			IntPtr unitInfo = memory.ReadPointer86(address + Offset.Info);
-			Int32 health = memory.ReadInt32(unitInfo + Offset.Health);
-			return health != 0;
 		}
 
 		public bool IsLootable()

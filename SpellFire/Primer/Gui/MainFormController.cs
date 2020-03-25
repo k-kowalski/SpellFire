@@ -32,6 +32,7 @@ namespace SpellFire.Primer.Gui
 		{
 			ICollection<string> solutionTypes = new List<string>
 			{
+				nameof(UnholyDK),
 				nameof(Disenchanter),
 				nameof(AutoLooter),
 				nameof(BalanceDruidFarm),

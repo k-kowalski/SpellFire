@@ -9,7 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using SpellFire.Primer.Gui;
 using SpellFire.Well.Controller;
-using SpellFire.Well.LuaEvents;
+using SpellFire.Well.Lua;
 using SpellFire.Well.Util;
 
 namespace SpellFire.Primer.Solutions
@@ -40,7 +40,17 @@ namespace SpellFire.Primer.Solutions
 			ci.remoteControl.FrameScript__Execute(DisenchantLuaScript, 0, 0);
 
 			/* Disenchant cast time is 3s, so give some idle margin to simulate human behaviour */
-			Thread.Sleep(4000);
+			DateTime tiemoutStart = DateTime.Now;
+			Func<Int32, bool> timeout = (timeoutSeconds) => (DateTime.Now - tiemoutStart).Seconds < timeoutSeconds;
+			while (timeout(4))
+			{
+				Thread.Sleep(100);
+				if ( ! Active)
+				{
+					/* cut sleep when solution got turned off */
+					return;
+				}
+			}
 		}
 
 		public override void Finish()

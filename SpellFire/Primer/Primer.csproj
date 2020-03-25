@@ -77,6 +77,7 @@
     <Compile Include="Solution.cs" />
     <Compile Include="Solutions\AutoLogin.cs" />
     <Compile Include="Solutions\PacketManip.cs" />
+    <Compile Include="Solutions\UnholyDK.cs" />
     <EmbeddedResource Include="Gui\MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>

@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using SpellFire.Well.Controller;
-using SpellFire.Well.LuaEvents;
+using SpellFire.Well.Lua;
 using SpellFire.Well.Model;
 using SpellFire.Well.Util;
 
@@ -72,7 +72,7 @@ namespace SpellFire.Primer.Solutions
 				{
 					//Console.WriteLine($"checking: {currentGameObject.ToString("X")} .. has guid: {currentGameObjectGUID} ");
 					if (gameObject.Type == GameObjectType.Unit
-						&& gameObject.IsAlive()
+						&& gameObject.Health > 0
 						&& gameObject.UnitType != CreatureType.Critter)
 					{
 						distance = player.GetDistance(gameObject);
@@ -98,7 +98,7 @@ namespace SpellFire.Primer.Solutions
 					distance = player.GetDistance(targetObject);
 					if (distance < 35f)
 					{
-						if (targetObject.IsAlive())
+						if (targetObject.Health > 0)
 						{
 							ci.remoteControl.CGPlayer_C__ClickToMoveStop(player.GetAddress());
 							float angle = playerObjectCoords.AngleBetween(targetObjectCoords);

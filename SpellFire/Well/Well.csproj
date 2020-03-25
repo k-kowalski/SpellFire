@@ -51,8 +51,8 @@
     <Compile Include="Controller\CommandQueue.cs" />
     <Compile Include="Controller\ControlInterface.cs" />
     <Compile Include="Controller\RemoteMain.cs" />
-    <Compile Include="LuaEvents\LuaEventArgs.cs" />
-    <Compile Include="LuaEvents\LuaEventListener.cs" />
+    <Compile Include="Lua\LuaEventArgs.cs" />
+    <Compile Include="Lua\LuaEventListener.cs" />
     <Compile Include="Model\ClickToMoveType.cs" />
     <Compile Include="Model\GameObjectType.cs" />
     <Compile Include="Model\CreatureType.cs" />

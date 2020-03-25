@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using SpellFire.Well.LuaEvents;
+using SpellFire.Well.Lua;
 using SpellFire.Well.Model;
 using SpellFire.Well.Util;
 

@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using SpellFire.Well.Controller;
-using SpellFire.Well.Util;
-using LuaEventHandler = System.Action<SpellFire.Well.LuaEvents.LuaEventArgs>;
+using LuaEventHandler = System.Action<SpellFire.Well.Lua.LuaEventArgs>;
 
-namespace SpellFire.Well.LuaEvents
+namespace SpellFire.Well.Lua
 {
 	public class LuaEventListener : IDisposable
 	{

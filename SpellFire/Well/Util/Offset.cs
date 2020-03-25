@@ -37,6 +37,7 @@ namespace SpellFire.Well.Util
 
 
 		public const Int32 TargetGUID = 0xBD07B0;
+		public const Int32 MouseoverGUID = 0xBD07A0;
 		public const Int32 ClientConnection = 0xC79CE0;
 		/// <summary>
 		/// client connection
@@ -46,6 +47,7 @@ namespace SpellFire.Well.Util
 		/// game object manager
 		/// </summary>
 		public const Int32 FirstGameObject = 0xAC;
+
 		/// <summary>
 		/// game object
 		/// </summary>
@@ -58,6 +60,15 @@ namespace SpellFire.Well.Util
 		/// info
 		/// </summary>
 		public const Int32 Health = 0x60;
+		/// <summary>
+		/// info
+		/// </summary>
+		public const Int32 MaxHealth = 0x80;
+		/// <summary>
+		/// info
+		/// </summary>
+		public const Int32 RunicPower = 0x7C;
+
 		/// <summary>
 		/// game object
 		/// </summary>
@@ -109,6 +120,5 @@ namespace SpellFire.Well.Util
 		/// dxDevice
 		/// </summary>
 		public const Int32 dxVirtualMethodTable = 0x397C;
-		public const Int32 MouseoverGUID = 0xBD07A0;
 	}
 }

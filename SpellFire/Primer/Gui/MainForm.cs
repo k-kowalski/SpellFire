@@ -15,8 +15,6 @@ namespace SpellFire.Primer.Gui
 			this.mfController = new MainFormController(this);
 
 			this.mfController.InitializeSolutionListBox(this.listBoxSolutions);
-
-			this.TopMost = true;
 		}
 
 		public void PostInfo(string info, Color color)

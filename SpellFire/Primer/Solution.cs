@@ -1,4 +1,7 @@
-﻿using SpellFire.Well.Controller;
+﻿using System.Drawing;
+using System.Windows.Forms;
+using SpellFire.Primer.Gui;
+using SpellFire.Well.Controller;
 
 namespace SpellFire.Primer
 {
@@ -22,5 +25,7 @@ namespace SpellFire.Primer
 			this.Active = false;
 		}
 		public abstract void Finish();
+
+		public virtual void RenderRadar(RadarCanvas radarCanvas, Bitmap radarBackBuffer) {}
 	}
 }

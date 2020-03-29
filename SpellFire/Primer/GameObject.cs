@@ -75,6 +75,14 @@ namespace SpellFire.Primer
 			}
 		}
 
+		public float Rotation
+		{
+			get
+			{
+				return BitConverter.ToSingle(memory.Read(address + Offset.Rotation, sizeof(float)), 0);
+			}
+		}
+
 		public bool IsCastingOrChanneling() 
 		{
 			return this.CastingSpellId != 0 || this.ChannelSpellId != 0;

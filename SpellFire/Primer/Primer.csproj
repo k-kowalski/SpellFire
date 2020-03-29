@@ -58,6 +58,9 @@
   <ItemGroup>
     <Compile Include="Gui\MainFormController.cs" />
     <Compile Include="Gui\ProcessEntry.cs" />
+    <Compile Include="Gui\RadarCanvas.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Solutions\AutoLooter.cs" />
     <Compile Include="Solutions\BalanceDruidFarm.cs" />
     <Compile Include="Solutions\Disenchanter.cs" />

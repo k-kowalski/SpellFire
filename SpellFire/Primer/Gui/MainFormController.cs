@@ -32,9 +32,9 @@ namespace SpellFire.Primer.Gui
 		{
 			ICollection<string> solutionTypes = new List<string>
 			{
+				nameof(AutoLooter),
 				nameof(UnholyDK),
 				nameof(Disenchanter),
-				nameof(AutoLooter),
 				nameof(BalanceDruidFarm),
 				nameof(Fishing),
 				nameof(AutoLogin),
@@ -134,12 +134,15 @@ namespace SpellFire.Primer.Gui
 				while (solution.Active)
 				{
 					solution.Tick();
+
+					solution.RenderRadar(mainForm.GetRadarCanvas(), mainForm.GetRadarBackBuffer());
+					mainForm.RadarSwapBuffers();
 				}
 				solution.Finish();
 			}));
 
 			mainForm.PostInfo($"Running solution {solutionType}", Color.Blue);
-			mainForm.SetToggleButtonText("Stop");
+			mainForm.SetToggleButtonText("Stop");	
 		}
 	}
 }

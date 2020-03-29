@@ -30,6 +30,7 @@
 		{
 			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
 			this.panel1 = new System.Windows.Forms.Panel();
+			this.radarCanvas = new SpellFire.Primer.Gui.RadarCanvas();
 			this.buttonRefresh = new System.Windows.Forms.Button();
 			this.labelInfo = new System.Windows.Forms.Label();
 			this.label2 = new System.Windows.Forms.Label();
@@ -43,6 +44,7 @@
 			// panel1
 			// 
 			this.panel1.BackColor = System.Drawing.SystemColors.ControlDark;
+			this.panel1.Controls.Add(this.radarCanvas);
 			this.panel1.Controls.Add(this.buttonRefresh);
 			this.panel1.Controls.Add(this.labelInfo);
 			this.panel1.Controls.Add(this.label2);
@@ -53,8 +55,17 @@
 			this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.panel1.Location = new System.Drawing.Point(0, 0);
 			this.panel1.Name = "panel1";
-			this.panel1.Size = new System.Drawing.Size(229, 372);
+			this.panel1.Size = new System.Drawing.Size(938, 505);
 			this.panel1.TabIndex = 0;
+			// 
+			// radarCanvas
+			// 
+			this.radarCanvas.BackColor = System.Drawing.SystemColors.ControlLight;
+			this.radarCanvas.Location = new System.Drawing.Point(235, 4);
+			this.radarCanvas.Name = "radarCanvas";
+			this.radarCanvas.Size = new System.Drawing.Size(691, 489);
+			this.radarCanvas.TabIndex = 10;
+			this.radarCanvas.Paint += new System.Windows.Forms.PaintEventHandler(this.radarCanvas_Paint);
 			// 
 			// buttonRefresh
 			// 
@@ -128,7 +139,7 @@
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.ClientSize = new System.Drawing.Size(229, 372);
+			this.ClientSize = new System.Drawing.Size(938, 505);
 			this.Controls.Add(this.panel1);
 			this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
 			this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -152,6 +163,7 @@
 		private System.Windows.Forms.Label label2;
 		private System.Windows.Forms.Label label1;
 		private System.Windows.Forms.Button buttonRefresh;
+		private RadarCanvas radarCanvas;
 	}
 }
 

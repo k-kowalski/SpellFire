@@ -98,6 +98,10 @@ namespace SpellFire.Well.Util
 		/// <summary>
 		/// game object
 		/// </summary>
+		public const Int32 Rotation = 0x7A8;
+		/// <summary>
+		/// game object
+		/// </summary>
 		public const Int32 Type = 0x14;
 		/// <summary>
 		/// game object

@@ -55,6 +55,12 @@ namespace SpellFire.Well.Controller
 		public delegate void ClientSendPacket(IntPtr thisObject, DataStore data);
 
 		public delegate IntPtr NetGetCurrentConnection();
+
+		[UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+		public delegate UnitReaction CGUnit_C__UnitReaction(IntPtr thisObject, IntPtr unit);
+
+		[UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+		public delegate IntPtr CGUnit_C__GetAura(IntPtr thisObject, Int32 auraIndex);
 	}
 
 	public class CommandHandler : TimelessMarshalByRefObject, IDisposable
@@ -79,6 +85,8 @@ namespace SpellFire.Well.Controller
 		private CommandCallback.WorldSendPacket WorldSendPacket;
 		private CommandCallback.ClientSendPacket ClientSendPacket;
 		public CommandCallback.NetGetCurrentConnection NetGetCurrentConnection;
+		private CommandCallback.CGUnit_C__UnitReaction CGUnit_C__UnitReaction;
+		private CommandCallback.CGUnit_C__GetAura CGUnit_C__GetAura;
 
 		private CommandCallback.LuaEventCallback eventCallback;
 		private IntPtr luaEventCallbackPtr;
@@ -112,6 +120,8 @@ namespace SpellFire.Well.Controller
 			WorldSendPacket = Marshal.GetDelegateForFunctionPointer<CommandCallback.WorldSendPacket>(IntPtr.Zero + Offset.WorldSendPacket);
 			ClientSendPacket = Marshal.GetDelegateForFunctionPointer<CommandCallback.ClientSendPacket>(IntPtr.Zero + Offset.ClientSendPacket);
 			NetGetCurrentConnection = Marshal.GetDelegateForFunctionPointer<CommandCallback.NetGetCurrentConnection>(IntPtr.Zero + Offset.NetGetCurrentConnection);
+			CGUnit_C__UnitReaction = Marshal.GetDelegateForFunctionPointer<CommandCallback.CGUnit_C__UnitReaction>(IntPtr.Zero + Offset.CGUnit_C__UnitReaction);
+			CGUnit_C__GetAura = Marshal.GetDelegateForFunctionPointer<CommandCallback.CGUnit_C__GetAura>(IntPtr.Zero + Offset.CGUnit_C__GetAura);
 
 			ctrlInterface.remoteControl.FrameScript__ExecuteEvent += FrameScript__ExecuteHandler;
 			ctrlInterface.remoteControl.FrameScript__GetLocalizedTextEvent += FrameScript__GetLocalizedTextHandler;
@@ -120,6 +130,8 @@ namespace SpellFire.Well.Controller
 			ctrlInterface.remoteControl.ClntObjMgrGetActivePlayerObjEvent += ClntObjMgrGetActivePlayerObjHandler;
 			ctrlInterface.remoteControl.SelectUnitEvent += SelectUnitHandler;
 			ctrlInterface.remoteControl.InteractUnitEvent += InteractUnitHandler;
+			ctrlInterface.remoteControl.CGUnit_C__UnitReactionEvent += CGUnit_C__UnitReactionHandler;
+			ctrlInterface.remoteControl.CGUnit_C__GetAuraEvent += CGUnit_C__GetAuraHandler;
 			#endregion
 
 			ctrlInterface.remoteControl.InitializeLuaEventFrameEvent += InitializeLuaEventFrame;
@@ -265,6 +277,16 @@ namespace SpellFire.Well.Controller
 				ClientSendPacket(thisObject, data);
 				return null;
 			});
+		}
+
+		public UnitReaction CGUnit_C__UnitReactionHandler(IntPtr thisObject, IntPtr unit)
+		{
+			return commandQueue.Submit<UnitReaction>((() => CGUnit_C__UnitReaction(thisObject, unit)));
+		}
+		
+		public IntPtr CGUnit_C__GetAuraHandler(IntPtr thisObject, Int32 auraIndex)
+		{
+			return commandQueue.Submit<IntPtr>((() => CGUnit_C__GetAura(thisObject, auraIndex)));
 		}
 		#endregion
 

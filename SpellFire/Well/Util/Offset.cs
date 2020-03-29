@@ -29,6 +29,8 @@ namespace SpellFire.Well.Util
 		public const Int32 WorldSendPacket = 0x406F40;
 		public const Int32 ClientSendPacket = 0x632B50;
 		public const Int32 NetGetCurrentConnection = 0x6B0970;
+		public const Int32 CGUnit_C__UnitReaction = 0x7251C0;
+		public const Int32 CGUnit_C__GetAura = 0x556E10;
 
 
 
@@ -68,6 +70,10 @@ namespace SpellFire.Well.Util
 		/// info
 		/// </summary>
 		public const Int32 RunicPower = 0x7C;
+		/// <summary>
+		/// info
+		/// </summary>
+		public const Int32 MountDisplayID = 0x114;
 
 		/// <summary>
 		/// game object

@@ -83,6 +83,14 @@ namespace SpellFire.Well.Controller
 			public event CommandCallback.InteractUnit InteractUnitEvent;
 			public Int32 InteractUnit(IntPtr thisObject) =>
 				InteractUnitEvent?.Invoke(thisObject) ?? 0;
+
+			public event CommandCallback.CGUnit_C__UnitReaction CGUnit_C__UnitReactionEvent;
+			public UnitReaction CGUnit_C__UnitReaction(IntPtr thisObject, IntPtr unit) =>
+				CGUnit_C__UnitReactionEvent?.Invoke(thisObject, unit) ?? UnitReaction.Unknown;
+
+			public event CommandCallback.CGUnit_C__GetAura CGUnit_C__GetAuraEvent;
+			public IntPtr CGUnit_C__GetAura(IntPtr thisObject, Int32 auraIndex) =>
+				CGUnit_C__GetAuraEvent?.Invoke(thisObject, auraIndex) ?? IntPtr.Zero;
 			#endregion
 		}
 	}

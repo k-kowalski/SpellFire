@@ -97,6 +97,12 @@ namespace SpellFire.Primer
 			return (flags & 1) != 0;
 		}
 
+		public bool IsMounted()
+		{
+			IntPtr unitInfo = memory.ReadPointer86(address + Offset.Info);
+			return memory.ReadInt32(unitInfo + Offset.MountDisplayID) > 0;
+		}
+
 		public GameObject(Memory memory, IntPtr address) : base(memory, address) { }
 	}
 }

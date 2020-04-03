@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 using SpellFire.Well.Util;
 
 namespace SpellFire.Primer
@@ -9,6 +11,8 @@ namespace SpellFire.Primer
 	{
 		private readonly IntPtr processHandle;
 		private Int32 lastOpProcessedBytes;
+
+		private const Int32 StringChunkLength = 20;
 
 		public Memory(Process process)
 		{
@@ -36,7 +40,24 @@ namespace SpellFire.Primer
 
 		public string ReadString(IntPtr address)
 		{
-			throw new NotImplementedException();
+			List<byte> chars = new List<byte>();
+
+			while (true)
+			{
+				byte[] chunk = Read(address, StringChunkLength);
+
+				for (int i = 0; i < chunk.Length; i++)
+				{
+					chars.Add(chunk[i]);
+
+					if (chunk[i] == '\0')
+					{
+						break;
+					}
+				}
+
+				return Encoding.UTF8.GetString(chars.ToArray());
+			}
 		}
 
 		public Ty ReadStruct<Ty>(IntPtr address) where Ty : struct

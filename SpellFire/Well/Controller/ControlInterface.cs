@@ -91,7 +91,12 @@ namespace SpellFire.Well.Controller
 			public event CommandCallback.CGUnit_C__GetAura CGUnit_C__GetAuraEvent;
 			public IntPtr CGUnit_C__GetAura(IntPtr thisObject, Int32 auraIndex) =>
 				CGUnit_C__GetAuraEvent?.Invoke(thisObject, auraIndex) ?? IntPtr.Zero;
+
+			public event Func<IntPtr, string> GetUnitNameEvent;
+			public string GetUnitName(IntPtr thisObject) =>
+				GetUnitNameEvent?.Invoke(thisObject) ?? null;
 			#endregion
+
 		}
 	}
 }

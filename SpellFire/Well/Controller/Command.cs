@@ -61,6 +61,10 @@ namespace SpellFire.Well.Controller
 
 		[UnmanagedFunctionPointer(CallingConvention.ThisCall)]
 		public delegate IntPtr CGUnit_C__GetAura(IntPtr thisObject, Int32 auraIndex);
+
+		/* returns pointer to string, cannot marshal it via delegate signature */
+		[UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+		public delegate IntPtr GetUnitName(IntPtr thisObject);
 	}
 
 	public class CommandHandler : TimelessMarshalByRefObject, IDisposable
@@ -132,6 +136,7 @@ namespace SpellFire.Well.Controller
 			ctrlInterface.remoteControl.InteractUnitEvent += InteractUnitHandler;
 			ctrlInterface.remoteControl.CGUnit_C__UnitReactionEvent += CGUnit_C__UnitReactionHandler;
 			ctrlInterface.remoteControl.CGUnit_C__GetAuraEvent += CGUnit_C__GetAuraHandler;
+			ctrlInterface.remoteControl.GetUnitNameEvent += GetUnitNameHandler;
 			#endregion
 
 			ctrlInterface.remoteControl.InitializeLuaEventFrameEvent += InitializeLuaEventFrame;
@@ -209,7 +214,7 @@ namespace SpellFire.Well.Controller
 
 			try
 			{
-				ctrlInterface.hostControl.LuaEventTrigger( new LuaEventArgs(luaEventArgs) );
+				ctrlInterface.hostControl.LuaEventTrigger(new LuaEventArgs(luaEventArgs));
 			}
 			catch (Exception)
 			{
@@ -257,7 +262,9 @@ namespace SpellFire.Well.Controller
 
 		public Int32 InteractUnitHandler(IntPtr thisObject)
 		{
-			CommandCallback.InteractUnit InteractUnit = Marshal.GetDelegateForFunctionPointer<CommandCallback.InteractUnit>(Marshal.ReadIntPtr(Marshal.ReadIntPtr(thisObject) + Offset.InteractUnit));
+			CommandCallback.InteractUnit InteractUnit =
+				Marshal.GetDelegateForFunctionPointer<CommandCallback.InteractUnit>(
+					Marshal.ReadIntPtr(Marshal.ReadIntPtr(thisObject) + Offset.InteractUnit));
 			return commandQueue.Submit<Int32>((() => InteractUnit(thisObject)));
 		}
 
@@ -283,10 +290,19 @@ namespace SpellFire.Well.Controller
 		{
 			return commandQueue.Submit<UnitReaction>((() => CGUnit_C__UnitReaction(thisObject, unit)));
 		}
-		
+
 		public IntPtr CGUnit_C__GetAuraHandler(IntPtr thisObject, Int32 auraIndex)
 		{
 			return commandQueue.Submit<IntPtr>((() => CGUnit_C__GetAura(thisObject, auraIndex)));
+		}
+
+		public string GetUnitNameHandler(IntPtr thisObject)
+		{
+			CommandCallback.GetUnitName GetUnitName =
+				Marshal.GetDelegateForFunctionPointer<CommandCallback.GetUnitName>(
+					Marshal.ReadIntPtr(Marshal.ReadIntPtr(thisObject) + Offset.GetUnitName));
+
+			return commandQueue.Submit<string>((() => Marshal.PtrToStringAnsi(GetUnitName(thisObject))));
 		}
 		#endregion
 

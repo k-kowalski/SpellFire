@@ -94,54 +94,14 @@ namespace SpellFire.Primer.Solutions
 			eventListener.Dispose();
 		}
 
-		public float gameYardToPixelRatio = 0.1f;
-
 		public override void RenderRadar(RadarCanvas radarCanvas, Bitmap radarBackBuffer)
 		{
-			Graphics g = Graphics.FromImage(radarBackBuffer);
-			g.Clear(Color.Beige);
+			RadarCanvas.BasicRadar(radarCanvas, radarBackBuffer, player, objectManager, GetTargetGUID(), ci);
+		}
 
-			Pen pen = new Pen(Color.Black);
-
-			int width = radarCanvas.Width;
-			int height = radarCanvas.Height;
-
-			int basex = width / 2;
-			int basey = height / 2;
-
-
-			Vector3 playerCoordinates = player.Coordinates;
-			float px = playerCoordinates.x;
-			float py = playerCoordinates.y;
-			foreach (GameObject obj in objectManager.Where(gameObj => gameObj.Type == GameObjectType.Unit))
-			{
-				Vector3 objCoords = obj.Coordinates;
-				float x = objCoords.x;
-				float y = objCoords.y;
-
-				float dx = x - px;
-				float dy = y - py;
-
-				float angleRad = player.Rotation + (float)(Math.PI / 2);
-				//g.RotateTransform((float) (player.Rotation * 180f / Math.PI));
-
-				float newx = (float)-((dx * Math.Cos(-angleRad)) - (dy * Math.Sin(-angleRad)));
-				float newy = (float)((dx * Math.Sin(-angleRad)) + (dy * Math.Cos(-angleRad)));
-
-				newx += basex;
-				newy += basey;
-
-				pen = new Pen(Color.Red);
-				g.DrawEllipse(pen, newx, newy, 5f, 5f);
-				Font drawFont = new Font("Arial", 10, FontStyle.Bold);
-				g.DrawString(obj.UnitName, drawFont, new SolidBrush(Color.Aquamarine), newx, newy);
-			}
-
-			// draw player triangle
-			pen = new Pen(Color.Fuchsia);
-			g.DrawLine(pen, basex, basey - 15, basex + 5, basey);
-			g.DrawLine(pen, basex + 5, basey, basex - 5, basey);
-			g.DrawLine(pen, basex - 5, basey, basex, basey - 15);
+		private Int64 GetTargetGUID()
+		{
+			return memory.ReadInt64(IntPtr.Zero + Offset.TargetGUID);
 		}
 	}
 }

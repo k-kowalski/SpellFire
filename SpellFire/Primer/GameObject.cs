@@ -11,20 +11,11 @@ namespace SpellFire.Primer
 		public GameObjectType Type => memory.ReadStruct<GameObjectType>(address + Offset.Type);
 
 		/*
-		 * TODO: names better implementation(i.e. read till null-terminator)
-		 */
-		/*
 		 * TODO: inheritance or maybe try composition
 		 */
-		private const Int32 NameProbeLength = 40;
 
-		public string UnitName => Encoding.UTF8.GetString(memory.Read(
-			memory.ReadPointer86(memory.ReadPointer86(address + 0x964) + 0x05C),
-			NameProbeLength));
-
-		public string WorldObjectName => Encoding.UTF8.GetString(memory.Read(
-			memory.ReadPointer86(memory.ReadPointer86(address + 0x1A4) + 0x90),
-			NameProbeLength));
+		public string WorldObjectName => memory.ReadString(
+			memory.ReadPointer86(memory.ReadPointer86(address + 0x1A4) + 0x90));
 
 		public Int32 CastingSpellId => memory.ReadInt32(address + Offset.CastingSpellId);
 		public Int32 ChannelSpellId => memory.ReadInt32(address + Offset.ChannelSpellId);
@@ -102,7 +93,14 @@ namespace SpellFire.Primer
 		{
 			IntPtr unitInfo = memory.ReadPointer86(address + Offset.Info);
 			Int32 flags = memory.ReadInt32(unitInfo + Offset.Flags);
-			return (flags & 1) != 0;
+			return (flags & (byte)DynamicUnitFlags.Lootable) != 0;
+		}
+
+		public bool IsTaggedByOther()
+		{
+			IntPtr unitInfo = memory.ReadPointer86(address + Offset.Info);
+			Int32 flags = memory.ReadInt32(unitInfo + Offset.Flags);
+			return (flags & (byte)DynamicUnitFlags.TaggedByOther) != 0;
 		}
 
 		public bool IsMounted()

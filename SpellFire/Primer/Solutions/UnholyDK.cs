@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using SpellFire.Primer.Gui;
 using SpellFire.Well.Controller;
 using SpellFire.Well.Lua;
 using SpellFire.Well.Model;
@@ -277,6 +278,11 @@ namespace SpellFire.Primer.Solutions
 					Thread.Sleep(100);
 				}
 			}
+		}
+
+		public override void RenderRadar(RadarCanvas radarCanvas, Bitmap radarBackBuffer)
+		{
+			RadarCanvas.BasicRadar(radarCanvas, radarBackBuffer, player, objectManager, GetTargetGUID(), ci);
 		}
 
 		public override void Finish()

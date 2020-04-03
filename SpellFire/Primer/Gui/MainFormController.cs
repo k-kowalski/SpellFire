@@ -22,6 +22,7 @@ namespace SpellFire.Primer.Gui
 
 		private Solution solution;
 		private Task solutionTask;
+		private Task radarTask;
 
 		public MainFormController(MainForm mainForm)
 		{
@@ -106,6 +107,7 @@ namespace SpellFire.Primer.Gui
 			{
 				solution.Stop();
 				solutionTask.Wait();
+				radarTask.Wait();
 				mainForm.PostInfo($"Stopped solution {solution.GetType().Name}.", Color.DarkRed);
 				solution = null;
 
@@ -134,11 +136,17 @@ namespace SpellFire.Primer.Gui
 				while (solution.Active)
 				{
 					solution.Tick();
+				}
+				solution.Finish();
+			}));
 
+			radarTask = Task.Run((() =>
+			{
+				while (solution.Active)
+				{
 					solution.RenderRadar(mainForm.GetRadarCanvas(), mainForm.GetRadarBackBuffer());
 					mainForm.RadarSwapBuffers();
 				}
-				solution.Finish();
 			}));
 
 			mainForm.PostInfo($"Running solution {solutionType}", Color.Blue);

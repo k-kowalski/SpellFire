@@ -17,10 +17,6 @@ namespace SpellFire.Well.Util
 		public const Int32 CGPlayer_C__ClickToMoveStop = 0x72B3A0;
 		public const Int32 ClntObjMgrGetActivePlayerObj = 0x4038F0;
 		public const Int32 SelectUnit = 0x524BF0;
-		/// <summary>
-		/// game object
-		/// </summary>
-		public const Int32 InteractUnit = 0xB0;
 		public const Int32 InvalidPtrCheck = 0x86B5A0;
 		public const Int32 LuaGetTop = 0x84DBD0;
 		public const Int32 LuaToString = 0x84E0E0;
@@ -31,6 +27,15 @@ namespace SpellFire.Well.Util
 		public const Int32 NetGetCurrentConnection = 0x6B0970;
 		public const Int32 CGUnit_C__UnitReaction = 0x7251C0;
 		public const Int32 CGUnit_C__GetAura = 0x556E10;
+
+		/// <summary>
+		/// game object
+		/// </summary>
+		public const Int32 InteractUnit = 0xB0;
+		/// <summary>
+		/// game object
+		/// </summary>
+		public const Int32 GetUnitName = 0xD8;
 
 
 

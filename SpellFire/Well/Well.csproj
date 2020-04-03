@@ -56,6 +56,7 @@
     <Compile Include="Model\Aura.cs" />
     <Compile Include="Model\ClickToMoveType.cs" />
     <Compile Include="Model\DeathKnightRune.cs" />
+    <Compile Include="Model\DynamicUnitFlags.cs" />
     <Compile Include="Model\GameObjectType.cs" />
     <Compile Include="Model\CreatureType.cs" />
     <Compile Include="Model\UnitReaction.cs" />

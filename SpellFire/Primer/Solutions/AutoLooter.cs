@@ -48,7 +48,7 @@ namespace SpellFire.Primer.Solutions
 
 		public override void Tick()
 		{
-			Thread.Sleep(200);
+			Thread.Sleep(100);
 
 			IEnumerable<GameObject> lootables = objectManager.Where(gameObj => gameObj.Type == GameObjectType.Unit && gameObj.IsLootable());
 
@@ -84,7 +84,7 @@ namespace SpellFire.Primer.Solutions
 					 * after successful looting rest a little longer
 					 * so it will be more believable
 					 */
-					Thread.Sleep(300);
+					Thread.Sleep(100);
 				}
 			}
 		}

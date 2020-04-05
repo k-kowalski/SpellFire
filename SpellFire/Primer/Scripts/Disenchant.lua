@@ -1,3 +1,7 @@
+Quality = {
+	Uncommon = 2,
+}
+
 function Main()
 	bagCount = 4
 	for bagInd = 0, bagCount do
@@ -23,8 +27,10 @@ end
 function DisenchantItem(itemID)
 	local name, link, quality, iLevel, reqLevel, class, subclass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(itemID)
 	if class == "Weapon" or class == "Armor" then
-		CastSpellByName('Disenchant')
-		SpellTargetItem(itemID)
+		if quality == Quality["Uncommon"] then
+			CastSpellByName('Disenchant')
+			SpellTargetItem(itemID)
+		end
 	end
 	
 end

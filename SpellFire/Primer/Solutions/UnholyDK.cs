@@ -54,7 +54,7 @@ namespace SpellFire.Primer.Solutions
 
 		public override void Tick()
 		{
-			Thread.Sleep(200);
+			Thread.Sleep(1);
 
 			Looting();
 
@@ -110,38 +110,20 @@ namespace SpellFire.Primer.Solutions
 			Console.WriteLine($"bp: {isTargetBloodPlagueUp}");
 			Console.WriteLine($"ff: {isTargetFrostFeverUp}");
 
-			int bloodRunesUp = IsRuneReady(DeathKnightRune.Blood1)
-				? IsRuneReady(DeathKnightRune.Blood2) ? 2 : 1
-				: IsRuneReady(DeathKnightRune.Blood2) ? 1 : 0;
+			DeathKnightRunesState runesState = GetAvailableRunes();
 
-			int frostRunesUp = IsRuneReady(DeathKnightRune.Frost1)
-				? IsRuneReady(DeathKnightRune.Frost2) ? 2 : 1
-				: IsRuneReady(DeathKnightRune.Frost2) ? 1 : 0;
+			Console.WriteLine($"blood r: {runesState.bloodReady}");
+			Console.WriteLine($"frost r: {runesState.frostReady}");
+			Console.WriteLine($"unholy r: {runesState.unholyReady}");
 
-			int unholyRunesUp = IsRuneReady(DeathKnightRune.Unholy1)
-				? IsRuneReady(DeathKnightRune.Unholy2) ? 2 : 1
-				: IsRuneReady(DeathKnightRune.Unholy2) ? 1 : 0;
-
-			Console.WriteLine($"blood r: {bloodRunesUp}");
-			Console.WriteLine($"frost r: {frostRunesUp}");
-			Console.WriteLine($"unholy r: {unholyRunesUp}");
-
-			if (isTargetInMelee && !isTargetBloodPlagueUp && unholyRunesUp > 0)
+			if (isTargetInMelee && !isTargetBloodPlagueUp && runesState.unholyReady > 0)
 			{
 				CastSpell("Plague Strike");
 				Console.WriteLine("PS");
 				return;
 			}
 
-			Int32 runicPower = player.RunicPower;
-			if (runicPower >= 40)
-			{
-				CastSpell("Death Coil");
-				Console.WriteLine("DC");
-				return;
-			}
-
-			if (!isTargetFrostFeverUp && frostRunesUp > 0)
+			if (!isTargetFrostFeverUp && runesState.frostReady > 0)
 			{
 				CastSpell("Icy Touch");
 				Console.WriteLine("IT");
@@ -149,7 +131,7 @@ namespace SpellFire.Primer.Solutions
 			}
 
 			/* check for Pestilence possibility */
-			if (isTargetInMelee && isTargetBloodPlagueUp && isTargetFrostFeverUp && bloodRunesUp > 0)
+			if (isTargetInMelee && (isTargetBloodPlagueUp && isTargetFrostFeverUp) && runesState.bloodReady > 0)
 			{
 
 				IEnumerable<GameObject> pestilenceEnemies = objectManager.Where(gameObj =>
@@ -158,8 +140,8 @@ namespace SpellFire.Primer.Solutions
 					&& gameObj.GUID != targetGUID /* exclude target unit */
 					&& player.GetDistance(gameObj) < DeathKnightConstants.PestilenceRange /* unit in range */
 					&& ci.remoteControl.CGUnit_C__UnitReaction(player.GetAddress(), gameObj.GetAddress()) <= UnitReaction.Neutral /* unit attackable */
-					&& ! HasAura(gameObj, "Blood Plague", player) /* unit doesn't have diseases */
-					&& ! HasAura(gameObj, "Frost Fever", player));
+					&& !HasAura(gameObj, "Blood Plague", player) /* unit doesn't have diseases */
+					&& !HasAura(gameObj, "Frost Fever", player));
 
 				if (pestilenceEnemies.Any())
 				{
@@ -169,14 +151,13 @@ namespace SpellFire.Primer.Solutions
 				}
 			}
 
-
 			if (isTargetInMelee
-				&& isTargetBloodPlagueUp
-				&& isTargetFrostFeverUp
-				&& unholyRunesUp > 0
-				&& frostRunesUp > 0)
+			    && isTargetBloodPlagueUp
+			    && isTargetFrostFeverUp
+			    && runesState.unholyReady > 0
+			    && runesState.frostReady > 0)
 			{
-				if (player.HealthPct >= 60)
+				if (player.HealthPct >= 80)
 				{
 					CastSpell("Scourge Strike");
 					Console.WriteLine("SS");
@@ -190,9 +171,17 @@ namespace SpellFire.Primer.Solutions
 				}
 			}
 
+			Int32 runicPower = player.RunicPower;
+			if (runicPower >= 40)
+			{
+				CastSpell("Death Coil");
+				Console.WriteLine("DC");
+				return;
+			}
+
 			/* use Blood Strike only when having 2 Blood Runes ready, to have always Pestilence ready to use */
 			if (isTargetInMelee && isTargetBloodPlagueUp && isTargetFrostFeverUp
-				&& bloodRunesUp == 2)
+				&& runesState.bloodReady == 2)
 			{
 				CastSpell("Blood Strike");
 				return;
@@ -302,18 +291,22 @@ namespace SpellFire.Primer.Solutions
 				resultLuaVariable, 0);
 		}
 
-		// TODO can be abstracted
-		private bool IsRuneReady(DeathKnightRune rune)
+		private DeathKnightRunesState GetAvailableRunes()
 		{
-			string luaScript =
-				$"start, duration, runeReady = GetRuneCooldown({(byte)rune})";
-			ci.remoteControl.FrameScript__Execute(luaScript, 0, 0);
+			uint runeCountTotal = memory.ReadUInt32(  IntPtr.Zero + Offset.RuneCount);
 
-			string result = ci.remoteControl.FrameScript__GetLocalizedText(
-				ci.remoteControl.ClntObjMgrGetActivePlayerObj(),
-				"start", 0);
+			DeathKnightRunesState state = new DeathKnightRunesState();
 
-			return result[0] == '0';
+			state.bloodReady += (runeCountTotal & (1 << (int)DeathKnightRune.Blood1)) != 0 ? 1 : 0;
+			state.bloodReady += (runeCountTotal & (1 << (int)DeathKnightRune.Blood2)) != 0 ? 1 : 0;
+
+			state.frostReady += (runeCountTotal & (1 << (int)DeathKnightRune.Frost1)) != 0 ? 1 : 0;
+			state.frostReady += (runeCountTotal & (1 << (int)DeathKnightRune.Frost2)) != 0 ? 1 : 0;
+
+			state.unholyReady += (runeCountTotal & (1 << (int)DeathKnightRune.Unholy1)) != 0 ? 1 : 0;
+			state.unholyReady += (runeCountTotal & (1 << (int)DeathKnightRune.Unholy2)) != 0 ? 1 : 0;
+
+			return state;
 		}
 
 		private Int64 GetTargetGUID()

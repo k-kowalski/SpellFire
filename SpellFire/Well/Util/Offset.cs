@@ -46,6 +46,8 @@ namespace SpellFire.Well.Util
 		public const Int32 TargetGUID = 0xBD07B0;
 		public const Int32 MouseoverGUID = 0xBD07A0;
 		public const Int32 ClientConnection = 0xC79CE0;
+		public const Int32 RuneCount = 0xC24388;
+
 		/// <summary>
 		/// client connection
 		/// </summary>

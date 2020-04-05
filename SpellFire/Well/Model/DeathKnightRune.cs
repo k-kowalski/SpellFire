@@ -8,13 +8,20 @@ namespace SpellFire.Well.Model
 {
 	public enum DeathKnightRune : byte
 	{
-		Blood1 = 1,
-		Blood2 = 2,
+		Blood1,
+		Blood2,
 
-		Frost1 = 3,
-		Frost2 = 4,
+		Frost1,
+		Frost2,
 
-		Unholy1 = 5,
-		Unholy2 = 6,
+		Unholy1,
+		Unholy2,
+	}
+
+	public struct DeathKnightRunesState
+	{
+		public Int32 bloodReady;
+		public Int32 frostReady;
+		public Int32 unholyReady;
 	}
 }

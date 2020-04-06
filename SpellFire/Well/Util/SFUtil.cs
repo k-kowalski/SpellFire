@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SpellFire.Well.Util
 {
-	public class SFUtil
+	public static class SFUtil
 	{
 		public static readonly Random RandomGenerator = new Random();
 
@@ -24,6 +24,18 @@ namespace SpellFire.Well.Util
 			}
 
 			return new string(result);
+		}
+
+		public static string RemoveFromEnd(this string str, string suffix)
+		{
+			if (str.EndsWith(suffix))
+			{
+				return str.Substring(0, str.Length - suffix.Length);
+			}
+			else
+			{
+				return str;
+			}
 		}
 	}
 }

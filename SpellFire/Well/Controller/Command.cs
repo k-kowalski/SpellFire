@@ -2,6 +2,8 @@
 using SpellFire.Well.Util;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using SpellFire.Well.Lua;
 using SpellFire.Well.Net;
@@ -98,53 +100,77 @@ namespace SpellFire.Well.Controller
 		private string luaEventFunctionName;
 		private string frameName;
 
-		public CommandHandler(ControlInterface ctrlInterface, IntPtr EndSceneAddress)
+		public CommandHandler(ControlInterface ctrlInterface)
 		{
 			this.commandQueue = new CommandQueue();
 			this.ctrlInterface = ctrlInterface;
 
-			RegisterFunctions(ctrlInterface, EndSceneAddress);
+			ResolveEndSceneAddress();
+			RegisterFunctions();
 		}
 
-		private void RegisterFunctions(ControlInterface ctrlInterface, IntPtr EndSceneAddress)
+		private void ResolveEndSceneAddress()
 		{
-			#region WoW Engine API initialization
-			EndScene = Marshal.GetDelegateForFunctionPointer<CommandCallback.EndScene>(EndSceneAddress);
-			FrameScript__Execute = Marshal.GetDelegateForFunctionPointer<CommandCallback.FrameScript__Execute>(IntPtr.Zero + Offset.FrameScript__Execute);
-			FrameScript__GetLocalizedText = Marshal.GetDelegateForFunctionPointer<CommandCallback.FrameScript__GetLocalizedText>(IntPtr.Zero + Offset.FrameScript__GetLocalizedText);
-			CGPlayer_C__ClickToMove = Marshal.GetDelegateForFunctionPointer<CommandCallback.CGPlayer_C__ClickToMove>(IntPtr.Zero + Offset.CGPlayer_C__ClickToMove);
-			CGPlayer_C__ClickToMoveStop = Marshal.GetDelegateForFunctionPointer<CommandCallback.CGPlayer_C__ClickToMoveStop>(IntPtr.Zero + Offset.CGPlayer_C__ClickToMoveStop);
-			ClntObjMgrGetActivePlayerObj = Marshal.GetDelegateForFunctionPointer<CommandCallback.ClntObjMgrGetActivePlayerObj>(IntPtr.Zero + Offset.ClntObjMgrGetActivePlayerObj);
-			SelectUnit = Marshal.GetDelegateForFunctionPointer<CommandCallback.SelectUnit>(IntPtr.Zero + Offset.SelectUnit);
-			InvalidPtrCheck = Marshal.GetDelegateForFunctionPointer<CommandCallback.InvalidPtrCheck>(IntPtr.Zero + Offset.InvalidPtrCheck);
-			LuaGetTop = Marshal.GetDelegateForFunctionPointer<CommandCallback.LuaGetTop>(IntPtr.Zero + Offset.LuaGetTop);
-			LuaToString = Marshal.GetDelegateForFunctionPointer<CommandCallback.LuaToString>(IntPtr.Zero + Offset.LuaToString);
-			FrameScript__RegisterFunction = Marshal.GetDelegateForFunctionPointer<CommandCallback.FrameScript__RegisterFunction>(IntPtr.Zero + Offset.FrameScript__RegisterFunction);
-			FrameScript__UnregisterFunction = Marshal.GetDelegateForFunctionPointer<CommandCallback.FrameScript__UnregisterFunction>(IntPtr.Zero + Offset.FrameScript__UnregisterFunction);
-			WorldSendPacket = Marshal.GetDelegateForFunctionPointer<CommandCallback.WorldSendPacket>(IntPtr.Zero + Offset.WorldSendPacket);
-			ClientSendPacket = Marshal.GetDelegateForFunctionPointer<CommandCallback.ClientSendPacket>(IntPtr.Zero + Offset.ClientSendPacket);
-			NetGetCurrentConnection = Marshal.GetDelegateForFunctionPointer<CommandCallback.NetGetCurrentConnection>(IntPtr.Zero + Offset.NetGetCurrentConnection);
-			CGUnit_C__UnitReaction = Marshal.GetDelegateForFunctionPointer<CommandCallback.CGUnit_C__UnitReaction>(IntPtr.Zero + Offset.CGUnit_C__UnitReaction);
-			CGUnit_C__GetAura = Marshal.GetDelegateForFunctionPointer<CommandCallback.CGUnit_C__GetAura>(IntPtr.Zero + Offset.CGUnit_C__GetAura);
 
-			ctrlInterface.remoteControl.FrameScript__ExecuteEvent += FrameScript__ExecuteHandler;
-			ctrlInterface.remoteControl.FrameScript__GetLocalizedTextEvent += FrameScript__GetLocalizedTextHandler;
-			ctrlInterface.remoteControl.CGPlayer_C__ClickToMoveEvent += CGPlayer_C__ClickToMoveHandler;
-			ctrlInterface.remoteControl.CGPlayer_C__ClickToMoveStopEvent += CGPlayer_C__ClickToMoveStopHandler;
-			ctrlInterface.remoteControl.ClntObjMgrGetActivePlayerObjEvent += ClntObjMgrGetActivePlayerObjHandler;
-			ctrlInterface.remoteControl.SelectUnitEvent += SelectUnitHandler;
-			ctrlInterface.remoteControl.InteractUnitEvent += InteractUnitHandler;
-			ctrlInterface.remoteControl.CGUnit_C__UnitReactionEvent += CGUnit_C__UnitReactionHandler;
-			ctrlInterface.remoteControl.CGUnit_C__GetAuraEvent += CGUnit_C__GetAuraHandler;
-			ctrlInterface.remoteControl.GetUnitNameEvent += GetUnitNameHandler;
-			#endregion
+			IntPtr dxDeviceObject = Marshal.ReadIntPtr(IntPtr.Zero + Offset.DirectX.Device);
+			IntPtr vTablePointer = Marshal.ReadIntPtr(dxDeviceObject + Offset.DirectX.VirtualMethodTable);
+			IntPtr vTableData = Marshal.ReadIntPtr(vTablePointer);
 
-			ctrlInterface.remoteControl.InitializeLuaEventFrameEvent += InitializeLuaEventFrame;
-			ctrlInterface.remoteControl.DestroyLuaEventFrameEvent += DestroyLuaEventFrame;
+			/*
+             * virtual method table consists of pointers so multiply by pointer size
+             * since Marshal.ReadIntPtr counts in bytes 
+             */
+			Offset.Function.EndScene = Marshal.ReadInt32(vTableData + (Offset.DirectX.EndSceneVMTableIndex * IntPtr.Size));
 		}
 
+		private void RegisterFunctions()
+		{
+			Type commandHandlerType = typeof(CommandHandler);
 
-		public void InitializeLuaEventFrame()
+			/* bind delegates to functions at specified addresses */
+			FieldInfo[] functionOffsetFields =
+				typeof(Offset.Function)
+					.GetFields(BindingFlags.Public | BindingFlags.DeclaredOnly | BindingFlags.Static);
+
+			FieldInfo[] chFields =
+				commandHandlerType
+					.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly | BindingFlags.Instance);
+
+			foreach (FieldInfo offsetField in functionOffsetFields)
+			{
+				FieldInfo delegateFieldInfo = chFields.FirstOrDefault(chField => chField.Name == offsetField.Name);
+
+				if (delegateFieldInfo != null)
+				{
+					delegateFieldInfo.SetValue(this,
+						Marshal.GetDelegateForFunctionPointer(IntPtr.Zero + (Int32)offsetField.GetValue(null), delegateFieldInfo.FieldType));
+				}
+			}
+
+
+			/* bind handlers to events */
+			MethodInfo[] chMethods =
+				commandHandlerType
+					.GetMethods(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly | BindingFlags.Instance);
+
+			foreach (EventInfo ciEventInfo in typeof(ControlInterface.RemoteControl).GetEvents())
+			{
+				MethodInfo handlerInfo = chMethods
+					.FirstOrDefault(handler =>
+						handler.Name.RemoveFromEnd("Handler") == ciEventInfo.Name.RemoveFromEnd("Event"));
+
+				if (handlerInfo != null)
+				{
+					ctrlInterface.hostControl.PrintMessage($"Binding {handlerInfo.Name} to {ciEventInfo.Name}");
+					Delegate handlerInstance = Delegate.CreateDelegate(ciEventInfo.EventHandlerType, this, handlerInfo);
+
+					ciEventInfo.AddEventHandler( ctrlInterface.remoteControl, handlerInstance);
+				}
+			}
+
+		}
+
+		public void InitializeLuaEventFrameHandler()
 		{
 			eventCallback = LuaEventHandler;
 			luaEventCallbackPtr = Marshal.GetFunctionPointerForDelegate(eventCallback);
@@ -161,7 +187,7 @@ namespace SpellFire.Well.Controller
 			}));
 		}
 
-		public void DestroyLuaEventFrame()
+		public void DestroyLuaEventFrameHandler()
 		{
 			commandQueue.Submit<object>((() =>
 			{
@@ -225,7 +251,7 @@ namespace SpellFire.Well.Controller
 			return 0;
 		}
 
-		#region WoW Engine API
+#region WoW Engine API
 		public Int32 FrameScript__ExecuteHandler(String command, Int32 a1, Int32 a2)
 		{
 			return commandQueue.Submit<Int32>((() => FrameScript__Execute(command, a1, a2)));
@@ -264,7 +290,7 @@ namespace SpellFire.Well.Controller
 		{
 			CommandCallback.InteractUnit InteractUnit =
 				Marshal.GetDelegateForFunctionPointer<CommandCallback.InteractUnit>(
-					Marshal.ReadIntPtr(Marshal.ReadIntPtr(thisObject) + Offset.InteractUnit));
+					Marshal.ReadIntPtr(Marshal.ReadIntPtr(thisObject) + Offset.VirtualFunction.InteractUnit));
 			return commandQueue.Submit<Int32>((() => InteractUnit(thisObject)));
 		}
 
@@ -300,15 +326,15 @@ namespace SpellFire.Well.Controller
 		{
 			CommandCallback.GetUnitName GetUnitName =
 				Marshal.GetDelegateForFunctionPointer<CommandCallback.GetUnitName>(
-					Marshal.ReadIntPtr(Marshal.ReadIntPtr(thisObject) + Offset.GetUnitName));
+					Marshal.ReadIntPtr(Marshal.ReadIntPtr(thisObject) + Offset.VirtualFunction.GetUnitName));
 
 			return commandQueue.Submit<string>((() => Marshal.PtrToStringAnsi(GetUnitName(thisObject))));
 		}
-		#endregion
+#endregion
 
 		public void Dispose()
 		{
-			DestroyLuaEventFrame();
+			DestroyLuaEventFrameHandler();
 		}
 	}
 }

@@ -21,12 +21,9 @@ namespace SpellFire.Well.Controller
 		{
 			public event Action<LuaEventArgs> LuaEventFired;
 
-			public void ReportMessages(string[] messages)
+			public void PrintMessage(string message)
 			{
-				foreach (string message in messages)
-				{
-					Console.WriteLine(message);
-				}
+				Console.WriteLine($"[Well] {message}");
 			}
 
 			public void Ping() {/* used to check connection */}

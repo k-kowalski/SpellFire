@@ -11,33 +11,38 @@ namespace SpellFire.Well.Util
 	/// </summary>
 	public static class Offset
 	{
-		public const Int32 FrameScript__Execute = 0x819210;
-		public const Int32 FrameScript__GetLocalizedText = 0x7225E0;
-		public const Int32 CGPlayer_C__ClickToMove = 0x727400;
-		public const Int32 CGPlayer_C__ClickToMoveStop = 0x72B3A0;
-		public const Int32 ClntObjMgrGetActivePlayerObj = 0x4038F0;
-		public const Int32 SelectUnit = 0x524BF0;
-		public const Int32 InvalidPtrCheck = 0x86B5A0;
-		public const Int32 LuaGetTop = 0x84DBD0;
-		public const Int32 LuaToString = 0x84E0E0;
-		public const Int32 FrameScript__RegisterFunction = 0x817F90;
-		public const Int32 FrameScript__UnregisterFunction = 0x817FD0;
-		public const Int32 WorldSendPacket = 0x406F40;
-		public const Int32 ClientSendPacket = 0x632B50;
-		public const Int32 NetGetCurrentConnection = 0x6B0970;
-		public const Int32 CGUnit_C__UnitReaction = 0x7251C0;
-		public const Int32 CGUnit_C__GetAura = 0x556E10;
+		public static class Function
+		{
+			public static Int32 EndScene;
+			public const Int32 FrameScript__Execute = 0x819210;
+			public const Int32 FrameScript__GetLocalizedText = 0x7225E0;
+			public const Int32 CGPlayer_C__ClickToMove = 0x727400;
+			public const Int32 CGPlayer_C__ClickToMoveStop = 0x72B3A0;
+			public const Int32 ClntObjMgrGetActivePlayerObj = 0x4038F0;
+			public const Int32 SelectUnit = 0x524BF0;
+			public const Int32 InvalidPtrCheck = 0x86B5A0;
+			public const Int32 LuaGetTop = 0x84DBD0;
+			public const Int32 LuaToString = 0x84E0E0;
+			public const Int32 FrameScript__RegisterFunction = 0x817F90;
+			public const Int32 FrameScript__UnregisterFunction = 0x817FD0;
+			public const Int32 WorldSendPacket = 0x406F40;
+			public const Int32 ClientSendPacket = 0x632B50;
+			public const Int32 NetGetCurrentConnection = 0x6B0970;
+			public const Int32 CGUnit_C__UnitReaction = 0x7251C0;
+			public const Int32 CGUnit_C__GetAura = 0x556E10;
+		}
 
-		/// <summary>
-		/// game object
-		/// </summary>
-		public const Int32 InteractUnit = 0xB0;
-		/// <summary>
-		/// game object
-		/// </summary>
-		public const Int32 GetUnitName = 0xD8;
-
-
+		public static class VirtualFunction
+		{
+			/// <summary>
+			/// game object
+			/// </summary>
+			public const Int32 InteractUnit = 0xB0;
+			/// <summary>
+			/// game object
+			/// </summary>
+			public const Int32 GetUnitName = 0xD8;
+		}
 
 
 
@@ -128,14 +133,15 @@ namespace SpellFire.Well.Util
 		public const Int32 CreatureType = 0x10;
 
 
+		public static class DirectX
+		{
+			public const Int32 EndSceneVMTableIndex = 42;
+			public const Int32 Device = 0xC5DF88;
 
-
-
-		public const Int32 EndSceneVMTableIndex = 42;
-		public const Int32 dxDevice = 0xC5DF88;
-		/// <summary>
-		/// dxDevice
-		/// </summary>
-		public const Int32 dxVirtualMethodTable = 0x397C;
+			/// <summary>
+			/// Device
+			/// </summary>
+			public const Int32 VirtualMethodTable = 0x397C;
+		}
 	}
 }

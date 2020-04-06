@@ -14,35 +14,32 @@ namespace SpellFire.Well.Controller
 {
 	public class RemoteMain : IEntryPoint
 	{
-		private ControlInterface ctrlInterface = null;
-		private Queue<string> messageQueue = new Queue<string>();
-		private CommandHandler commandHandler;
-		private PacketManager packetManager;
-		private IntPtr EndSceneAddress;
+		private readonly ControlInterface ctrlInterface;
+		private readonly CommandHandler commandHandler;
+		private readonly PacketManager packetManager;
 
 		public RemoteMain(RemoteHooking.IContext context, string channelName)
 		{
 			ctrlInterface = RemoteHooking.IpcConnectClient<ControlInterface>(channelName);
-			messageQueue.Enqueue("registered client");
 
 			EstablishReverseConnection(channelName);
 
-			EndSceneAddress = GetEndSceneAddress();
-			commandHandler = new CommandHandler(ctrlInterface, EndSceneAddress);
+			commandHandler = new CommandHandler(ctrlInterface);
 
 			packetManager = new PacketManager(ctrlInterface, commandHandler);
+
+			ctrlInterface.hostControl.PrintMessage("Ready");
 		}
 
 		public void Run(RemoteHooking.IContext context, string channelName)
 		{
 			LocalHook endScenePatch = null;
 			LocalHook invalidPtrPatch = null;
-			LocalHook unregisterPatch = null;
 
 			try
 			{
 				endScenePatch = LocalHook.Create(
-					EndSceneAddress,
+					IntPtr.Zero + Offset.Function.EndScene,
 					new CommandCallback.EndScene(commandHandler.EndScenePatch),
 					this);
 
@@ -50,13 +47,13 @@ namespace SpellFire.Well.Controller
 			}
 			catch (Exception e)
 			{
-				this.messageQueue.Enqueue(e.ToString());
+				ctrlInterface.hostControl.PrintMessage(e.ToString());
 			}
 
 			try
 			{
 				invalidPtrPatch = LocalHook.Create(
-					IntPtr.Zero + Offset.InvalidPtrCheck,
+					IntPtr.Zero + Offset.Function.InvalidPtrCheck,
 					new CommandCallback.InvalidPtrCheck(commandHandler.InvalidPtrCheckPatch),
 					this);
 
@@ -64,7 +61,7 @@ namespace SpellFire.Well.Controller
 			}
 			catch (Exception e)
 			{
-				this.messageQueue.Enqueue(e.ToString());
+				ctrlInterface.hostControl.PrintMessage(e.ToString());
 			}
 
 			try
@@ -73,21 +70,7 @@ namespace SpellFire.Well.Controller
 				{
 					Thread.Sleep(500);
 
-					string[] queued = null;
-					lock (messageQueue)
-					{
-						queued = messageQueue.ToArray();
-						messageQueue.Clear();
-					}
-
-					if (queued != null && queued.Length > 0)
-					{
-						ctrlInterface.hostControl.ReportMessages(queued);
-					}
-					else
-					{
-						ctrlInterface.hostControl.Ping();
-					}
+					ctrlInterface.hostControl.Ping();
 				}
 			}
 			catch
@@ -97,7 +80,6 @@ namespace SpellFire.Well.Controller
 				commandHandler.Dispose();
 
 				endScenePatch.Dispose();
-				unregisterPatch.Dispose();
 				invalidPtrPatch.Dispose();
 				LocalHook.Release();
 			}
@@ -114,20 +96,6 @@ namespace SpellFire.Well.Controller
 
 			IpcServerChannel _clientServerChannel = new IpcServerChannel(properties, binaryProv);
 			ChannelServices.RegisterChannel(_clientServerChannel, false);
-		}
-
-		private IntPtr GetEndSceneAddress()
-		{
-
-			IntPtr dxDeviceObject = Marshal.ReadIntPtr(IntPtr.Zero + Offset.dxDevice);
-			IntPtr vTablePointer = Marshal.ReadIntPtr(dxDeviceObject + Offset.dxVirtualMethodTable);
-			IntPtr vTableData = Marshal.ReadIntPtr(vTablePointer);
-
-			/*
-             * virtual method table consists of pointers so multiply by pointer size
-             * since Marshal.ReadIntPtr counts in bytes 
-             */
-			return Marshal.ReadIntPtr(vTableData + (Offset.EndSceneVMTableIndex * IntPtr.Size));
 		}
 	}
 }

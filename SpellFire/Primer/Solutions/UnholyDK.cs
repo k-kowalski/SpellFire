@@ -23,10 +23,6 @@ namespace SpellFire.Primer.Solutions
 
 	public class UnholyDK : Solution
 	{
-		private bool loot;
-		private bool lootTargeted;
-		private Int64 currentlyOccupiedMobGUID;
-
 		private readonly GameObject player;
 		private readonly GameObjectManager objectManager;
 

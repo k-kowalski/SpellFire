@@ -67,6 +67,9 @@ namespace SpellFire.Well.Controller
 		/* returns pointer to string, cannot marshal it via delegate signature */
 		[UnmanagedFunctionPointer(CallingConvention.ThisCall)]
 		public delegate IntPtr GetUnitName(IntPtr thisObject);
+
+		[UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+		public delegate IntPtr CGUnit_C__UpdateDisplayInfo(IntPtr thisObject, bool a1);
 	}
 
 	public class CommandHandler : TimelessMarshalByRefObject, IDisposable
@@ -93,6 +96,7 @@ namespace SpellFire.Well.Controller
 		public CommandCallback.NetGetCurrentConnection NetGetCurrentConnection;
 		private CommandCallback.CGUnit_C__UnitReaction CGUnit_C__UnitReaction;
 		private CommandCallback.CGUnit_C__GetAura CGUnit_C__GetAura;
+		private CommandCallback.CGUnit_C__UpdateDisplayInfo CGUnit_C__UpdateDisplayInfo;
 
 		private CommandCallback.LuaEventCallback eventCallback;
 		private IntPtr luaEventCallbackPtr;
@@ -329,6 +333,11 @@ namespace SpellFire.Well.Controller
 					Marshal.ReadIntPtr(Marshal.ReadIntPtr(thisObject) + Offset.VirtualFunction.GetUnitName));
 
 			return commandQueue.Submit<string>((() => Marshal.PtrToStringAnsi(GetUnitName(thisObject))));
+		}
+
+		public IntPtr CGUnit_C__UpdateDisplayInfoHandler(IntPtr thisObject, bool a1)
+		{
+			return commandQueue.Submit<IntPtr>((() => CGUnit_C__UpdateDisplayInfo(thisObject, a1)));
 		}
 #endregion
 

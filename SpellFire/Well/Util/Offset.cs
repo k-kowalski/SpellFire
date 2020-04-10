@@ -30,6 +30,7 @@ namespace SpellFire.Well.Util
 			public const Int32 NetGetCurrentConnection = 0x6B0970;
 			public const Int32 CGUnit_C__UnitReaction = 0x7251C0;
 			public const Int32 CGUnit_C__GetAura = 0x556E10;
+			public const Int32 CGUnit_C__UpdateDisplayInfo = 0x73E410;
 		}
 
 		public static class VirtualFunction
@@ -86,6 +87,10 @@ namespace SpellFire.Well.Util
 		/// info
 		/// </summary>
 		public const Int32 MountDisplayID = 0x114;
+		/// <summary>
+		/// info
+		/// </summary>
+		public const Int32 PlayerItem1ID = 0x11B;
 
 		/// <summary>
 		/// game object

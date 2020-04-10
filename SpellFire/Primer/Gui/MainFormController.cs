@@ -35,6 +35,7 @@ namespace SpellFire.Primer.Gui
 			{
 				nameof(AutoLooter),
 				nameof(UnholyDK),
+				nameof(Morpher),
 				nameof(Disenchanter),
 				nameof(BalanceDruidFarm),
 				nameof(Fishing),
@@ -108,10 +109,8 @@ namespace SpellFire.Primer.Gui
 				solution.Stop();
 				solutionTask.Wait();
 				radarTask.Wait();
-				mainForm.PostInfo($"Stopped solution {solution.GetType().Name}.", Color.DarkRed);
 				solution = null;
 
-				mainForm.SetToggleButtonText("Start");
 				return;
 			}
 
@@ -138,6 +137,9 @@ namespace SpellFire.Primer.Gui
 					solution.Tick();
 				}
 				solution.Finish();
+
+				mainForm.PostInfo($"Solution {solution.GetType().Name} stopped.", Color.DarkRed);
+				mainForm.SetToggleButtonText("Start");
 			}));
 
 			radarTask = Task.Run((() =>

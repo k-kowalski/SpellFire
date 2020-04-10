@@ -92,6 +92,10 @@ namespace SpellFire.Well.Controller
 			public event Func<IntPtr, string> GetUnitNameEvent;
 			public string GetUnitName(IntPtr thisObject) =>
 				GetUnitNameEvent?.Invoke(thisObject) ?? null;
+
+			public event CommandCallback.CGUnit_C__UpdateDisplayInfo CGUnit_C__UpdateDisplayInfoEvent;
+			public IntPtr CGUnit_C__UpdateDisplayInfo(IntPtr thisObject, bool a1) =>
+				CGUnit_C__UpdateDisplayInfoEvent?.Invoke(thisObject, a1) ?? IntPtr.Zero;
 			#endregion
 
 		}

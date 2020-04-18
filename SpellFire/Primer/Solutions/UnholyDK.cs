@@ -23,9 +23,6 @@ namespace SpellFire.Primer.Solutions
 
 	public class UnholyDK : Solution
 	{
-		private readonly GameObject player;
-		private readonly GameObjectManager objectManager;
-
 		private readonly LuaEventListener eventListener;
 
 		public UnholyDK(ControlInterface ci, Memory memory) : base(ci, memory)
@@ -33,24 +30,24 @@ namespace SpellFire.Primer.Solutions
 			eventListener = new LuaEventListener(ci);
 			eventListener.Bind("LOOT_OPENED", LootOpenedHandler);
 
-			IntPtr clientConnection = memory.ReadPointer86(IntPtr.Zero + Offset.ClientConnection);
-			IntPtr objectManagerAddress = memory.ReadPointer86(clientConnection + Offset.GameObjectManager);
-
-			player = new GameObject(memory, ci.remoteControl.ClntObjMgrGetActivePlayerObj());
-			objectManager = new GameObjectManager(memory, objectManagerAddress);
-
 			this.Active = true;
 		}
 
 		private void LootOpenedHandler(LuaEventArgs luaEventArgs)
 		{
 			Console.WriteLine($"[{DateTime.Now}] looting");
-			ci.remoteControl.FrameScript__Execute("for i = 1, GetNumLootItems() do LootSlot(i) ConfirmLootSlot(i) end", 0, 0);
+			ci.remoteControl.FrameScript__Execute("for i = 1, GetNumLootItems() do LootSlot(i) ConfirmLootSlot(i) end",
+				0, 0);
 		}
 
 		public override void Tick()
 		{
 			Thread.Sleep(1);
+
+			if (!GetObjectMgrAndPlayer())
+			{
+				return;
+			}
 
 			Looting();
 
@@ -77,7 +74,8 @@ namespace SpellFire.Primer.Solutions
 			GameObject target = objectManager.FirstOrDefault(gameObj => gameObj.GUID == targetGUID);
 
 			if (target == null || target.Health == 0 ||
-			    ci.remoteControl.CGUnit_C__UnitReaction(player.GetAddress(), target.GetAddress()) > UnitReaction.Neutral)
+			    ci.remoteControl.CGUnit_C__UnitReaction(player.GetAddress(), target.GetAddress()) >
+			    UnitReaction.Neutral)
 			{
 				return;
 			}
@@ -89,7 +87,8 @@ namespace SpellFire.Primer.Solutions
 			{
 				if (!player.IsMoving() && !player.IsMounted())
 				{
-					ci.remoteControl.CGPlayer_C__ClickToMove(player.GetAddress(), ClickToMoveType.AutoAttack, ref targetGUID, ref targetCoords, 1f);
+					ci.remoteControl.CGPlayer_C__ClickToMove(player.GetAddress(), ClickToMoveType.AutoAttack,
+						ref targetGUID, ref targetCoords, 1f);
 					return;
 				}
 			}
@@ -97,7 +96,8 @@ namespace SpellFire.Primer.Solutions
 			{
 				ci.remoteControl.CGPlayer_C__ClickToMoveStop(player.GetAddress());
 				float angle = player.Coordinates.AngleBetween(targetCoords);
-				ci.remoteControl.CGPlayer_C__ClickToMove(player.GetAddress(), ClickToMoveType.Face, ref targetGUID, ref targetCoords, angle);
+				ci.remoteControl.CGPlayer_C__ClickToMove(player.GetAddress(), ClickToMoveType.Face, ref targetGUID,
+					ref targetCoords, angle);
 			}
 
 			bool isTargetBloodPlagueUp = HasAura(target, "Blood Plague", player);
@@ -135,7 +135,8 @@ namespace SpellFire.Primer.Solutions
 					&& gameObj.Health > 0 /* alive units */
 					&& gameObj.GUID != targetGUID /* exclude target unit */
 					&& player.GetDistance(gameObj) < DeathKnightConstants.PestilenceRange /* unit in range */
-					&& ci.remoteControl.CGUnit_C__UnitReaction(player.GetAddress(), gameObj.GetAddress()) <= UnitReaction.Neutral /* unit attackable */
+					&& ci.remoteControl.CGUnit_C__UnitReaction(player.GetAddress(), gameObj.GetAddress()) <=
+					UnitReaction.Neutral /* unit attackable */
 					&& !HasAura(gameObj, "Blood Plague", player) /* unit doesn't have diseases */
 					&& !HasAura(gameObj, "Frost Fever", player));
 
@@ -177,55 +178,17 @@ namespace SpellFire.Primer.Solutions
 
 			/* use Blood Strike only when having 2 Blood Runes ready, to have always Pestilence ready to use */
 			if (isTargetInMelee && isTargetBloodPlagueUp && isTargetFrostFeverUp
-				&& runesState.bloodReady == 2)
+			    && runesState.bloodReady == 2)
 			{
 				CastSpell("Blood Strike");
 				return;
 			}
 		}
 
-		private bool IsOnCooldown(string spellName)
-		{
-			string result = ExecLuaAndGetResult($"start = GetSpellCooldown('{spellName}')", "start");
-			return result[0] != '0';
-		}
-
-		private bool HasAura(GameObject gameObject, string auraName, GameObject ownedBy = null)
-		{
-			int currentAuraIndex = 0;
-			while (true)
-			{
-				IntPtr auraPtr = ci.remoteControl.CGUnit_C__GetAura(gameObject.GetAddress(), currentAuraIndex++);
-				if (auraPtr == IntPtr.Zero)
-				{
-					return false;
-				}
-
-				Aura aura = memory.ReadStruct<Aura>(auraPtr);
-				if (auraName == ExecLuaAndGetResult($"name = GetSpellInfo({aura.auraID})", "name"))
-				{
-					if (ownedBy != null)
-					{
-						if (aura.creatorGuid == ownedBy.GUID)
-						{
-							return true;
-						}
-						else
-						{
-							continue;
-						}
-					}
-					else
-					{
-						return true;
-					}
-				}
-			}
-		}
-
 		private void Looting()
 		{
-			IEnumerable<GameObject> lootables = objectManager.Where(gameObj => gameObj.Type == GameObjectType.Unit && gameObj.IsLootable());
+			IEnumerable<GameObject> lootables =
+				objectManager.Where(gameObj => gameObj.Type == GameObjectType.Unit && gameObj.IsLootable());
 
 			float minDistance = Single.MaxValue;
 			GameObject closestLootableUnit = null;
@@ -242,7 +205,8 @@ namespace SpellFire.Primer.Solutions
 
 			if (closestLootableUnit != null)
 			{
-				Console.WriteLine($"[{DateTime.Now}] closest target away {minDistance}y, checked {lootables.Count()} lootable/s.");
+				Console.WriteLine(
+					$"[{DateTime.Now}] closest target away {minDistance}y, checked {lootables.Count()} lootable/s.");
 
 				if (minDistance < 6f && (!player.IsMoving()) && (!player.IsCastingOrChanneling()))
 				{
@@ -265,49 +229,27 @@ namespace SpellFire.Primer.Solutions
 			}
 		}
 
-		public override void RenderRadar(RadarCanvas radarCanvas, Bitmap radarBackBuffer)
-		{
-			RadarCanvas.BasicRadar(radarCanvas, radarBackBuffer, player, objectManager, GetTargetGUID(), ci);
-		}
-
-		public override void Finish()
-		{
-			eventListener.Dispose();
-		}
-
-		private void CastSpell(string spellName)
-		{
-			ci.remoteControl.FrameScript__Execute($"CastSpellByName('{spellName}')", 0, 0);
-		}
-
-		private string ExecLuaAndGetResult(string luaScript, string resultLuaVariable)
-		{
-			ci.remoteControl.FrameScript__Execute(luaScript, 0, 0);
-			return ci.remoteControl.FrameScript__GetLocalizedText(ci.remoteControl.ClntObjMgrGetActivePlayerObj(),
-				resultLuaVariable, 0);
-		}
-
 		private DeathKnightRunesState GetAvailableRunes()
 		{
-			uint runeCountTotal = memory.ReadUInt32(  IntPtr.Zero + Offset.RuneCount);
+			uint runeCountTotal = memory.ReadUInt32(IntPtr.Zero + Offset.RuneCount);
 
 			DeathKnightRunesState state = new DeathKnightRunesState();
 
-			state.bloodReady += (runeCountTotal & (1 << (int)DeathKnightRune.Blood1)) != 0 ? 1 : 0;
-			state.bloodReady += (runeCountTotal & (1 << (int)DeathKnightRune.Blood2)) != 0 ? 1 : 0;
+			state.bloodReady += (runeCountTotal & (1 << (int) DeathKnightRune.Blood1)) != 0 ? 1 : 0;
+			state.bloodReady += (runeCountTotal & (1 << (int) DeathKnightRune.Blood2)) != 0 ? 1 : 0;
 
-			state.frostReady += (runeCountTotal & (1 << (int)DeathKnightRune.Frost1)) != 0 ? 1 : 0;
-			state.frostReady += (runeCountTotal & (1 << (int)DeathKnightRune.Frost2)) != 0 ? 1 : 0;
+			state.frostReady += (runeCountTotal & (1 << (int) DeathKnightRune.Frost1)) != 0 ? 1 : 0;
+			state.frostReady += (runeCountTotal & (1 << (int) DeathKnightRune.Frost2)) != 0 ? 1 : 0;
 
-			state.unholyReady += (runeCountTotal & (1 << (int)DeathKnightRune.Unholy1)) != 0 ? 1 : 0;
-			state.unholyReady += (runeCountTotal & (1 << (int)DeathKnightRune.Unholy2)) != 0 ? 1 : 0;
+			state.unholyReady += (runeCountTotal & (1 << (int) DeathKnightRune.Unholy1)) != 0 ? 1 : 0;
+			state.unholyReady += (runeCountTotal & (1 << (int) DeathKnightRune.Unholy2)) != 0 ? 1 : 0;
 
 			return state;
 		}
 
-		private Int64 GetTargetGUID()
+		public override void Dispose()
 		{
-			return memory.ReadInt64(IntPtr.Zero + Offset.TargetGUID);
+			eventListener.Dispose();
 		}
 	}
 }

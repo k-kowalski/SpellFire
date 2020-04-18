@@ -106,7 +106,7 @@ namespace SpellFire.Well.Controller
 
 		public CommandHandler(ControlInterface ctrlInterface)
 		{
-			this.commandQueue = new CommandQueue();
+			this.commandQueue = new CommandQueue(ctrlInterface);
 			this.ctrlInterface = ctrlInterface;
 
 			ResolveEndSceneAddress();

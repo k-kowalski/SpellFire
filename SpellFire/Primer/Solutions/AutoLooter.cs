@@ -20,22 +20,12 @@ namespace SpellFire.Primer.Solutions
 	/// </summary>
 	class AutoLooter : Solution
 	{
-
-		private readonly GameObject player;
-		private readonly GameObjectManager objectManager;
-
 		private readonly LuaEventListener eventListener;
 
 		public AutoLooter(ControlInterface ci, Memory memory) : base(ci, memory)
 		{
 			eventListener = new LuaEventListener(ci);
 			eventListener.Bind("LOOT_OPENED", LootOpenedHandler);
-
-			IntPtr clientConnection = memory.ReadPointer86(IntPtr.Zero + Offset.ClientConnection);
-			IntPtr objectManagerAddress = memory.ReadPointer86(clientConnection + Offset.GameObjectManager);
-
-			player = new GameObject(memory, ci.remoteControl.ClntObjMgrGetActivePlayerObj());
-			objectManager = new GameObjectManager(memory, objectManagerAddress);
 
 			this.Active = true;
 		}
@@ -49,6 +39,11 @@ namespace SpellFire.Primer.Solutions
 		public override void Tick()
 		{
 			Thread.Sleep(100);
+
+			if (!GetObjectMgrAndPlayer())
+			{
+				return;
+			}
 
 			IEnumerable<GameObject> lootables = objectManager.Where(gameObj => gameObj.Type == GameObjectType.Unit && gameObj.IsLootable());
 
@@ -89,19 +84,9 @@ namespace SpellFire.Primer.Solutions
 			}
 		}
 
-		public override void Finish()
+		public override void Dispose()
 		{
 			eventListener.Dispose();
-		}
-
-		public override void RenderRadar(RadarCanvas radarCanvas, Bitmap radarBackBuffer)
-		{
-			RadarCanvas.BasicRadar(radarCanvas, radarBackBuffer, player, objectManager, GetTargetGUID(), ci);
-		}
-
-		private Int64 GetTargetGUID()
-		{
-			return memory.ReadInt64(IntPtr.Zero + Offset.TargetGUID);
 		}
 	}
 }

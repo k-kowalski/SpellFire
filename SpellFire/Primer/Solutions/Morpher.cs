@@ -10,17 +10,9 @@ namespace SpellFire.Primer.Solutions
 {
 	public class Morpher : Solution
 	{
-		private readonly GameObject player;
-		private readonly GameObjectManager objectManager;
-
 		public Morpher(ControlInterface ci, Memory memory) : base(ci, memory)
 		{
-			IntPtr clientConnection = memory.ReadPointer86(IntPtr.Zero + Offset.ClientConnection);
-			IntPtr objectManagerAddress = memory.ReadPointer86(clientConnection + Offset.GameObjectManager);
-
-			player = new GameObject(memory, ci.remoteControl.ClntObjMgrGetActivePlayerObj());
-			objectManager = new GameObjectManager(memory, objectManagerAddress);
-
+			GetObjectMgrAndPlayer();
 			Morph();
 		}
 
@@ -28,9 +20,9 @@ namespace SpellFire.Primer.Solutions
 		{
 			IntPtr fields = memory.ReadPointer86(player.GetAddress() + Offset.Info);
 
-
-			var targetMorphItemID = 31980;
-			var slot = 1;
+			var targetMorphItemID = 19334;
+			var targetMorphEnchantID = 0;
+			var slot = 16;
 
 			if (slot > 19 || slot < 0)
 			{
@@ -38,9 +30,11 @@ namespace SpellFire.Primer.Solutions
 				return;
 			}
 
-			var offset = (Offset.PlayerItem1ID + ((slot - 1) * 2)) * 4;
+			var offsetItem = (Offset.PlayerItem1ID + ((slot - 1) * 2)) * 4;
+			var offsetEnchant = offsetItem + sizeof(Int32); /* enchant immediately follows item */
 
-			memory.Write(fields + offset, BitConverter.GetBytes(targetMorphItemID));
+			memory.Write(fields + offsetItem, BitConverter.GetBytes(targetMorphItemID));
+			memory.Write(fields + offsetEnchant, BitConverter.GetBytes(targetMorphEnchantID));
 			ci.remoteControl.CGUnit_C__UpdateDisplayInfo(player.GetAddress(), true);
 		}
 
@@ -49,7 +43,7 @@ namespace SpellFire.Primer.Solutions
 			
 		}
 
-		public override void Finish()
+		public override void Dispose()
 		{
 			
 		}

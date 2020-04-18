@@ -22,21 +22,12 @@ namespace SpellFire.Primer.Solutions
 		private bool lootTargeted;
 		private Int64 currentlyOccupiedMobGUID;
 
-		private readonly GameObject player;
-		private readonly GameObjectManager objectManager;
-
 		private readonly LuaEventListener eventListener;
 
 		public BalanceDruidFarm(ControlInterface ci, Memory memory) : base(ci, memory)
 		{
 			eventListener = new LuaEventListener(ci);
 			eventListener.Bind("LOOT_OPENED", LootOpenedHandler);
-
-			IntPtr clientConnection = memory.ReadPointer86(IntPtr.Zero + Offset.ClientConnection);
-			IntPtr objectManagerAddress = memory.ReadPointer86(clientConnection + Offset.GameObjectManager);
-
-			player = new GameObject(memory, ci.remoteControl.ClntObjMgrGetActivePlayerObj());
-			objectManager = new GameObjectManager(memory, objectManagerAddress);
 
 			loot = false;
 			lootTargeted = false;
@@ -58,6 +49,12 @@ namespace SpellFire.Primer.Solutions
 		public override void Tick()
 		{
 			Thread.Sleep(500);
+
+			if (!GetObjectMgrAndPlayer())
+			{
+				return;
+			}
+
 			Int64 targetGUID = GetTargetGUID();
 			Vector3 targetObjectCoords = new Vector3();
 			GameObject targetObject = null;
@@ -164,20 +161,9 @@ namespace SpellFire.Primer.Solutions
 			}
 		}
 
-		public override void Finish()
+		public override void Dispose()
 		{
 			eventListener.Dispose();
 		}
-
-		private void CastSpell(string spellName)
-		{
-			ci.remoteControl.FrameScript__Execute($"CastSpellByName('{spellName}')", 0, 0);
-		}
-
-		private Int64 GetTargetGUID()
-		{
-			return memory.ReadInt64(IntPtr.Zero + Offset.TargetGUID);
-		}
-
 	}
 }

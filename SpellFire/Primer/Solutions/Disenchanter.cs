@@ -37,6 +37,11 @@ namespace SpellFire.Primer.Solutions
 
 		public override void Tick()
 		{
+			if (!GetObjectMgrAndPlayer())
+			{
+				return;
+			}
+
 			ci.remoteControl.FrameScript__Execute(DisenchantLuaScript, 0, 0);
 
 			/* Disenchant cast time is 3s, so give some idle margin to simulate human behaviour */
@@ -53,14 +58,9 @@ namespace SpellFire.Primer.Solutions
 			}
 		}
 
-		public override void Finish()
+		public override void Dispose()
 		{
 			eventListener.Dispose();
-		}
-
-		private void CastSpell(string spellName)
-		{
-			ci.remoteControl.FrameScript__Execute($"CastSpellByName('{spellName}')", 0, 0);
 		}
 	}
 }

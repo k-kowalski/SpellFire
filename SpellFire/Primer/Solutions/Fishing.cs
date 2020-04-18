@@ -12,16 +12,10 @@ namespace SpellFire.Primer.Solutions
 	/// </summary>
 	public class Fishing : Solution
 	{
-		private readonly GameObjectManager objectManager;
 		private LinkedList<Int64> lastBobberGUIDs = new LinkedList<long>();
 
 		public Fishing(ControlInterface ci, Memory memory) : base(ci, memory)
 		{
-			IntPtr clientConnection = memory.ReadPointer86(IntPtr.Zero + Offset.ClientConnection);
-			IntPtr objectManagerAddress = memory.ReadPointer86(clientConnection + Offset.GameObjectManager);
-
-			objectManager = new GameObjectManager(memory, objectManagerAddress);
-
 			// start fishing initially
 			CastSpell("Fishing");
 
@@ -31,6 +25,11 @@ namespace SpellFire.Primer.Solutions
 		public override void Tick()
 		{
 			Thread.Sleep(1000);
+
+			if (!GetObjectMgrAndPlayer())
+			{
+				return;
+			}
 
 			foreach (GameObject gameObject in objectManager)
 			{
@@ -59,7 +58,7 @@ namespace SpellFire.Primer.Solutions
 			}
 		}
 
-		public override void Finish()
+		public override void Dispose()
 		{
 			/* no finish logic */
 		}
@@ -71,11 +70,6 @@ namespace SpellFire.Primer.Solutions
 		{
 			Int32 fluctuation = SFUtil.RandomGenerator.Next(500) * (SFUtil.RandomGenerator.Next(0, 2) == 0 ? -1 : 1);
 			Thread.Sleep(1000 + fluctuation);
-		}
-
-		private void CastSpell(string spellName)
-		{
-			ci.remoteControl.FrameScript__Execute($"CastSpellByName('{spellName}')", 0, 0);
 		}
 	}
 }

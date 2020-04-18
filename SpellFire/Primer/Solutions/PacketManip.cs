@@ -31,7 +31,7 @@ namespace SpellFire.Primer.Solutions
 		{
 		}
 
-		public override void Finish()
+		public override void Dispose()
 		{
 		}
 	}

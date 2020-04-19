@@ -13,7 +13,7 @@ namespace SpellFire.Well.Controller
 		private Queue<Task<dynamic>> commandTasks = new Queue<Task<dynamic>>();
 
 		/* allow those functions to execute when not in game world */
-		private string[] worldUnloadedFunctionWhitelist = new[]
+		private string[] worldUnloadedFunctionWhitelist =
 		{
 			"FrameScript__ExecuteHandler"
 		};

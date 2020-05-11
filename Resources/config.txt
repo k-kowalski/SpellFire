@@ -1,0 +1,13 @@
+wowDir=X:\path\to\World of Warcraft 3.3.5a
+
+# digit at the end of setting name is ID of a client
+# settings with common ID will be applied to the same client
+creds1=YourLoginX:YourPasswordX
+character1=YourCharacterX
+solution1=SpellFire.Primer.Solutions.YourSolutionX
+config1=X:\path\to\World of Warcraft 3.3.5a\WTF\Config_preset_X.wtf
+
+creds2=YourLoginY:YourPasswordY
+character2=YourCharacterY
+solution2=SpellFire.Primer.Solutions.YourSolutionY
+config2=X:\path\to\World of Warcraft 3.3.5a\WTF\Config_preset_Y.wtf

@@ -67,6 +67,7 @@
     <Compile Include="Net\PacketManager.cs" />
     <Compile Include="Net\Packet.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Util\Config.cs" />
     <Compile Include="Util\Offset.cs" />
     <Compile Include="Util\SFUtil.cs" />
     <Compile Include="Util\SystemWin32.cs" />

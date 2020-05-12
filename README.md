@@ -1,4 +1,4 @@
-![alt text](Resources/SpellFire.png)
+![SpellFire logo](Resources/SpellFire.png)
 
 *Bringing back the magic!*
 
@@ -11,6 +11,12 @@ Right now only supported WoW version is **3.3.5a (build 12340)**, however struct
 Project goal is to provide clean and maintainable API of a game instrumentation.
 
 [You can see it in action here.](https://kkovs.github.io/SpellFire/Resources/Demo/SpellFire_demo.mp4)
+
+![screenshot1](Resources/Demo/Screenshot1.png)
+
+---
+
+![screenshot2](Resources/Demo/Screenshot2.png)
 
 ## **How does it work?**
 The system entails **two** components working together, their general description:

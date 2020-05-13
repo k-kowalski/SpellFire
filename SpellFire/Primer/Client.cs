@@ -12,17 +12,9 @@ namespace SpellFire.Primer
 	public class Client
 	{
 		private static readonly string LoginLuaScript = Encoding.UTF8.GetString(File.ReadAllBytes("Scripts/Login.lua"));
-		public string Username { get; }
-		public string Password { get; }
 		public Process Process { get; }
 		public ControlInterface ControlInterface { get; private set; }
 		public Memory Memory { get; }
-
-		public Client(string username, string password, Process process) : this(process)
-		{
-			Username = username;
-			Password = password;
-		}
 
 		public Client(Process process)
 		{
@@ -56,11 +48,11 @@ namespace SpellFire.Primer
 
 					if (wowProcess.WaitForInputIdle())
 					{
-						Client client = new Client(creds[0], creds[1], wowProcess);
+						Client client = new Client(wowProcess);
 						clients.Add(client);
 
 						string loginCharacter = config[$"character{id}"];
-						client.Login(loginCharacter);
+						client.Login(creds[0], creds[1], loginCharacter);
 					}
 				}
 			}
@@ -68,20 +60,20 @@ namespace SpellFire.Primer
 			return clients;
 		}
 
-		private void Login(string loginCharacter)
+		private void Login(string username, string password, string loginCharacter)
 		{
-			string loginScriptReady = String.Format(LoginLuaScript, Username, Password, loginCharacter);
+			string loginScriptFmt = String.Format(LoginLuaScript, username, password, loginCharacter);
 
 			if (loginCharacter == null)
 			{
-				ControlInterface.remoteControl.FrameScript__Execute(loginScriptReady, 0, 0);
+				ControlInterface.remoteControl.FrameScript__Execute(loginScriptFmt, 0, 0);
 			}
 			else
 			{
 				Memory.Write(IntPtr.Zero + Offset.LastHardwareEvent, BitConverter.GetBytes(Environment.TickCount));
 				while (!IsInWorld())
 				{
-					ControlInterface.remoteControl.FrameScript__Execute(loginScriptReady, 0, 0);
+					ControlInterface.remoteControl.FrameScript__Execute(loginScriptFmt, 0, 0);
 					Thread.Sleep(1000);
 				}
 			}

@@ -30,6 +30,7 @@
 		{
 			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
 			this.panel1 = new System.Windows.Forms.Panel();
+			this.checkBoxLaunch = new System.Windows.Forms.CheckBox();
 			this.radarCanvas = new SpellFire.Primer.Gui.RadarCanvas();
 			this.buttonRefresh = new System.Windows.Forms.Button();
 			this.labelInfo = new System.Windows.Forms.Label();
@@ -44,6 +45,7 @@
 			// panel1
 			// 
 			this.panel1.BackColor = System.Drawing.SystemColors.ControlDark;
+			this.panel1.Controls.Add(this.checkBoxLaunch);
 			this.panel1.Controls.Add(this.radarCanvas);
 			this.panel1.Controls.Add(this.buttonRefresh);
 			this.panel1.Controls.Add(this.labelInfo);
@@ -58,6 +60,18 @@
 			this.panel1.Size = new System.Drawing.Size(938, 505);
 			this.panel1.TabIndex = 0;
 			// 
+			// checkBoxLaunch
+			// 
+			this.checkBoxLaunch.AutoSize = true;
+			this.checkBoxLaunch.Checked = true;
+			this.checkBoxLaunch.CheckState = System.Windows.Forms.CheckState.Checked;
+			this.checkBoxLaunch.Location = new System.Drawing.Point(12, 129);
+			this.checkBoxLaunch.Name = "checkBoxLaunch";
+			this.checkBoxLaunch.Size = new System.Drawing.Size(144, 17);
+			this.checkBoxLaunch.TabIndex = 11;
+			this.checkBoxLaunch.Text = "Quick launch from config";
+			this.checkBoxLaunch.UseVisualStyleBackColor = true;
+			// 
 			// radarCanvas
 			// 
 			this.radarCanvas.BackColor = System.Drawing.SystemColors.ControlLight;
@@ -71,7 +85,7 @@
 			// 
 			this.buttonRefresh.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
 			this.buttonRefresh.Image = ((System.Drawing.Image)(resources.GetObject("buttonRefresh.Image")));
-			this.buttonRefresh.Location = new System.Drawing.Point(153, 136);
+			this.buttonRefresh.Location = new System.Drawing.Point(153, 50);
 			this.buttonRefresh.Name = "buttonRefresh";
 			this.buttonRefresh.Size = new System.Drawing.Size(48, 39);
 			this.buttonRefresh.TabIndex = 9;
@@ -92,7 +106,7 @@
 			// label2
 			// 
 			this.label2.AutoSize = true;
-			this.label2.Location = new System.Drawing.Point(13, 189);
+			this.label2.Location = new System.Drawing.Point(13, 158);
 			this.label2.Name = "label2";
 			this.label2.Size = new System.Drawing.Size(76, 13);
 			this.label2.TabIndex = 8;
@@ -101,7 +115,7 @@
 			// label1
 			// 
 			this.label1.AutoSize = true;
-			this.label1.Location = new System.Drawing.Point(12, 135);
+			this.label1.Location = new System.Drawing.Point(12, 63);
 			this.label1.Name = "label1";
 			this.label1.Size = new System.Drawing.Size(108, 13);
 			this.label1.TabIndex = 7;
@@ -110,7 +124,7 @@
 			// listBoxSolutions
 			// 
 			this.listBoxSolutions.FormattingEnabled = true;
-			this.listBoxSolutions.Location = new System.Drawing.Point(12, 210);
+			this.listBoxSolutions.Location = new System.Drawing.Point(12, 179);
 			this.listBoxSolutions.Name = "listBoxSolutions";
 			this.listBoxSolutions.Size = new System.Drawing.Size(205, 95);
 			this.listBoxSolutions.TabIndex = 6;
@@ -118,7 +132,7 @@
 			// buttonToggle
 			// 
 			this.buttonToggle.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-			this.buttonToggle.Location = new System.Drawing.Point(73, 325);
+			this.buttonToggle.Location = new System.Drawing.Point(73, 294);
 			this.buttonToggle.Name = "buttonToggle";
 			this.buttonToggle.Size = new System.Drawing.Size(87, 35);
 			this.buttonToggle.TabIndex = 4;
@@ -129,7 +143,7 @@
 			// comboBoxProcesses
 			// 
 			this.comboBoxProcesses.FormattingEnabled = true;
-			this.comboBoxProcesses.Location = new System.Drawing.Point(12, 154);
+			this.comboBoxProcesses.Location = new System.Drawing.Point(12, 89);
 			this.comboBoxProcesses.Name = "comboBoxProcesses";
 			this.comboBoxProcesses.Size = new System.Drawing.Size(121, 21);
 			this.comboBoxProcesses.TabIndex = 0;
@@ -164,6 +178,7 @@
 		private System.Windows.Forms.Label label1;
 		private System.Windows.Forms.Button buttonRefresh;
 		private RadarCanvas radarCanvas;
+		private System.Windows.Forms.CheckBox checkBoxLaunch;
 	}
 }
 

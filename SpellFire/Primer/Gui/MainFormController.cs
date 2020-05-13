@@ -14,8 +14,8 @@ namespace SpellFire.Primer.Gui
 	public class MainFormController
 	{
 		private MainForm mainForm;
-		private ControlInterface ctrlInterface;
-		private ProcessEntry currentProcessEntry;
+
+		private Client client;
 
 		private Solution solution;
 		private Task solutionTask;
@@ -58,45 +58,37 @@ namespace SpellFire.Primer.Gui
 
 		public bool AttachToProcess(ProcessEntry processEntry)
 		{
+			if (mainForm.IsLaunchCheckboxChecked())
+			{
+				mainForm.PostInfo("Launching...", Color.DarkGoldenrod);
+
+				const int clientId = 1;
+				var config = new Well.Util.Config();
+				client = Client.LaunchClient(
+					config,
+					config["wowDir"],
+					config[$"creds{clientId}"].Split(':'),
+					1);
+				return true;
+			}
+
 			if (processEntry == null)
 			{
 				MessageBox.Show("No WoW process selected.");
 				return false;
 			}
 
-			if (processEntry.Equals(currentProcessEntry))
+			Process process = processEntry.GetProcess();
+
+			if (client != null && process.Id == client.Process.Id)
 			{
 				/* do not reinject the same process */
 				return true;
 			}
 
-			/* establish connection to remote agent */
-			InjectProcess(processEntry.GetProcess());
-
-			currentProcessEntry = processEntry;
+			client = new Client(process);
 
 			return true;
-		}
-
-		private void InjectProcess(Process process)
-		{
-			ctrlInterface = new ControlInterface();
-
-			string channelName = null;
-			RemoteHooking.IpcCreateServer(ref channelName, System.Runtime.Remoting.WellKnownObjectMode.Singleton, ctrlInterface);
-
-			string injectionLibraryPath = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "Well.dll");
-			try
-			{
-				EasyHook.RemoteHooking.Inject(process.Id, injectionLibraryPath, null, channelName);
-			}
-			catch (Exception e)
-			{
-				Console.ForegroundColor = ConsoleColor.Red;
-				Console.WriteLine("There was an error while injecting into target:");
-				Console.ResetColor();
-				Console.WriteLine(e.ToString());
-			}
 		}
 
 		public void ToggleRunState(string solutionType, ProcessEntry processEntry)
@@ -117,15 +109,18 @@ namespace SpellFire.Primer.Gui
 				return;
 			}
 
-			if ( ! AttachToProcess(processEntry))
+			if (!AttachToProcess(processEntry))
 			{
 				return;
 			}
 
 			solution = Activator.CreateInstance(
-				Type.GetType(Solution.SolutionAssemblyQualifier + solutionType),
-				ctrlInterface,
-				new Memory(processEntry.GetProcess())) as Solution;
+					Type.GetType(Solution.SolutionAssemblyQualifier + solutionType),
+					client.ControlInterface, client.Memory)
+				as Solution;
+
+			mainForm.PostInfo($"Running solution {solutionType}", Color.Blue);
+			mainForm.SetToggleButtonText("Stop");
 
 			solutionTask = Task.Run((() =>
 			{
@@ -147,9 +142,6 @@ namespace SpellFire.Primer.Gui
 					mainForm.RadarSwapBuffers();
 				}
 			}));
-
-			mainForm.PostInfo($"Running solution {solutionType}", Color.Blue);
-			mainForm.SetToggleButtonText("Stop");	
 		}
 	}
 }

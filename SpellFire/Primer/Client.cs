@@ -42,22 +42,30 @@ namespace SpellFire.Primer
 					char id = key[key.Length - 1];
 					string[] creds = config[key].Split(':');
 
-					File.Copy(config[$"config{id}"],
-						wowDir + @"\WTF\Config.wtf", true);
-					Process wowProcess = Process.Start(wowDir + @"\Wow.exe");
-
-					if (wowProcess.WaitForInputIdle())
-					{
-						Client client = new Client(wowProcess);
-						clients.Add(client);
-
-						string loginCharacter = config[$"character{id}"];
-						client.Login(creds[0], creds[1], loginCharacter);
-					}
+					clients.Add( LaunchClient(config, wowDir, creds, id) );
 				}
 			}
 
 			return clients;
+		}
+
+		public static Client LaunchClient(Config config, string wowDir, string[] credentials, int id)
+		{
+			File.Copy(config[$"config{id}"],
+				wowDir + @"\WTF\Config.wtf", true);
+			Process wowProcess = Process.Start(wowDir + @"\Wow.exe");
+
+			if (wowProcess.WaitForInputIdle())
+			{
+				Client client = new Client(wowProcess);
+
+				string loginCharacter = config[$"character{id}"];
+				client.Login(credentials[0], credentials[1], loginCharacter);
+
+				return client;
+			}
+
+			return null;
 		}
 
 		private void Login(string username, string password, string loginCharacter)

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace SpellFire.Primer.Gui
@@ -48,9 +49,9 @@ namespace SpellFire.Primer.Gui
 
 		private void buttonToggle_Click(object sender, EventArgs e)
 		{
-			this.mfController.ToggleRunState(
+			Task.Run(() => this.mfController.ToggleRunState(
 				listBoxSolutions.SelectedItem as string,
-				comboBoxProcesses.SelectedItem as ProcessEntry);
+				comboBoxProcesses.SelectedItem as ProcessEntry));
 		}
 
 		private void buttonRefresh_Click(object sender, EventArgs e)
@@ -78,5 +79,7 @@ namespace SpellFire.Primer.Gui
 		{
 			return radarCanvas;
 		}
+
+		public bool IsLaunchCheckboxChecked() => checkBoxLaunch.Checked;
 	}
 }

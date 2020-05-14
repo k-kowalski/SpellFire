@@ -28,18 +28,7 @@ namespace SpellFire.Primer.Gui
 
 		public void InitializeSolutionListBox(ListBox listBoxSolutions)
 		{
-			ICollection<string> solutionTypes = new List<string>
-			{
-				nameof(AutoLooter),
-				nameof(UnholyDK),
-				nameof(Morpher),
-				nameof(Disenchanter),
-				nameof(BalanceDruidFarm),
-				nameof(Fishing),
-				nameof(AutoLogin),
-			};
-
-			listBoxSolutions.DataSource = solutionTypes;
+			listBoxSolutions.DataSource = new List<SolutionTypeEntry>(SolutionTypeEntry.GetSolutionTypes());
 		}
 
 		public void RefreshProcessList(ComboBox comboBoxProcesses)
@@ -60,10 +49,10 @@ namespace SpellFire.Primer.Gui
 		{
 			if (mainForm.IsLaunchCheckboxChecked())
 			{
-				mainForm.PostInfo("Launching...", Color.DarkGoldenrod);
+				mainForm.PostInfo("Launching...", Color.Gold);
 
 				const int clientId = 1;
-				var config = new Well.Util.Config();
+				var config = new Well.Util.Config("config1.txt");
 				client = Client.LaunchClient(
 					config,
 					config["wowDir"],
@@ -91,7 +80,7 @@ namespace SpellFire.Primer.Gui
 			return true;
 		}
 
-		public void ToggleRunState(string solutionType, ProcessEntry processEntry)
+		public void ToggleRunState(SolutionTypeEntry solutionTypeEntry, ProcessEntry processEntry)
 		{
 			if (solution != null)
 			{
@@ -103,7 +92,7 @@ namespace SpellFire.Primer.Gui
 				return;
 			}
 
-			if (String.IsNullOrEmpty(solutionType))
+			if (solutionTypeEntry == null)
 			{
 				MessageBox.Show("Select solution to run.");
 				return;
@@ -114,12 +103,11 @@ namespace SpellFire.Primer.Gui
 				return;
 			}
 
-			solution = Activator.CreateInstance(
-					Type.GetType(Solution.SolutionAssemblyQualifier + solutionType),
+			solution = Activator.CreateInstance( solutionTypeEntry.GetSolutionType(),
 					client.ControlInterface, client.Memory)
 				as Solution;
 
-			mainForm.PostInfo($"Running solution {solutionType}", Color.Blue);
+			mainForm.PostInfo($"Running solution {solutionTypeEntry}", Color.Blue);
 			mainForm.SetToggleButtonText("Stop");
 
 			solutionTask = Task.Run((() =>

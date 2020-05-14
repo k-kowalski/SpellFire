@@ -63,6 +63,8 @@
     <Compile Include="Gui\RadarCanvas.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Client.cs" />
+    <Compile Include="Gui\SolutionTypeEntry.cs" />
     <Compile Include="Solutions\AutoLooter.cs" />
     <Compile Include="Solutions\BalanceDruidFarm.cs" />
     <Compile Include="Solutions\Disenchanter.cs" />
@@ -108,6 +110,7 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
     <None Include="Scripts\Disenchant.lua" />
+    <None Include="Scripts\Login.lua" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

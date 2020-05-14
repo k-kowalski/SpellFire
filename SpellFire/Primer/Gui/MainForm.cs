@@ -50,7 +50,7 @@ namespace SpellFire.Primer.Gui
 		private void buttonToggle_Click(object sender, EventArgs e)
 		{
 			Task.Run(() => this.mfController.ToggleRunState(
-				listBoxSolutions.SelectedItem as string,
+				listBoxSolutions.SelectedItem as SolutionTypeEntry,
 				comboBoxProcesses.SelectedItem as ProcessEntry));
 		}
 

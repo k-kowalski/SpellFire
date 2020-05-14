@@ -9,14 +9,14 @@ namespace SpellFire.Well.Util
 {
 	public class Config
 	{
-		public const string ConfigFile = "config.txt";
+		public const string DefaultConfigFile = "config.txt";
 		public const string CommentMark = "#";
 
 		private readonly Dictionary<string, string> Settings = new Dictionary<string, string>();
 
-		public Config()
+		public Config(string configFile = DefaultConfigFile)
 		{
-			string[] configAllLines = File.ReadAllLines(ConfigFile);
+			string[] configAllLines = File.ReadAllLines(configFile);
 			foreach (var line in configAllLines)
 			{
 				if (String.IsNullOrEmpty(line) || line.StartsWith(Config.CommentMark))

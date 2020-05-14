@@ -1,3 +1,5 @@
+# sample config file
+
 wowDir=X:\path\to\World of Warcraft 3.3.5a
 
 # digit at the end of setting name is ID of a client

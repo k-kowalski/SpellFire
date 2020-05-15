@@ -27,13 +27,19 @@ namespace SpellFire.Primer.Gui
 
 		public void PostInfo(string info, Color color)
 		{
-			this.labelInfo.Text = info;
-			this.labelInfo.ForeColor = color;
+			Invoke(new Action(() =>
+			{
+				this.labelInfo.Text = info;
+				this.labelInfo.ForeColor = color;
+			}));
 		}
 
 		public void SetToggleButtonText(string text)
 		{
-			this.buttonToggle.Text = text;
+			Invoke(new Action(() =>
+			{
+				this.buttonToggle.Text = text;
+			}));
 		}
 
 		private void MainForm_Load(object sender, EventArgs e)

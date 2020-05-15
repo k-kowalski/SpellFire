@@ -17,9 +17,9 @@ namespace SpellFire.Primer.Gui
 		{
 			InitializeComponent();
 
-			this.mfController = new MainFormController(this);
+			mfController = new MainFormController(this);
 
-			this.mfController.InitializeSolutionListBox(this.listBoxSolutions);
+			mfController.InitializeSolutionListBox(listBoxSolutions);
 
 			radarFrontBuffer = new Bitmap(radarCanvas.Width, radarCanvas.Width);
 			radarBackBuffer = new Bitmap(radarCanvas.Width, radarCanvas.Width);
@@ -29,8 +29,8 @@ namespace SpellFire.Primer.Gui
 		{
 			Invoke(new Action(() =>
 			{
-				this.labelInfo.Text = info;
-				this.labelInfo.ForeColor = color;
+				labelInfo.Text = info;
+				labelInfo.ForeColor = color;
 			}));
 		}
 
@@ -38,13 +38,13 @@ namespace SpellFire.Primer.Gui
 		{
 			Invoke(new Action(() =>
 			{
-				this.buttonToggle.Text = text;
+				buttonToggle.Text = text;
 			}));
 		}
 
 		private void MainForm_Load(object sender, EventArgs e)
 		{
-			this.mfController.RefreshProcessList(comboBoxProcesses);
+			mfController.RefreshProcessList(comboBoxProcesses);
 		}
 
 		/* makes combo box readonly */
@@ -63,7 +63,7 @@ namespace SpellFire.Primer.Gui
 
 		private void buttonRefresh_Click(object sender, EventArgs e)
 		{
-			this.mfController.RefreshProcessList(comboBoxProcesses);
+			mfController.RefreshProcessList(comboBoxProcesses);
 		}
 
 		private void radarCanvas_Paint(object sender, PaintEventArgs e)

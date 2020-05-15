@@ -15,10 +15,9 @@ namespace SpellFire.Primer.Gui
 		{
 			this.type = type;
 		}
-
-		public override string ToString()
+		public Type GetSolutionType()
 		{
-			return type.Name;
+			return type;
 		}
 
 		public static IEnumerable<SolutionTypeEntry> GetSolutionTypes()
@@ -32,10 +31,9 @@ namespace SpellFire.Primer.Gui
 				.Select(solutionType => new SolutionTypeEntry(solutionType));
 		}
 
-
-		public Type GetSolutionType()
+		public override string ToString()
 		{
-			return type;
+			return type.Name;
 		}
 	}
 }

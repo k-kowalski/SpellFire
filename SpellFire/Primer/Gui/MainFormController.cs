@@ -37,16 +37,7 @@ namespace SpellFire.Primer.Gui
 
 		public void RefreshProcessList(ComboBox comboBoxProcesses)
 		{
-			comboBoxProcesses.DataSource = null;
-
-			ICollection <ProcessEntry> entries = new List<ProcessEntry>();
-
-			foreach (Process process in Process.GetProcessesByName("WoW"))
-			{
-				entries.Add(new ProcessEntry(process));
-			}
-
-			comboBoxProcesses.DataSource = entries;
+			comboBoxProcesses.DataSource = new List<ProcessEntry>(ProcessEntry.GetRunningWoWProcessess());
 		}
 
 		public bool AttachToProcess(ProcessEntry processEntry)

@@ -83,7 +83,6 @@
     <Compile Include="Primer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Solution.cs" />
-    <Compile Include="Solutions\AutoLogin.cs" />
     <Compile Include="Solutions\Morpher.cs" />
     <Compile Include="Solutions\PacketManip.cs" />
     <Compile Include="Solutions\UnholyDK.cs" />

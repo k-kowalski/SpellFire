@@ -93,9 +93,7 @@ namespace SpellFire.Primer.Gui
 				return;
 			}
 
-			solution = Activator.CreateInstance( solutionTypeEntry.GetSolutionType(),
-					client.ControlInterface, client.Memory)
-				as Solution;
+			solution = Activator.CreateInstance(solutionTypeEntry.GetSolutionType(), client) as Solution;
 
 			mainForm.PostInfo($"Running solution {solutionTypeEntry}", Color.Blue);
 			mainForm.SetToggleButtonText("Stop");

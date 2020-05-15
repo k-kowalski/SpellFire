@@ -24,13 +24,18 @@ namespace SpellFire.Primer.Solutions
 
 		private readonly LuaEventListener eventListener;
 
-		public BalanceDruidFarm(ControlInterface ci, Memory memory) : base(ci, memory)
+		private ControlInterface ci;
+
+		public BalanceDruidFarm(Client client) : base(client)
 		{
+			ci = client.ControlInterface;
+
 			eventListener = new LuaEventListener(ci);
 			eventListener.Bind("LOOT_OPENED", LootOpenedHandler);
 
 			loot = false;
 			lootTargeted = false;
+
 
 			this.Active = true;
 		}
@@ -50,12 +55,12 @@ namespace SpellFire.Primer.Solutions
 		{
 			Thread.Sleep(500);
 
-			if (!GetObjectMgrAndPlayer())
+			if (!client.GetObjectMgrAndPlayer())
 			{
 				return;
 			}
 
-			Int64 targetGUID = GetTargetGUID();
+			Int64 targetGUID = client.GetTargetGUID();
 			Vector3 targetObjectCoords = new Vector3();
 			GameObject targetObject = null;
 			float distance;
@@ -65,14 +70,14 @@ namespace SpellFire.Primer.Solutions
 				Int64 GUID = 0;
 
 
-				foreach (GameObject gameObject in objectManager)
+				foreach (GameObject gameObject in client.ObjectManager)
 				{
 					//Console.WriteLine($"checking: {currentGameObject.ToString("X")} .. has guid: {currentGameObjectGUID} ");
 					if (gameObject.Type == GameObjectType.Unit
 						&& gameObject.Health > 0
 						&& gameObject.UnitType != CreatureType.Critter)
 					{
-						distance = player.GetDistance(gameObject);
+						distance = client.Player.GetDistance(gameObject);
 						if (distance < minDistance)
 						{
 							minDistance = distance;
@@ -88,21 +93,21 @@ namespace SpellFire.Primer.Solutions
 			{
 				if (targetGUID != 0 && (!lootTargeted))
 				{
-					targetObject = objectManager.First(gameObj => gameObj.GUID == targetGUID);
+					targetObject = client.ObjectManager.First(gameObj => gameObj.GUID == targetGUID);
 					targetObjectCoords = targetObject.Coordinates;
-					Vector3 playerObjectCoords = player.Coordinates;
+					Vector3 playerObjectCoords = client.Player.Coordinates;
 
-					distance = player.GetDistance(targetObject);
+					distance = client.Player.GetDistance(targetObject);
 					if (distance < 35f)
 					{
 						if (targetObject.Health > 0)
 						{
-							ci.remoteControl.CGPlayer_C__ClickToMoveStop(player.GetAddress());
+							ci.remoteControl.CGPlayer_C__ClickToMoveStop(client.Player.GetAddress());
 							float angle = playerObjectCoords.AngleBetween(targetObjectCoords);
-							ci.remoteControl.CGPlayer_C__ClickToMove(player.GetAddress(), ClickToMoveType.Face, ref targetGUID, ref targetObjectCoords, angle);
-							if ( ! player.IsCastingOrChanneling())
+							ci.remoteControl.CGPlayer_C__ClickToMove(client.Player.GetAddress(), ClickToMoveType.Face, ref targetGUID, ref targetObjectCoords, angle);
+							if ( ! client.Player.IsCastingOrChanneling())
 							{
-								CastSpell("Wrath");
+								client.CastSpell("Wrath");
 							}
 							loot = true;
 							currentlyOccupiedMobGUID = targetGUID;
@@ -110,30 +115,30 @@ namespace SpellFire.Primer.Solutions
 					}
 					else
 					{
-						ci.remoteControl.CGPlayer_C__ClickToMove(player.GetAddress(), ClickToMoveType.Move, ref targetGUID, ref targetObjectCoords, 1f);
+						ci.remoteControl.CGPlayer_C__ClickToMove(client.Player.GetAddress(), ClickToMoveType.Move, ref targetGUID, ref targetObjectCoords, 1f);
 					}
 				}
 				else if (targetGUID == 0 && loot && (!lootTargeted))
 				{
 					ci.remoteControl.SelectUnit(currentlyOccupiedMobGUID);
-					targetGUID = GetTargetGUID();
+					targetGUID = client.GetTargetGUID();
 					lootTargeted = true;
 				}
 				if (targetGUID != 0 && lootTargeted)
 				{
-					targetObject = objectManager.First(gameObj => gameObj.GUID == targetGUID);
+					targetObject = client.ObjectManager.First(gameObj => gameObj.GUID == targetGUID);
 
-					distance = player.GetDistance(targetObject);
-					if (distance < 6f && ( ! player.IsMoving())) // loot
+					distance = client.Player.GetDistance(targetObject);
+					if (distance < 6f && ( ! client.Player.IsMoving())) // loot
 					{
 						ci.remoteControl.InteractUnit(targetObject.GetAddress());
 						FinishLooting();
 					}
 					else
 					{
-						targetGUID = GetTargetGUID();
+						targetGUID = client.GetTargetGUID();
 						targetObjectCoords = targetObject.Coordinates;
-						ci.remoteControl.CGPlayer_C__ClickToMove(player.GetAddress(), ClickToMoveType.Move, ref targetGUID, ref targetObjectCoords, 1f);
+						ci.remoteControl.CGPlayer_C__ClickToMove(client.Player.GetAddress(), ClickToMoveType.Move, ref targetGUID, ref targetObjectCoords, 1f);
 					}
 				}
 			}

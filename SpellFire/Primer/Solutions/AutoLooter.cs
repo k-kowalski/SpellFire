@@ -22,8 +22,12 @@ namespace SpellFire.Primer.Solutions
 	{
 		private readonly LuaEventListener eventListener;
 
-		public AutoLooter(ControlInterface ci, Memory memory) : base(ci, memory)
+		private ControlInterface ci;
+
+		public AutoLooter(Client client) : base(client)
 		{
+			ci = client.ControlInterface;
+
 			eventListener = new LuaEventListener(ci);
 			eventListener.Bind("LOOT_OPENED", LootOpenedHandler);
 
@@ -33,26 +37,26 @@ namespace SpellFire.Primer.Solutions
 		private void LootOpenedHandler(LuaEventArgs luaEventArgs)
 		{
 			Console.WriteLine($"[{DateTime.Now}] looting");
-			ci.remoteControl.FrameScript__Execute("for i = 1, GetNumLootItems() do LootSlot(i) ConfirmLootSlot(i) end", 0, 0);
+			client.ControlInterface.remoteControl.FrameScript__Execute("for i = 1, GetNumLootItems() do LootSlot(i) ConfirmLootSlot(i) end", 0, 0);
 		}
 
 		public override void Tick()
 		{
 			Thread.Sleep(100);
 
-			if (!GetObjectMgrAndPlayer())
+			if (!client.GetObjectMgrAndPlayer())
 			{
 				return;
 			}
 
-			IEnumerable<GameObject> lootables = objectManager.Where(gameObj => gameObj.Type == GameObjectType.Unit && gameObj.IsLootable());
+			IEnumerable<GameObject> lootables = client.ObjectManager.Where(gameObj => gameObj.Type == GameObjectType.Unit && gameObj.IsLootable());
 
 			float minDistance = Single.MaxValue;
 			GameObject closestLootableUnit = null;
 
 			foreach (GameObject lootable in lootables)
 			{
-				float distance = player.GetDistance(lootable);
+				float distance = client.Player.GetDistance(lootable);
 				if (distance < minDistance)
 				{
 					minDistance = distance;
@@ -64,7 +68,7 @@ namespace SpellFire.Primer.Solutions
 			{
 				Console.WriteLine($"[{DateTime.Now}] closest target away {minDistance}y, checked {lootables.Count()} lootable/s.");
 
-				if (minDistance < 6f && (!player.IsMoving()) && (!player.IsCastingOrChanneling()))
+				if (minDistance < 6f && (!client.Player.IsMoving()) && (!client.Player.IsCastingOrChanneling()))
 				{
 					Console.WriteLine($"[{DateTime.Now}] interacting");
 

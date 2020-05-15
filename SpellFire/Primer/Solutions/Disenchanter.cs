@@ -18,10 +18,14 @@ namespace SpellFire.Primer.Solutions
 	{
 		private readonly LuaEventListener eventListener;
 
+		private ControlInterface ci;
+
 		private readonly string DisenchantLuaScript;
 
-		public Disenchanter(ControlInterface ci, Memory memory) : base(ci, memory)
+		public Disenchanter(Client client) : base(client)
 		{
+			ci = client.ControlInterface;
+
 			eventListener = new LuaEventListener(ci);
 			eventListener.Bind("LOOT_OPENED", LootOpenedHandler);
 
@@ -37,7 +41,7 @@ namespace SpellFire.Primer.Solutions
 
 		public override void Tick()
 		{
-			if (!GetObjectMgrAndPlayer())
+			if (!client.GetObjectMgrAndPlayer())
 			{
 				return;
 			}

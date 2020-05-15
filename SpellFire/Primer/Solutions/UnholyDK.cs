@@ -25,8 +25,12 @@ namespace SpellFire.Primer.Solutions
 	{
 		private readonly LuaEventListener eventListener;
 
-		public UnholyDK(ControlInterface ci, Memory memory) : base(ci, memory)
+		private ControlInterface ci;
+
+		public UnholyDK(Client client) : base(client)
 		{
+			ci = client.ControlInterface;
+
 			eventListener = new LuaEventListener(ci);
 			eventListener.Bind("LOOT_OPENED", LootOpenedHandler);
 
@@ -44,64 +48,64 @@ namespace SpellFire.Primer.Solutions
 		{
 			Thread.Sleep(1);
 
-			if (!GetObjectMgrAndPlayer())
+			if (!client.GetObjectMgrAndPlayer())
 			{
 				return;
 			}
 
 			Looting();
 
-			if (IsOnCooldown("Death Coil")) /* global cooldown check */
+			if (client.IsOnCooldown("Death Coil")) /* global cooldown check */
 			{
 				return;
 			}
 
-			if (!player.IsMounted()
-			    && !IsOnCooldown("Horn of Winter")
-			    && !HasAura(player, "Horn of Winter"))
+			if (!client.Player.IsMounted()
+			    && !client.IsOnCooldown("Horn of Winter")
+			    && !client.HasAura(client.Player, "Horn of Winter"))
 			{
-				CastSpell("Horn of Winter");
+				client.CastSpell("Horn of Winter");
 				return;
 			}
 
 
-			Int64 targetGUID = GetTargetGUID();
+			Int64 targetGUID = client.GetTargetGUID();
 			if (targetGUID == 0)
 			{
 				return;
 			}
 
-			GameObject target = objectManager.FirstOrDefault(gameObj => gameObj.GUID == targetGUID);
+			GameObject target = client.ObjectManager.FirstOrDefault(gameObj => gameObj.GUID == targetGUID);
 
 			if (target == null || target.Health == 0 ||
-			    ci.remoteControl.CGUnit_C__UnitReaction(player.GetAddress(), target.GetAddress()) >
+			    ci.remoteControl.CGUnit_C__UnitReaction(client.Player.GetAddress(), target.GetAddress()) >
 			    UnitReaction.Neutral)
 			{
 				return;
 			}
 
-			bool isTargetInMelee = player.GetDistance(target) < DeathKnightConstants.MeleeRange;
+			bool isTargetInMelee = client.Player.GetDistance(target) < DeathKnightConstants.MeleeRange;
 
 			Vector3 targetCoords = target.Coordinates;
 			if (!isTargetInMelee)
 			{
-				if (!player.IsMoving() && !player.IsMounted())
+				if (!client.Player.IsMoving() && !client.Player.IsMounted())
 				{
-					ci.remoteControl.CGPlayer_C__ClickToMove(player.GetAddress(), ClickToMoveType.AutoAttack,
+					ci.remoteControl.CGPlayer_C__ClickToMove(client.Player.GetAddress(), ClickToMoveType.AutoAttack,
 						ref targetGUID, ref targetCoords, 1f);
 					return;
 				}
 			}
 			else
 			{
-				ci.remoteControl.CGPlayer_C__ClickToMoveStop(player.GetAddress());
-				float angle = player.Coordinates.AngleBetween(targetCoords);
-				ci.remoteControl.CGPlayer_C__ClickToMove(player.GetAddress(), ClickToMoveType.Face, ref targetGUID,
+				ci.remoteControl.CGPlayer_C__ClickToMoveStop(client.Player.GetAddress());
+				float angle = client.Player.Coordinates.AngleBetween(targetCoords);
+				ci.remoteControl.CGPlayer_C__ClickToMove(client.Player.GetAddress(), ClickToMoveType.Face, ref targetGUID,
 					ref targetCoords, angle);
 			}
 
-			bool isTargetBloodPlagueUp = HasAura(target, "Blood Plague", player);
-			bool isTargetFrostFeverUp = HasAura(target, "Frost Fever", player);
+			bool isTargetBloodPlagueUp = client.HasAura(target, "Blood Plague", client.Player);
+			bool isTargetFrostFeverUp = client.HasAura(target, "Frost Fever", client.Player);
 
 			Console.WriteLine($"bp: {isTargetBloodPlagueUp}");
 			Console.WriteLine($"ff: {isTargetFrostFeverUp}");
@@ -114,14 +118,14 @@ namespace SpellFire.Primer.Solutions
 
 			if (isTargetInMelee && !isTargetBloodPlagueUp && runesState.unholyReady > 0)
 			{
-				CastSpell("Plague Strike");
+				client.CastSpell("Plague Strike");
 				Console.WriteLine("PS");
 				return;
 			}
 
 			if (!isTargetFrostFeverUp && runesState.frostReady > 0)
 			{
-				CastSpell("Icy Touch");
+				client.CastSpell("Icy Touch");
 				Console.WriteLine("IT");
 				return;
 			}
@@ -130,19 +134,19 @@ namespace SpellFire.Primer.Solutions
 			if (isTargetInMelee && (isTargetBloodPlagueUp && isTargetFrostFeverUp) && runesState.bloodReady > 0)
 			{
 
-				IEnumerable<GameObject> pestilenceEnemies = objectManager.Where(gameObj =>
+				IEnumerable<GameObject> pestilenceEnemies = client.ObjectManager.Where(gameObj =>
 					gameObj.Type == GameObjectType.Unit
 					&& gameObj.Health > 0 /* alive units */
 					&& gameObj.GUID != targetGUID /* exclude target unit */
-					&& player.GetDistance(gameObj) < DeathKnightConstants.PestilenceRange /* unit in range */
-					&& ci.remoteControl.CGUnit_C__UnitReaction(player.GetAddress(), gameObj.GetAddress()) <=
+					&& client.Player.GetDistance(gameObj) < DeathKnightConstants.PestilenceRange /* unit in range */
+					&& ci.remoteControl.CGUnit_C__UnitReaction(client.Player.GetAddress(), gameObj.GetAddress()) <=
 					UnitReaction.Neutral /* unit attackable */
-					&& !HasAura(gameObj, "Blood Plague", player) /* unit doesn't have diseases */
-					&& !HasAura(gameObj, "Frost Fever", player));
+					&& !client.HasAura(gameObj, "Blood Plague", client.Player) /* unit doesn't have diseases */
+					&& !client.HasAura(gameObj, "Frost Fever", client.Player));
 
 				if (pestilenceEnemies.Any())
 				{
-					CastSpell("Pestilence");
+					client.CastSpell("Pestilence");
 					Console.WriteLine("Pesti");
 					return;
 				}
@@ -154,24 +158,24 @@ namespace SpellFire.Primer.Solutions
 			    && runesState.unholyReady > 0
 			    && runesState.frostReady > 0)
 			{
-				if (player.HealthPct >= 80)
+				if (client.Player.HealthPct >= 80)
 				{
-					CastSpell("Scourge Strike");
+					client.CastSpell("Scourge Strike");
 					Console.WriteLine("SS");
 					return;
 				}
 				else
 				{
-					CastSpell("Death Strike");
+					client.CastSpell("Death Strike");
 					Console.WriteLine("DS");
 					return;
 				}
 			}
 
-			Int32 runicPower = player.RunicPower;
+			Int32 runicPower = client.Player.RunicPower;
 			if (runicPower >= 40)
 			{
-				CastSpell("Death Coil");
+				client.CastSpell("Death Coil");
 				Console.WriteLine("DC");
 				return;
 			}
@@ -180,7 +184,7 @@ namespace SpellFire.Primer.Solutions
 			if (isTargetInMelee && isTargetBloodPlagueUp && isTargetFrostFeverUp
 			    && runesState.bloodReady == 2)
 			{
-				CastSpell("Blood Strike");
+				client.CastSpell("Blood Strike");
 				return;
 			}
 		}
@@ -188,14 +192,14 @@ namespace SpellFire.Primer.Solutions
 		private void Looting()
 		{
 			IEnumerable<GameObject> lootables =
-				objectManager.Where(gameObj => gameObj.Type == GameObjectType.Unit && gameObj.IsLootable());
+				client.ObjectManager.Where(gameObj => gameObj.Type == GameObjectType.Unit && gameObj.IsLootable());
 
 			float minDistance = Single.MaxValue;
 			GameObject closestLootableUnit = null;
 
 			foreach (GameObject lootable in lootables)
 			{
-				float distance = player.GetDistance(lootable);
+				float distance = client.Player.GetDistance(lootable);
 				if (distance < minDistance)
 				{
 					minDistance = distance;
@@ -208,11 +212,11 @@ namespace SpellFire.Primer.Solutions
 				Console.WriteLine(
 					$"[{DateTime.Now}] closest target away {minDistance}y, checked {lootables.Count()} lootable/s.");
 
-				if (minDistance < 6f && (!player.IsMoving()) && (!player.IsCastingOrChanneling()))
+				if (minDistance < 6f && (!client.Player.IsMoving()) && (!client.Player.IsCastingOrChanneling()))
 				{
 					Console.WriteLine($"[{DateTime.Now}] interacting");
 
-					ci.remoteControl.CGPlayer_C__ClickToMoveStop(player.GetAddress());
+					ci.remoteControl.CGPlayer_C__ClickToMoveStop(client.Player.GetAddress());
 					ci.remoteControl.InteractUnit(closestLootableUnit.GetAddress());
 
 					/*
@@ -231,7 +235,7 @@ namespace SpellFire.Primer.Solutions
 
 		private DeathKnightRunesState GetAvailableRunes()
 		{
-			uint runeCountTotal = memory.ReadUInt32(IntPtr.Zero + Offset.RuneCount);
+			uint runeCountTotal = client.Memory.ReadUInt32(IntPtr.Zero + Offset.RuneCount);
 
 			DeathKnightRunesState state = new DeathKnightRunesState();
 

@@ -30,8 +30,6 @@
 		{
 			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
 			this.panel1 = new System.Windows.Forms.Panel();
-			this.checkBoxLaunch = new System.Windows.Forms.CheckBox();
-			this.radarCanvas = new SpellFire.Primer.Gui.RadarCanvas();
 			this.buttonRefresh = new System.Windows.Forms.Button();
 			this.labelInfo = new System.Windows.Forms.Label();
 			this.label2 = new System.Windows.Forms.Label();
@@ -39,13 +37,13 @@
 			this.listBoxSolutions = new System.Windows.Forms.ListBox();
 			this.buttonToggle = new System.Windows.Forms.Button();
 			this.comboBoxProcesses = new System.Windows.Forms.ComboBox();
+			this.radarCanvas = new SpellFire.Primer.Gui.RadarCanvas();
 			this.panel1.SuspendLayout();
 			this.SuspendLayout();
 			// 
 			// panel1
 			// 
 			this.panel1.BackColor = System.Drawing.SystemColors.ControlDark;
-			this.panel1.Controls.Add(this.checkBoxLaunch);
 			this.panel1.Controls.Add(this.radarCanvas);
 			this.panel1.Controls.Add(this.buttonRefresh);
 			this.panel1.Controls.Add(this.labelInfo);
@@ -60,32 +58,11 @@
 			this.panel1.Size = new System.Drawing.Size(938, 505);
 			this.panel1.TabIndex = 0;
 			// 
-			// checkBoxLaunch
-			// 
-			this.checkBoxLaunch.AutoSize = true;
-			this.checkBoxLaunch.Checked = true;
-			this.checkBoxLaunch.CheckState = System.Windows.Forms.CheckState.Checked;
-			this.checkBoxLaunch.Location = new System.Drawing.Point(12, 129);
-			this.checkBoxLaunch.Name = "checkBoxLaunch";
-			this.checkBoxLaunch.Size = new System.Drawing.Size(144, 17);
-			this.checkBoxLaunch.TabIndex = 11;
-			this.checkBoxLaunch.Text = "Quick launch from config";
-			this.checkBoxLaunch.UseVisualStyleBackColor = true;
-			// 
-			// radarCanvas
-			// 
-			this.radarCanvas.BackColor = System.Drawing.SystemColors.ControlLight;
-			this.radarCanvas.Location = new System.Drawing.Point(235, 4);
-			this.radarCanvas.Name = "radarCanvas";
-			this.radarCanvas.Size = new System.Drawing.Size(691, 489);
-			this.radarCanvas.TabIndex = 10;
-			this.radarCanvas.Paint += new System.Windows.Forms.PaintEventHandler(this.radarCanvas_Paint);
-			// 
 			// buttonRefresh
 			// 
 			this.buttonRefresh.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
 			this.buttonRefresh.Image = ((System.Drawing.Image)(resources.GetObject("buttonRefresh.Image")));
-			this.buttonRefresh.Location = new System.Drawing.Point(153, 50);
+			this.buttonRefresh.Location = new System.Drawing.Point(143, 102);
 			this.buttonRefresh.Name = "buttonRefresh";
 			this.buttonRefresh.Size = new System.Drawing.Size(48, 39);
 			this.buttonRefresh.TabIndex = 9;
@@ -115,7 +92,7 @@
 			// label1
 			// 
 			this.label1.AutoSize = true;
-			this.label1.Location = new System.Drawing.Point(12, 63);
+			this.label1.Location = new System.Drawing.Point(13, 91);
 			this.label1.Name = "label1";
 			this.label1.Size = new System.Drawing.Size(108, 13);
 			this.label1.TabIndex = 7;
@@ -143,11 +120,20 @@
 			// comboBoxProcesses
 			// 
 			this.comboBoxProcesses.FormattingEnabled = true;
-			this.comboBoxProcesses.Location = new System.Drawing.Point(12, 89);
+			this.comboBoxProcesses.Location = new System.Drawing.Point(16, 120);
 			this.comboBoxProcesses.Name = "comboBoxProcesses";
 			this.comboBoxProcesses.Size = new System.Drawing.Size(121, 21);
 			this.comboBoxProcesses.TabIndex = 0;
 			this.comboBoxProcesses.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.comboBoxProcesses_KeyPress);
+			// 
+			// radarCanvas
+			// 
+			this.radarCanvas.BackColor = System.Drawing.SystemColors.ControlLight;
+			this.radarCanvas.Location = new System.Drawing.Point(235, 4);
+			this.radarCanvas.Name = "radarCanvas";
+			this.radarCanvas.Size = new System.Drawing.Size(691, 489);
+			this.radarCanvas.TabIndex = 10;
+			this.radarCanvas.Paint += new System.Windows.Forms.PaintEventHandler(this.radarCanvas_Paint);
 			// 
 			// MainForm
 			// 
@@ -178,7 +164,6 @@
 		private System.Windows.Forms.Label label1;
 		private System.Windows.Forms.Button buttonRefresh;
 		private RadarCanvas radarCanvas;
-		private System.Windows.Forms.CheckBox checkBoxLaunch;
 	}
 }
 

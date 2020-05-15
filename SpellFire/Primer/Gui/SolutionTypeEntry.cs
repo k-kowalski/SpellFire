@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using SpellFire.Primer.Solutions;
 
 namespace SpellFire.Primer.Gui
 {
@@ -27,7 +28,7 @@ namespace SpellFire.Primer.Gui
 			return Assembly
 				.GetExecutingAssembly()
 				.GetTypes()
-				.Where(type => type.IsSubclassOf(solutionBaseType))
+				.Where(type => type.IsSubclassOf(solutionBaseType) && type.IsClass && !type.IsAbstract)
 				.Select(solutionType => new SolutionTypeEntry(solutionType));
 		}
 
@@ -35,5 +36,7 @@ namespace SpellFire.Primer.Gui
 		{
 			return type.Name;
 		}
+
+		public bool IsMultiboxSolution() => type.IsSubclassOf(typeof(MultiboxSolution));
 	}
 }

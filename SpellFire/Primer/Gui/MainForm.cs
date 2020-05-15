@@ -86,7 +86,5 @@ namespace SpellFire.Primer.Gui
 		{
 			return radarCanvas;
 		}
-
-		public bool IsLaunchCheckboxChecked() => checkBoxLaunch.Checked;
 	}
 }

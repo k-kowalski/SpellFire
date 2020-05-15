@@ -5,7 +5,7 @@ using SpellFire.Well.Controller;
 using SpellFire.Well.Model;
 using SpellFire.Well.Util;
 
-namespace SpellFire.Primer
+namespace SpellFire.Primer.Solutions
 {
 	public abstract class Solution : IDisposable
 	{
@@ -13,7 +13,7 @@ namespace SpellFire.Primer
 
 		protected readonly Client client;
 
-		protected Solution(Client client)
+		public Solution(Client client)
 		{
 			this.client = client;
 		}

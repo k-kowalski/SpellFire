@@ -1,8 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using SpellFire.Primer.Gui;
+using SpellFire.Primer.Solutions;
 using SpellFire.Well.Util;
 
 namespace SpellFire.Primer
@@ -12,11 +17,17 @@ namespace SpellFire.Primer
 		private static readonly string LoginLuaScript = Encoding.UTF8.GetString(File.ReadAllBytes("Scripts/Login.lua"));
 
 		private Config config;
+		private MainForm mainForm;
 		private string wowDir;
 
-		public Launcher(Config config)
+		private Solution solution;
+		private Task solutionTask;
+		private Task radarTask;
+
+		public Launcher(Config config, MainForm mainForm)
 		{
 			this.config = config;
+			this.mainForm = mainForm;
 			wowDir = config["wowDir"];
 		}
 
@@ -26,7 +37,7 @@ namespace SpellFire.Primer
 		/// </summary>
 		/// <param></param>
 		/// <returns></returns>
-		public List<Client> LaunchClientsFromConfig()
+		public IEnumerable<Client> LaunchClientsFromConfig()
 		{
 
 			List<Client> clients = new List<Client>();
@@ -80,6 +91,74 @@ namespace SpellFire.Primer
 					System.Threading.Thread.Sleep(1000);
 				}
 			}
+		}
+
+		public void AttachAndLaunch(ProcessEntry processEntry, SolutionTypeEntry solutionTypeEntry)
+		{
+			if (solution != null)
+			{
+				TerminateRunningSolution();
+				return;
+			}
+
+			mainForm.PostInfo("Launching...", Color.Gold);
+
+			object solutionArg = null;
+
+			if (Int32.TryParse(config["quickLaunchId"], out int quickLaunchClientId))
+			{
+				solutionArg = LaunchClient(quickLaunchClientId);
+			}
+			else if(solutionTypeEntry.IsMultiboxSolution())
+			{
+				solutionArg = LaunchClientsFromConfig();
+			}
+			else
+			{
+				if (processEntry == null)
+				{
+					MessageBox.Show("No WoW process selected.");
+					return;
+				}
+				else
+				{
+					solutionArg = new Client(processEntry.GetProcess());
+				}
+			}
+
+			solution = Activator.CreateInstance(solutionTypeEntry.GetSolutionType(), solutionArg) as Solution;
+
+			mainForm.PostInfo($"Running solution {solutionTypeEntry}", Color.Blue);
+			mainForm.SetToggleButtonText("Stop");
+
+			solutionTask = Task.Run((() =>
+			{
+				while (solution.Active)
+				{
+					solution.Tick();
+				}
+				solution.Dispose();
+
+				mainForm.PostInfo($"Solution {solution.GetType().Name} stopped.", Color.DarkRed);
+				mainForm.SetToggleButtonText("Start");
+			}));
+
+			radarTask = Task.Run((() =>
+			{
+				while (solution.Active)
+				{
+					solution.RenderRadar(mainForm.GetRadarCanvas(), mainForm.GetRadarBackBuffer());
+					mainForm.RadarSwapBuffers();
+				}
+			}));
+		}
+
+		private void TerminateRunningSolution()
+		{
+			solution.Stop();
+			solutionTask.Wait();
+			radarTask.Wait();
+			solution = null;
 		}
 	}
 }

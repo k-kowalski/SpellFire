@@ -65,6 +65,7 @@
     </Compile>
     <Compile Include="Client.cs" />
     <Compile Include="Gui\SolutionTypeEntry.cs" />
+    <Compile Include="Launcher.cs" />
     <Compile Include="Solutions\AutoLooter.cs" />
     <Compile Include="Solutions\BalanceDruidFarm.cs" />
     <Compile Include="Solutions\Disenchanter.cs" />

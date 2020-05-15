@@ -8,6 +8,7 @@ using System.Windows.Forms;
 using EasyHook;
 using SpellFire.Primer.Solutions;
 using SpellFire.Well.Controller;
+using SpellFire.Well.Util;
 
 namespace SpellFire.Primer.Gui
 {
@@ -15,6 +16,7 @@ namespace SpellFire.Primer.Gui
 	{
 		private MainForm mainForm;
 
+		private Launcher launcher;
 		private Client client;
 
 		private Solution solution;
@@ -24,6 +26,8 @@ namespace SpellFire.Primer.Gui
 		public MainFormController(MainForm mainForm)
 		{
 			this.mainForm = mainForm;
+
+			launcher = new Launcher(new Well.Util.Config("config1.txt"));
 		}
 
 		public void InitializeSolutionListBox(ListBox listBoxSolutions)
@@ -52,12 +56,7 @@ namespace SpellFire.Primer.Gui
 				mainForm.PostInfo("Launching...", Color.Gold);
 
 				const int clientId = 1;
-				var config = new Well.Util.Config("config1.txt");
-				client = Client.LaunchClient(
-					config,
-					config["wowDir"],
-					config[$"creds{clientId}"].Split(':'),
-					1);
+				client = launcher.LaunchClient(clientId);
 				return true;
 			}
 

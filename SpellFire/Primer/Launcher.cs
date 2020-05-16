@@ -45,7 +45,7 @@ namespace SpellFire.Primer
 			{
 				if (key.StartsWith("creds"))
 				{
-					char id = key[key.Length - 1];
+					int id = key[key.Length - 1] - '0';
 					clients.Add( LaunchClient(id) );
 				}
 			}

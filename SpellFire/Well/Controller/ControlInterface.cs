@@ -20,6 +20,7 @@ namespace SpellFire.Well.Controller
 		public class HostControl : TimelessMarshalByRefObject
 		{
 			public event Action<LuaEventArgs> LuaEventFired;
+			public event Action<IntPtr, uint, IntPtr, IntPtr> WindowMessageDispatched;
 
 			public void PrintMessage(string message)
 			{
@@ -31,6 +32,11 @@ namespace SpellFire.Well.Controller
 			public void LuaEventTrigger(LuaEventArgs luaEventArgs)
 			{
 				LuaEventFired?.Invoke(luaEventArgs);
+			}
+
+			public void DispatchWindowMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
+			{
+				WindowMessageDispatched?.Invoke(hWnd, msg, wParam, lParam);
 			}
 		}
 

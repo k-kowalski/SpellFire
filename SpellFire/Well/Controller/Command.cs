@@ -2,6 +2,7 @@
 using SpellFire.Well.Util;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -104,6 +105,9 @@ namespace SpellFire.Well.Controller
 		private string luaEventFunctionName;
 		private string frameName;
 
+		private SystemWin32.WndProc originalWndProc;
+		private SystemWin32.WndProc WndProcPatchInstance;
+
 		public CommandHandler(ControlInterface ctrlInterface)
 		{
 			this.commandQueue = new CommandQueue(ctrlInterface);
@@ -111,6 +115,25 @@ namespace SpellFire.Well.Controller
 
 			ResolveEndSceneAddress();
 			RegisterFunctions();
+		}
+
+		public void DetourWndProc()
+		{
+			WndProcPatchInstance = WndProcPatch;
+
+			IntPtr hwnd = Process.GetCurrentProcess().MainWindowHandle;
+			IntPtr originalWndProcAddress = (IntPtr) SystemWin32.GetWindowLong(hwnd, SystemWin32.GWL_WNDPROC);
+
+			originalWndProc = Marshal.GetDelegateForFunctionPointer<SystemWin32.WndProc>(originalWndProcAddress);
+
+			SystemWin32.SetWindowLong(hwnd, SystemWin32.GWL_WNDPROC, Marshal.GetFunctionPointerForDelegate(WndProcPatchInstance));
+		}
+
+		public IntPtr WndProcPatch(IntPtr hWnd, UInt32 msg, IntPtr wParam, IntPtr lParam)
+		{
+			ctrlInterface.hostControl.DispatchWindowMessage(hWnd, msg, wParam, lParam);
+
+			return originalWndProc(hWnd, msg, wParam, lParam);
 		}
 
 		private void ResolveEndSceneAddress()

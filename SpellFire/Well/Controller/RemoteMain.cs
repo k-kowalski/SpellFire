@@ -28,6 +28,8 @@ namespace SpellFire.Well.Controller
 
 			packetManager = new PacketManager(ctrlInterface, commandHandler);
 
+			commandHandler.DetourWndProc();
+
 			ctrlInterface.hostControl.PrintMessage("Ready");
 		}
 

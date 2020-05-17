@@ -11,11 +11,11 @@ namespace SpellFire.Primer.Solutions
 	{
 		public bool Active { get; set; }
 
-		protected readonly Client client;
+		protected readonly Client me;
 
 		public Solution(Client client)
 		{
-			this.client = client;
+			this.me = client;
 		}
 
 		public abstract void Tick();
@@ -27,10 +27,10 @@ namespace SpellFire.Primer.Solutions
 
 		public virtual void RenderRadar(RadarCanvas radarCanvas, Bitmap radarBackBuffer)
 		{
-			if (client.Player != null && client.ObjectManager != null)
+			if (me.Player != null && me.ObjectManager != null)
 			{
 				RadarCanvas.BasicRadar(radarCanvas, radarBackBuffer,
-					client.Player, client.ObjectManager, client.GetTargetGUID(), client.ControlInterface);
+					me.Player, me.ObjectManager, me.GetTargetGUID(), me.ControlInterface);
 			}
 		}
 	}

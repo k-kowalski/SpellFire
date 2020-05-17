@@ -41,7 +41,7 @@ namespace SpellFire.Primer.Solutions
 
 		public override void Tick()
 		{
-			if (!client.GetObjectMgrAndPlayer())
+			if (!me.GetObjectMgrAndPlayer())
 			{
 				return;
 			}

@@ -37,26 +37,26 @@ namespace SpellFire.Primer.Solutions
 		private void LootOpenedHandler(LuaEventArgs luaEventArgs)
 		{
 			Console.WriteLine($"[{DateTime.Now}] looting");
-			client.ControlInterface.remoteControl.FrameScript__Execute("for i = 1, GetNumLootItems() do LootSlot(i) ConfirmLootSlot(i) end", 0, 0);
+			me.ControlInterface.remoteControl.FrameScript__Execute("for i = 1, GetNumLootItems() do LootSlot(i) ConfirmLootSlot(i) end", 0, 0);
 		}
 
 		public override void Tick()
 		{
 			Thread.Sleep(100);
 
-			if (!client.GetObjectMgrAndPlayer())
+			if (!me.GetObjectMgrAndPlayer())
 			{
 				return;
 			}
 
-			IEnumerable<GameObject> lootables = client.ObjectManager.Where(gameObj => gameObj.Type == GameObjectType.Unit && gameObj.IsLootable());
+			IEnumerable<GameObject> lootables = me.ObjectManager.Where(gameObj => gameObj.Type == GameObjectType.Unit && gameObj.IsLootable());
 
 			float minDistance = Single.MaxValue;
 			GameObject closestLootableUnit = null;
 
 			foreach (GameObject lootable in lootables)
 			{
-				float distance = client.Player.GetDistance(lootable);
+				float distance = me.Player.GetDistance(lootable);
 				if (distance < minDistance)
 				{
 					minDistance = distance;
@@ -68,7 +68,7 @@ namespace SpellFire.Primer.Solutions
 			{
 				Console.WriteLine($"[{DateTime.Now}] closest target away {minDistance}y, checked {lootables.Count()} lootable/s.");
 
-				if (minDistance < 6f && (!client.Player.IsMoving()) && (!client.Player.IsCastingOrChanneling()))
+				if (minDistance < 6f && (!me.Player.IsMoving()) && (!me.Player.IsCastingOrChanneling()))
 				{
 					Console.WriteLine($"[{DateTime.Now}] interacting");
 

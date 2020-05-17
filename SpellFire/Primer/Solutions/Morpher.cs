@@ -83,7 +83,7 @@ namespace SpellFire.Primer.Solutions
 
 		private void Morph()
 		{
-			IntPtr fields = client.Memory.ReadPointer86(client.Player.GetAddress() + Offset.Info);
+			IntPtr fields = me.Memory.ReadPointer86(me.Player.GetAddress() + Offset.Info);
 
 			for (int slot = 0; slot < InventorySlots.Length; slot++)
 			{
@@ -96,11 +96,11 @@ namespace SpellFire.Primer.Solutions
 				int offsetItem = (Offset.PlayerItem1ID + ((slot - 1) * 2)) * 4;
 				int offsetEnchant = offsetItem + sizeof(Int32); /* enchant immediately follows item */
 
-				client.Memory.Write(fields + offsetItem, BitConverter.GetBytes(request.itemId));
-				client.Memory.Write(fields + offsetEnchant, BitConverter.GetBytes(request.enchantId));
+				me.Memory.Write(fields + offsetItem, BitConverter.GetBytes(request.itemId));
+				me.Memory.Write(fields + offsetEnchant, BitConverter.GetBytes(request.enchantId));
 			}
 
-			client.ControlInterface.remoteControl.CGUnit_C__UpdateDisplayInfo(client.Player.GetAddress(), true);
+			me.ControlInterface.remoteControl.CGUnit_C__UpdateDisplayInfo(me.Player.GetAddress(), true);
 		}
 
 		public override void Tick()

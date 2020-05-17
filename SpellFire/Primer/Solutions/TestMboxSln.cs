@@ -17,7 +17,7 @@ namespace SpellFire.Primer.Solutions
 		public TestMboxSln(IEnumerable<Client> clients) : base(clients)
 		{
 			inputMultiplexer = new InputMultiplexer(
-				client.ControlInterface.hostControl,
+				me.ControlInterface.hostControl,
 				new List<IntPtr>(slaves.Select(s => s.Process.MainWindowHandle))
 				);
 

@@ -30,26 +30,26 @@ namespace SpellFire.Primer.Solutions
 		{
 			Thread.Sleep(1000);
 
-			if (!client.GetObjectMgrAndPlayer())
+			if (!me.GetObjectMgrAndPlayer())
 			{
 				return;
 			}
 
-			foreach (GameObject gameObject in client.ObjectManager)
+			foreach (GameObject gameObject in me.ObjectManager)
 			{
 				Int64 gameObjectGUID = gameObject.GUID;
 				if (gameObject.Type == GameObjectType.GameWorldObject && ( ! lastBobberGUIDs.Contains(gameObjectGUID)))
 				{
 					if (gameObject.WorldObjectName.Contains("Fishing Bobber"))
 					{
-						byte state = client.Memory.Read(gameObject.GetAddress() + 0xBC, 1)[0];
+						byte state = me.Memory.Read(gameObject.GetAddress() + 0xBC, 1)[0];
 						if (state == 1)
 						{
 							RandomSleep();
-							client.Memory.Write(IntPtr.Zero + Offset.MouseoverGUID, BitConverter.GetBytes(gameObjectGUID));
+							me.Memory.Write(IntPtr.Zero + Offset.MouseoverGUID, BitConverter.GetBytes(gameObjectGUID));
 							ci.remoteControl.FrameScript__Execute("InteractUnit('mouseover')", 0, 0);
 							RandomSleep();
-							client.CastSpell("Fishing");
+							me.CastSpell("Fishing");
 
 							if (lastBobberGUIDs.Count == 5)
 							{

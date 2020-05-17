@@ -367,6 +367,12 @@ namespace SpellFire.Well.Controller
 		public void Dispose()
 		{
 			DestroyLuaEventFrameHandler();
+
+			/* restore original wnd proc */
+			SystemWin32.SetWindowLong(
+				Process.GetCurrentProcess().MainWindowHandle,
+				SystemWin32.GWL_WNDPROC,
+				Marshal.GetFunctionPointerForDelegate(originalWndProc));
 		}
 	}
 }

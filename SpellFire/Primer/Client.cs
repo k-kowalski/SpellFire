@@ -5,6 +5,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using SpellFire.Well.Controller;
+using SpellFire.Well.Lua;
 using SpellFire.Well.Model;
 using SpellFire.Well.Util;
 
@@ -15,6 +16,7 @@ namespace SpellFire.Primer
 		public Process Process { get; }
 		public Memory Memory { get; }
 		public ControlInterface ControlInterface { get; private set; }
+		public LuaEventListener LuaEventListener { get; private set; }
 		public GameObjectManager ObjectManager { get; private set; }
 		public GameObject Player { get; private set; }
 
@@ -28,15 +30,15 @@ namespace SpellFire.Primer
 
 		private void InjectClient()
 		{
-			ControlInterface ctrlInterface = new ControlInterface();
+			this.ControlInterface = new ControlInterface();
 
 			string channelName = null;
-			EasyHook.RemoteHooking.IpcCreateServer(ref channelName, System.Runtime.Remoting.WellKnownObjectMode.Singleton, ctrlInterface);
+			EasyHook.RemoteHooking.IpcCreateServer(ref channelName, System.Runtime.Remoting.WellKnownObjectMode.Singleton, this.ControlInterface);
 
 			string injectionLibraryPath = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "Well.dll");
 			EasyHook.RemoteHooking.Inject(this.Process.Id, injectionLibraryPath, null, channelName);
 
-			this.ControlInterface = ctrlInterface;
+			this.LuaEventListener = new LuaEventListener(this.ControlInterface);
 		}
 
 		public bool GetObjectMgrAndPlayer()

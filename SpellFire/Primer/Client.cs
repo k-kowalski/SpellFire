@@ -46,6 +46,12 @@ namespace SpellFire.Primer
 			bool isInWorld = IsInWorld();
 			if (isInWorld)
 			{
+				if (!LuaEventListener.Active)
+				{
+					/* enable LEL when entering world */
+					LuaEventListener.Active = true;
+				}
+
 				IntPtr clientConnection = Memory.ReadPointer86(IntPtr.Zero + Offset.ClientConnection);
 				IntPtr objectManagerAddress = Memory.ReadPointer86(clientConnection + Offset.GameObjectManager);
 				ObjectManager = new GameObjectManager(Memory, objectManagerAddress);
@@ -53,6 +59,12 @@ namespace SpellFire.Primer
 			}
 			else
 			{
+				if (LuaEventListener.Active)
+				{
+					/* disable LEL when exiting world */
+					LuaEventListener.Active = false;
+				}
+
 				ObjectManager = null;
 				Player = null;
 			}

@@ -202,6 +202,11 @@ namespace SpellFire.Well.Controller
 
 		public void InitializeLuaEventFrameHandler()
 		{
+			if (frameName != null || luaEventFunctionName != null)
+			{
+				return;
+			}
+
 			eventCallback = LuaEventHandler;
 			luaEventCallbackPtr = Marshal.GetFunctionPointerForDelegate(eventCallback);
 
@@ -219,20 +224,21 @@ namespace SpellFire.Well.Controller
 
 		public void DestroyLuaEventFrameHandler()
 		{
-			commandQueue.Submit<object>((() =>
+			if (frameName == null || luaEventFunctionName == null)
 			{
-				if (frameName != null)
-				{
-					FrameScript__Execute($"{frameName}:UnregisterAllEvents(); {frameName}:SetScript('OnEvent', nil);", 0, 0);
-				}
+				return;
+			}
 
-				if (luaEventFunctionName != null)
-				{
-					FrameScript__UnregisterFunction(luaEventFunctionName);
-				}
+			commandQueue.Submit<object>(() =>
+			{
+				FrameScript__Execute($"{frameName}:UnregisterAllEvents(); {frameName}:SetScript('OnEvent', nil);", 0, 0);
+				FrameScript__UnregisterFunction(luaEventFunctionName);
 
 				return null;
-			}));
+			});
+
+			frameName = null;
+			luaEventFunctionName = null;
 		}
 
 		public Int32 InvalidPtrCheckPatch(IntPtr ptr)

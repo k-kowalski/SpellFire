@@ -11,20 +11,38 @@ namespace SpellFire.Well.Lua
 		private readonly IDictionary<string, LuaEventHandler> eventHandlers;
 		private readonly ControlInterface ci;
 
+		private bool _active;
+		public bool Active
+		{
+			get => _active;
+			set
+			{
+				if (value)
+				{
+					ci.remoteControl.InitializeLuaEventFrame();
+				}
+				else
+				{
+					ci.remoteControl.DestroyLuaEventFrame();
+				}
+
+				_active = value;
+			}
+		}
+
 		public LuaEventListener(ControlInterface ci)
 		{
 			eventHandlers = new Dictionary<string, LuaEventHandler>();
 
 			this.ci = ci;
 
-			ci.remoteControl.InitializeLuaEventFrame();
 			ci.hostControl.LuaEventFired += DispatchLuaEvent;
 		}
 
 		public void Dispose()
 		{
 			ci.hostControl.LuaEventFired -= DispatchLuaEvent;
-			ci.remoteControl.DestroyLuaEventFrame();
+			Active = false;
 		}
 
 		public void Bind(string eventName, LuaEventHandler handler)

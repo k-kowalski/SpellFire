@@ -131,7 +131,10 @@ namespace SpellFire.Well.Controller
 
 		public IntPtr WndProcPatch(IntPtr hWnd, UInt32 msg, IntPtr wParam, IntPtr lParam)
 		{
-			ctrlInterface.hostControl.DispatchWindowMessage(hWnd, msg, wParam, lParam);
+			if(msg == SystemWin32.WM_KEYDOWN || msg == SystemWin32.WM_KEYUP)
+			{
+				ctrlInterface.hostControl.DispatchWindowMessage(hWnd, msg, wParam, lParam);
+			}
 
 			return originalWndProc(hWnd, msg, wParam, lParam);
 		}

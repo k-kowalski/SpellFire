@@ -41,14 +41,11 @@ namespace SpellFire.Well.Mbox
 			
 		private void MessageDispatcher(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
 		{
-			if (msg == SystemWin32.WM_KEYUP || msg == SystemWin32.WM_KEYDOWN)
+			if (BroadcastKeys.Contains((Keys)wParam))
 			{
-				if (BroadcastKeys.Contains((Keys)wParam))
+				foreach (IntPtr sink in Sinks)
 				{
-					foreach (IntPtr sink in Sinks)
-					{
-						SystemWin32.PostMessage(sink, msg, wParam, lParam);
-					}
+					SystemWin32.PostMessage(sink, msg, wParam, lParam);
 				}
 			}
 		}

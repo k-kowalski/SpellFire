@@ -2,6 +2,9 @@
 
 wowDir=X:\path\to\World of Warcraft 3.3.5a
 
+quickLaunchId=1
+luaPlugFunctionName=myluacb
+
 # digit at the end of setting name is ID of a client
 # settings with common ID will be applied to the same client
 creds1=YourLoginX:YourPasswordX

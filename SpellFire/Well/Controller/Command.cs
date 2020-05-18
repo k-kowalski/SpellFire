@@ -75,6 +75,7 @@ namespace SpellFire.Well.Controller
 
 	public class CommandHandler : TimelessMarshalByRefObject, IDisposable
 	{
+		private readonly Util.Config config;
 		[NonSerialized]
 		private CommandQueue commandQueue;
 		[NonSerialized]
@@ -108,10 +109,11 @@ namespace SpellFire.Well.Controller
 		private SystemWin32.WndProc originalWndProc;
 		private SystemWin32.WndProc WndProcPatchInstance;
 
-		public CommandHandler(ControlInterface ctrlInterface)
+		public CommandHandler(ControlInterface ctrlInterface, Well.Util.Config config)
 		{
 			this.commandQueue = new CommandQueue(ctrlInterface);
 			this.ctrlInterface = ctrlInterface;
+			this.config = config;
 
 			ResolveEndSceneAddress();
 			RegisterFunctions();
@@ -210,7 +212,7 @@ namespace SpellFire.Well.Controller
 			eventCallback = LuaEventHandler;
 			luaEventCallbackPtr = Marshal.GetFunctionPointerForDelegate(eventCallback);
 
-			luaEventFunctionName = SFUtil.GetRandomAsciiString(4);
+			luaEventFunctionName = config["luaPlugFunctionName"] ?? SFUtil.GetRandomAsciiString(4);
 			frameName = SFUtil.GetRandomAsciiString(5);
 
 			commandQueue.Submit<object>((() =>

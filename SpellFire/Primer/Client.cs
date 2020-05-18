@@ -20,15 +20,15 @@ namespace SpellFire.Primer
 		public GameObjectManager ObjectManager { get; private set; }
 		public GameObject Player { get; private set; }
 
-		public Client(Process process)
+		public Client(Process process, Well.Util.Config config)
 		{
 			Process = process;
 			Memory = new Memory(this.Process);
 
-			InjectClient();
+			InjectClient(config);
 		}
 
-		private void InjectClient()
+		private void InjectClient(Well.Util.Config config)
 		{
 			this.ControlInterface = new ControlInterface();
 
@@ -36,7 +36,8 @@ namespace SpellFire.Primer
 			EasyHook.RemoteHooking.IpcCreateServer(ref channelName, System.Runtime.Remoting.WellKnownObjectMode.Singleton, this.ControlInterface);
 
 			string injectionLibraryPath = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "Well.dll");
-			EasyHook.RemoteHooking.Inject(this.Process.Id, injectionLibraryPath, null, channelName);
+			EasyHook.RemoteHooking.Inject(this.Process.Id, injectionLibraryPath, null,
+				channelName, config);
 
 			this.LuaEventListener = new LuaEventListener(this.ControlInterface);
 		}

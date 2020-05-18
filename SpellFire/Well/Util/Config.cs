@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace SpellFire.Well.Util
 {
+	[Serializable]
 	public class Config
 	{
 		public const string DefaultConfigFile = "config.txt";

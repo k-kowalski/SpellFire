@@ -105,13 +105,13 @@ namespace SpellFire.Primer
 
 			object solutionArg = null;
 
-			if (Int32.TryParse(config["quickLaunchId"], out int quickLaunchClientId))
-			{
-				solutionArg = LaunchClient(quickLaunchClientId);
-			}
-			else if(solutionTypeEntry.IsMultiboxSolution())
+			if (solutionTypeEntry.IsMultiboxSolution())
 			{
 				solutionArg = LaunchClientsFromConfig();
+			}
+			else if (Int32.TryParse(config["quickLaunchId"], out int quickLaunchClientId))
+			{
+				solutionArg = LaunchClient(quickLaunchClientId);
 			}
 			else
 			{

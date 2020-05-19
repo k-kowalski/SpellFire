@@ -218,7 +218,7 @@ namespace SpellFire.Well.Controller
 			commandQueue.Submit<object>((() =>
 			{
 				FrameScript__RegisterFunction(luaEventFunctionName, luaEventCallbackPtr);
-				FrameScript__Execute($"{frameName} = CreateFrame('Frame'); {frameName}:SetScript('OnEvent', {luaEventFunctionName}); {frameName}:RegisterAllEvents();", 0, 0);
+				FrameScript__Execute($"{frameName} = CreateFrame('Frame'); {frameName}:SetScript('OnEvent', function(self, eventName, ...) {luaEventFunctionName}(eventName, ...) end); {frameName}:RegisterAllEvents();", 0, 0);
 
 				return null;
 			}));
@@ -265,15 +265,10 @@ namespace SpellFire.Well.Controller
 		public Int32 LuaEventHandler(IntPtr luaState)
 		{
 			Int32 argCount = LuaGetTop(luaState);
-			/*
-			 * LuaToString takes parameters starting from 1
-			 * and we discard first event argument, hence
-			 * we start from 2
-			 */
-			List<string> luaEventArgs = new List<string>(argCount - 1);
-			for (Int32 i = 2; i <= argCount; i++)
+			List<string> luaEventArgs = new List<string>(argCount);
+			for (Int32 i = 0; i <= argCount; i++)
 			{
-				luaEventArgs.Add(LuaToString(luaState, i, 0));
+				luaEventArgs.Add(LuaToString(luaState, i + 1, 0));
 			}
 
 			try

@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using SpellFire.Well.Util;
 
 namespace SpellFire.Well.Lua
@@ -8,12 +10,12 @@ namespace SpellFire.Well.Lua
 	{
 		public string Name { get; }
 
-		public ReadOnlyCollection<string> Args { get; }
+		public IList<string> Args { get; }
 
-		public LuaEventArgs(List<string> rawLuaArgs)
+		public LuaEventArgs(IList<string> rawLuaArgs)
 		{
 			this.Name = rawLuaArgs[0];
-			this.Args = rawLuaArgs.GetRange(1, rawLuaArgs.Count - 1).AsReadOnly(); /* TODO: span */
+			this.Args = new List<string>(rawLuaArgs.Skip(1));
 		}
 	}
 }

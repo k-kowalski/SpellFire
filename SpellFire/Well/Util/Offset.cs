@@ -31,6 +31,7 @@ namespace SpellFire.Well.Util
 			public const Int32 CGUnit_C__UnitReaction = 0x7251C0;
 			public const Int32 CGUnit_C__GetAura = 0x556E10;
 			public const Int32 CGUnit_C__UpdateDisplayInfo = 0x73E410;
+			public const Int32 Spell_C__CastSpell = 0x80DA40;
 		}
 
 		public static class VirtualFunction

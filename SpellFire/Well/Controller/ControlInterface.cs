@@ -102,6 +102,10 @@ namespace SpellFire.Well.Controller
 			public event CommandCallback.CGUnit_C__UpdateDisplayInfo CGUnit_C__UpdateDisplayInfoEvent;
 			public IntPtr CGUnit_C__UpdateDisplayInfo(IntPtr thisObject, bool a1) =>
 				CGUnit_C__UpdateDisplayInfoEvent?.Invoke(thisObject, a1) ?? IntPtr.Zero;
+
+			public event CommandCallback.Spell_C__CastSpell Spell_C__CastSpellEvent;
+			public bool Spell_C__CastSpell(Int32 spellID, IntPtr item, Int64 targetGUID, bool isTrade) =>
+				Spell_C__CastSpellEvent?.Invoke(spellID, item, targetGUID, isTrade) ?? false;
 			#endregion
 
 		}

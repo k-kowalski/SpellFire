@@ -71,6 +71,9 @@ namespace SpellFire.Well.Controller
 
 		[UnmanagedFunctionPointer(CallingConvention.ThisCall)]
 		public delegate IntPtr CGUnit_C__UpdateDisplayInfo(IntPtr thisObject, bool a1);
+
+		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+		public delegate bool Spell_C__CastSpell(Int32 spellID, IntPtr item, Int64 targetGUID, bool isTrade);
 	}
 
 	public class CommandHandler : TimelessMarshalByRefObject, IDisposable
@@ -99,6 +102,7 @@ namespace SpellFire.Well.Controller
 		private CommandCallback.CGUnit_C__UnitReaction CGUnit_C__UnitReaction;
 		private CommandCallback.CGUnit_C__GetAura CGUnit_C__GetAura;
 		private CommandCallback.CGUnit_C__UpdateDisplayInfo CGUnit_C__UpdateDisplayInfo;
+		private CommandCallback.Spell_C__CastSpell Spell_C__CastSpell;
 
 		private CommandCallback.LuaEventCallback eventCallback;
 		private IntPtr luaEventCallbackPtr;
@@ -368,7 +372,12 @@ namespace SpellFire.Well.Controller
 		{
 			return commandQueue.Submit<IntPtr>((() => CGUnit_C__UpdateDisplayInfo(thisObject, a1)));
 		}
-#endregion
+
+		public bool Spell_C__CastSpellHandler(Int32 spellID, IntPtr item, Int64 targetGUID, bool isTrade)
+		{
+			return commandQueue.Submit<bool>((() => Spell_C__CastSpell(spellID, item, targetGUID, isTrade)));
+		}
+		#endregion
 
 		public void Dispose()
 		{

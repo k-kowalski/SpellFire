@@ -122,7 +122,7 @@ namespace SpellFire.Primer
 			ControlInterface.remoteControl.FrameScript__Execute($"CastSpellByName('{spellName}')", 0, 0);
 		}
 
-		protected string ExecLuaAndGetResult(string luaScript, string resultLuaVariable)
+		public string ExecLuaAndGetResult(string luaScript, string resultLuaVariable)
 		{
 			ControlInterface.remoteControl.FrameScript__Execute(luaScript, 0, 0);
 			return ControlInterface.remoteControl.FrameScript__GetLocalizedText(Player.GetAddress(), resultLuaVariable, 0);

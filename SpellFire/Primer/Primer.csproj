@@ -86,7 +86,7 @@
     <Compile Include="Solutions\Solution.cs" />
     <Compile Include="Solutions\Morpher.cs" />
     <Compile Include="Solutions\PacketManip.cs" />
-    <Compile Include="Solutions\TestMboxSln.cs" />
+    <Compile Include="Solutions\Mbox\TestMboxSln.cs" />
     <Compile Include="Solutions\UnholyDK.cs" />
     <EmbeddedResource Include="Gui\MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>

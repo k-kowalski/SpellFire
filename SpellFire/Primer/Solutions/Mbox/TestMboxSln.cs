@@ -8,7 +8,7 @@ using SpellFire.Well.Lua;
 using SpellFire.Well.Mbox;
 using SpellFire.Well.Util;
 
-namespace SpellFire.Primer.Solutions
+namespace SpellFire.Primer.Solutions.Mbox
 {
 	public class TestMboxSln : MultiboxSolution
 	{

@@ -9,7 +9,7 @@ using SpellFire.Well.Net;
 
 namespace SpellFire.Primer.Solutions
 {
-	class PacketManip : Solution
+	public class PacketManip : Solution
 	{
 		public PacketManip(Client client) : base(client)
 		{

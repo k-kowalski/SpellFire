@@ -18,7 +18,7 @@ namespace SpellFire.Primer.Solutions
 	/// Autoloots lootable corpses as you stand in loot range
 	/// Does respect when you cast or channel spell and it will not interrupt
 	/// </summary>
-	class AutoLooter : Solution
+	public class AutoLooter : Solution
 	{
 		private readonly LuaEventListener eventListener;
 

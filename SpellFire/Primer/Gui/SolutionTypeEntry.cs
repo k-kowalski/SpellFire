@@ -28,7 +28,7 @@ namespace SpellFire.Primer.Gui
 			return Assembly
 				.GetExecutingAssembly()
 				.GetTypes()
-				.Where(type => type.IsSubclassOf(solutionBaseType) && type.IsClass && !type.IsAbstract)
+				.Where(type => type.IsPublic && type.IsSubclassOf(solutionBaseType) && type.IsClass && !type.IsAbstract)
 				.Select(solutionType => new SolutionTypeEntry(solutionType));
 		}
 

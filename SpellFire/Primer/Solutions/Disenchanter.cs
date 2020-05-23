@@ -14,7 +14,7 @@ using SpellFire.Well.Util;
 
 namespace SpellFire.Primer.Solutions
 {
-	class Disenchanter : Solution
+	public class Disenchanter : Solution
 	{
 		private readonly LuaEventListener eventListener;
 

@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using SpellFire.Well.Controller;
 using SpellFire.Well.Lua;
 using SpellFire.Well.Mbox;
+using SpellFire.Well.Model;
 using SpellFire.Well.Util;
 
 namespace SpellFire.Primer.Solutions.Mbox
@@ -15,6 +19,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 		private readonly InputMultiplexer inputMultiplexer;
 		private bool slavesAI;
 		private bool masterAI;
+		private IList<Task> slavesTasks;
 
 		private Action<IList<string>> GetCommand(string cmd)
 		{
@@ -25,7 +30,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 				{
 					string masterName = me.ControlInterface.remoteControl.GetUnitName(me.Player.GetAddress());
 
-					foreach (Client slave in slaves)
+					foreach (Client slave in Slaves)
 					{
 						slave
 							.ControlInterface
@@ -40,15 +45,10 @@ namespace SpellFire.Primer.Solutions.Mbox
 					string spellName = args[1];
 					Int64 targetGuid = me.GetTargetGUID();
 
-					Client caster = slaves.FirstOrDefault(c =>
+					Client caster = Slaves.FirstOrDefault(c =>
 						c.ControlInterface.remoteControl.GetUnitName(c.Player.GetAddress()) == casterName);
 
-					string spellLink = caster.ExecLuaAndGetResult(
-						$"link = GetSpellLink('{spellName}')",
-						"link");
-					string spellID = spellLink.Split('|')[2].Split(':')[1];
-					caster.ControlInterface.remoteControl.Spell_C__CastSpell(Int32.Parse(spellID), IntPtr.Zero,
-						targetGuid, false);
+					caster.CastSpellOnGuid(spellName, targetGuid);
 				})),
 				/* toggles AI(individual behaviour loops) */
 				"toggleai" => new Action<IList<string>>(((args) =>
@@ -75,9 +75,11 @@ namespace SpellFire.Primer.Solutions.Mbox
 
 		public TestMboxSln(IEnumerable<Client> clients) : base(clients)
 		{
+			slavesTasks = new List<Task>();
+
 			inputMultiplexer = new InputMultiplexer(
 				me.ControlInterface.hostControl,
-				new List<IntPtr>(slaves.Select(s => s.Process.MainWindowHandle))
+				new List<IntPtr>(Slaves.Select(s => s.Process.MainWindowHandle))
 				);
 
 			inputMultiplexer.BroadcastKeys.AddRange(new[]
@@ -87,7 +89,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 
 			me.GetObjectMgrAndPlayer();
 
-			foreach (Client slave in slaves)
+			foreach (Client slave in Slaves)
 			{
 				slave.GetObjectMgrAndPlayer();
 
@@ -100,7 +102,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 					.ControlInterface.remoteControl.FrameScript__Execute("StaticPopup_Hide('PARTY_INVITE')", 0, 0));
 				slave.LuaEventListener.Bind("CHAT_MSG_WHISPER",args => /* TODO: display desktop toast notfication? */
 				{
-					Console.Write($"[{slave.ControlInterface.remoteControl.GetUnitName(slave.Player.GetAddress())}] Whisper on slave!");
+					Console.Write($"[{slave.ControlInterface.remoteControl.GetUnitName(slave.Player.GetAddress())}] Whisper to slave!");
 				});
 
 				/* invite slaves to party */
@@ -116,10 +118,119 @@ namespace SpellFire.Primer.Solutions.Mbox
 			GetCommand("follow").Invoke(null);
 
 			this.Active = true;
+
+			AssignRoutines();
+		}
+
+		private void AssignRoutines()
+		{
+			foreach (Client slave in Slaves)
+			{
+				if (slave.RoutineName != null)
+				{
+					MethodInfo routineInfo = GetType().GetMethod(slave.RoutineName,
+						BindingFlags.NonPublic | BindingFlags.Instance);
+					if (routineInfo != null)
+					{
+						Console.WriteLine($"Bound routine {slave.RoutineName}.");
+						slavesTasks.Add(
+							Task.Run((() =>
+							{
+								while (Active)
+								{
+									routineInfo.Invoke(this, new object[] {slave});
+								}
+							}))
+						);
+					}
+					else
+					{
+						Console.WriteLine($"Could not find routine {slave.RoutineName}.");
+					}
+				}
+			}
+		}
+
+		private void Priest(Client c)
+		{
+			Thread.Sleep(200);
+			if (!slavesAI)
+			{
+				return;
+			}
+
+			if (c.IsOnCooldown("Smite")) /* global cooldown check */
+			{
+				return;
+			}
+
+			foreach (Client client in clients)
+			{
+				if (client.Player.HealthPct < 70
+				    && (!client.HasAura(client.Player, "Renew", null)))
+				{
+					c.CastSpellOnGuid("Renew", client.Player.GUID);
+					return;
+				}
+			}
+
+			GameObject target = GetMasterAttackTarget(c);
+			if (target == null)
+			{
+				return;
+			}
+
+			c.ControlInterface.remoteControl.SelectUnit(target.GUID);
+			c.CastSpell("Smite");
+		}
+
+		private void Warlock(Client c)
+		{
+
+			if (c.IsOnCooldown("Shadow Bolt")) /* global cooldown check */
+			{
+				return;
+			}
+
+			Thread.Sleep(200);
+			if (!slavesAI)
+			{
+				return;
+			}
+
+			GameObject target = GetMasterAttackTarget(c);
+			if (target == null)
+			{
+				return;
+			}
+
+			c.ControlInterface.remoteControl.SelectUnit(target.GUID);
+			c.CastSpell("Shadow Bolt");
+		}
+
+		private GameObject GetMasterAttackTarget(Client c)
+		{
+			Int64 targetGUID = me.GetTargetGUID();
+			if (targetGUID == 0)
+			{
+				return null;
+			}
+
+			GameObject target = c.ObjectManager.FirstOrDefault(gameObj => gameObj.GUID == targetGUID);
+
+			if (target == null || target.Health == 0 ||
+			    c.ControlInterface.remoteControl
+				.CGUnit_C__UnitReaction(c.Player.GetAddress(), target.GetAddress()) > UnitReaction.Neutral)
+			{
+				return null;
+			}
+
+			return target;
 		}
 
 		public override void Tick()
 		{
+			Thread.Sleep(1000);
 		}
 
 		public override void Dispose()

@@ -19,10 +19,12 @@ namespace SpellFire.Primer
 		public LuaEventListener LuaEventListener { get; private set; }
 		public GameObjectManager ObjectManager { get; private set; }
 		public GameObject Player { get; private set; }
+		public string RoutineName { get; }
 
-		public Client(Process process, Well.Util.Config config)
+		public Client(Process process, Well.Util.Config config, string routineName)
 		{
 			Process = process;
+			RoutineName = routineName;
 			Memory = new Memory(this.Process);
 
 			InjectClient(config);
@@ -120,6 +122,16 @@ namespace SpellFire.Primer
 		public void CastSpell(string spellName)
 		{
 			ControlInterface.remoteControl.FrameScript__Execute($"CastSpellByName('{spellName}')", 0, 0);
+		}
+
+		public void CastSpellOnGuid(string spellName, Int64 targetGuid)
+		{
+			string spellLink = ExecLuaAndGetResult(
+				$"link = GetSpellLink('{spellName}')",
+				"link");
+			string spellID = spellLink.Split('|')[2].Split(':')[1];
+			ControlInterface.remoteControl.Spell_C__CastSpell(Int32.Parse(spellID), IntPtr.Zero,
+				targetGuid, false);
 		}
 
 		public string ExecLuaAndGetResult(string luaScript, string resultLuaVariable)

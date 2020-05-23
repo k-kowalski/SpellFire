@@ -9,11 +9,13 @@ namespace SpellFire.Primer.Solutions
 {
 	public abstract class MultiboxSolution : Solution
 	{
-		protected IEnumerable<Client> slaves;
+		protected IEnumerable<Client> clients;
 
 		protected MultiboxSolution(IEnumerable<Client> clients) : base(clients.First())
 		{
-			slaves = clients.Skip(1);
+			this.clients = clients;
 		}
+
+		protected IEnumerable<Client> Slaves => clients.Where(c => c != me);
 	}
 }

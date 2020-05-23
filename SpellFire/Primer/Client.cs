@@ -83,27 +83,23 @@ namespace SpellFire.Primer
 
 		public bool HasAura(GameObject gameObject, string auraName, GameObject ownedBy = null)
 		{
-			int currentAuraIndex = 0;
-			while (true)
+			var auras = gameObject.Auras;
+			foreach (var aura in auras)
 			{
-				IntPtr auraPtr = ControlInterface.remoteControl.CGUnit_C__GetAura(gameObject.GetAddress(), currentAuraIndex++);
-				if (auraPtr == IntPtr.Zero)
+				if (aura.auraID <= 0)
 				{
-					return false;
+					continue;
 				}
 
-				Aura aura = Memory.ReadStruct<Aura>(auraPtr);
-				if (auraName == ExecLuaAndGetResult($"name = GetSpellInfo({aura.auraID})", "name"))
+				if (auraName == ExecLuaAndGetResult(
+					    $"name = GetSpellInfo({aura.auraID})",
+					    "name"))
 				{
 					if (ownedBy != null)
 					{
 						if (aura.creatorGuid == ownedBy.GUID)
 						{
 							return true;
-						}
-						else
-						{
-							continue;
 						}
 					}
 					else
@@ -112,6 +108,7 @@ namespace SpellFire.Primer
 					}
 				}
 			}
+			return false;
 		}
 
 		public Int64 GetTargetGUID()

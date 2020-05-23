@@ -62,9 +62,6 @@ namespace SpellFire.Well.Controller
 		[UnmanagedFunctionPointer(CallingConvention.ThisCall)]
 		public delegate UnitReaction CGUnit_C__UnitReaction(IntPtr thisObject, IntPtr unit);
 
-		[UnmanagedFunctionPointer(CallingConvention.ThisCall)]
-		public delegate IntPtr CGUnit_C__GetAura(IntPtr thisObject, Int32 auraIndex);
-
 		/* returns pointer to string, cannot marshal it via delegate signature */
 		[UnmanagedFunctionPointer(CallingConvention.ThisCall)]
 		public delegate IntPtr GetUnitName(IntPtr thisObject);
@@ -100,7 +97,6 @@ namespace SpellFire.Well.Controller
 		private CommandCallback.ClientSendPacket ClientSendPacket;
 		public CommandCallback.NetGetCurrentConnection NetGetCurrentConnection;
 		private CommandCallback.CGUnit_C__UnitReaction CGUnit_C__UnitReaction;
-		private CommandCallback.CGUnit_C__GetAura CGUnit_C__GetAura;
 		private CommandCallback.CGUnit_C__UpdateDisplayInfo CGUnit_C__UpdateDisplayInfo;
 		private CommandCallback.Spell_C__CastSpell Spell_C__CastSpell;
 
@@ -352,11 +348,6 @@ namespace SpellFire.Well.Controller
 		public UnitReaction CGUnit_C__UnitReactionHandler(IntPtr thisObject, IntPtr unit)
 		{
 			return commandQueue.Submit<UnitReaction>((() => CGUnit_C__UnitReaction(thisObject, unit)));
-		}
-
-		public IntPtr CGUnit_C__GetAuraHandler(IntPtr thisObject, Int32 auraIndex)
-		{
-			return commandQueue.Submit<IntPtr>((() => CGUnit_C__GetAura(thisObject, auraIndex)));
 		}
 
 		public string GetUnitNameHandler(IntPtr thisObject)

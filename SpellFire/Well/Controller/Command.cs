@@ -2,6 +2,7 @@
 using SpellFire.Well.Util;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -61,19 +62,20 @@ namespace SpellFire.Well.Controller
 		[UnmanagedFunctionPointer(CallingConvention.ThisCall)]
 		public delegate UnitReaction CGUnit_C__UnitReaction(IntPtr thisObject, IntPtr unit);
 
-		[UnmanagedFunctionPointer(CallingConvention.ThisCall)]
-		public delegate IntPtr CGUnit_C__GetAura(IntPtr thisObject, Int32 auraIndex);
-
 		/* returns pointer to string, cannot marshal it via delegate signature */
 		[UnmanagedFunctionPointer(CallingConvention.ThisCall)]
 		public delegate IntPtr GetUnitName(IntPtr thisObject);
 
 		[UnmanagedFunctionPointer(CallingConvention.ThisCall)]
 		public delegate IntPtr CGUnit_C__UpdateDisplayInfo(IntPtr thisObject, bool a1);
+
+		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+		public delegate bool Spell_C__CastSpell(Int32 spellID, IntPtr item, Int64 targetGUID, bool isTrade);
 	}
 
 	public class CommandHandler : TimelessMarshalByRefObject, IDisposable
 	{
+		private readonly Util.Config config;
 		[NonSerialized]
 		private CommandQueue commandQueue;
 		[NonSerialized]
@@ -95,8 +97,8 @@ namespace SpellFire.Well.Controller
 		private CommandCallback.ClientSendPacket ClientSendPacket;
 		public CommandCallback.NetGetCurrentConnection NetGetCurrentConnection;
 		private CommandCallback.CGUnit_C__UnitReaction CGUnit_C__UnitReaction;
-		private CommandCallback.CGUnit_C__GetAura CGUnit_C__GetAura;
 		private CommandCallback.CGUnit_C__UpdateDisplayInfo CGUnit_C__UpdateDisplayInfo;
+		private CommandCallback.Spell_C__CastSpell Spell_C__CastSpell;
 
 		private CommandCallback.LuaEventCallback eventCallback;
 		private IntPtr luaEventCallbackPtr;
@@ -104,13 +106,39 @@ namespace SpellFire.Well.Controller
 		private string luaEventFunctionName;
 		private string frameName;
 
-		public CommandHandler(ControlInterface ctrlInterface)
+		private SystemWin32.WndProc originalWndProc;
+		private SystemWin32.WndProc WndProcPatchInstance;
+
+		public CommandHandler(ControlInterface ctrlInterface, Well.Util.Config config)
 		{
 			this.commandQueue = new CommandQueue(ctrlInterface);
 			this.ctrlInterface = ctrlInterface;
+			this.config = config;
 
 			ResolveEndSceneAddress();
 			RegisterFunctions();
+		}
+
+		public void DetourWndProc()
+		{
+			WndProcPatchInstance = WndProcPatch;
+
+			IntPtr hwnd = Process.GetCurrentProcess().MainWindowHandle;
+			IntPtr originalWndProcAddress = (IntPtr) SystemWin32.GetWindowLong(hwnd, SystemWin32.GWL_WNDPROC);
+
+			originalWndProc = Marshal.GetDelegateForFunctionPointer<SystemWin32.WndProc>(originalWndProcAddress);
+
+			SystemWin32.SetWindowLong(hwnd, SystemWin32.GWL_WNDPROC, Marshal.GetFunctionPointerForDelegate(WndProcPatchInstance));
+		}
+
+		public IntPtr WndProcPatch(IntPtr hWnd, UInt32 msg, IntPtr wParam, IntPtr lParam)
+		{
+			if(msg == SystemWin32.WM_KEYDOWN || msg == SystemWin32.WM_KEYUP)
+			{
+				ctrlInterface.hostControl.DispatchWindowMessage(hWnd, msg, wParam, lParam);
+			}
+
+			return originalWndProc(hWnd, msg, wParam, lParam);
 		}
 
 		private void ResolveEndSceneAddress()
@@ -176,16 +204,21 @@ namespace SpellFire.Well.Controller
 
 		public void InitializeLuaEventFrameHandler()
 		{
+			if (frameName != null || luaEventFunctionName != null)
+			{
+				return;
+			}
+
 			eventCallback = LuaEventHandler;
 			luaEventCallbackPtr = Marshal.GetFunctionPointerForDelegate(eventCallback);
 
-			luaEventFunctionName = SFUtil.GetRandomAsciiString(4);
+			luaEventFunctionName = config["luaPlugFunctionName"] ?? SFUtil.GetRandomAsciiString(4);
 			frameName = SFUtil.GetRandomAsciiString(5);
 
 			commandQueue.Submit<object>((() =>
 			{
 				FrameScript__RegisterFunction(luaEventFunctionName, luaEventCallbackPtr);
-				FrameScript__Execute($"{frameName} = CreateFrame('Frame'); {frameName}:SetScript('OnEvent', {luaEventFunctionName}); {frameName}:RegisterAllEvents();", 0, 0);
+				FrameScript__Execute($"{frameName} = CreateFrame('Frame'); {frameName}:SetScript('OnEvent', function(self, eventName, ...) {luaEventFunctionName}(eventName, ...) end); {frameName}:RegisterAllEvents();", 0, 0);
 
 				return null;
 			}));
@@ -193,20 +226,21 @@ namespace SpellFire.Well.Controller
 
 		public void DestroyLuaEventFrameHandler()
 		{
-			commandQueue.Submit<object>((() =>
+			if (frameName == null || luaEventFunctionName == null)
 			{
-				if (frameName != null)
-				{
-					FrameScript__Execute($"{frameName}:UnregisterAllEvents(); {frameName}:SetScript('OnEvent', nil);", 0, 0);
-				}
+				return;
+			}
 
-				if (luaEventFunctionName != null)
-				{
-					FrameScript__UnregisterFunction(luaEventFunctionName);
-				}
+			commandQueue.Submit<object>(() =>
+			{
+				FrameScript__Execute($"{frameName}:UnregisterAllEvents(); {frameName}:SetScript('OnEvent', nil);", 0, 0);
+				FrameScript__UnregisterFunction(luaEventFunctionName);
 
 				return null;
-			}));
+			});
+
+			frameName = null;
+			luaEventFunctionName = null;
 		}
 
 		public Int32 InvalidPtrCheckPatch(IntPtr ptr)
@@ -231,15 +265,10 @@ namespace SpellFire.Well.Controller
 		public Int32 LuaEventHandler(IntPtr luaState)
 		{
 			Int32 argCount = LuaGetTop(luaState);
-			/*
-			 * LuaToString takes parameters starting from 1
-			 * and we discard first event argument, hence
-			 * we start from 2
-			 */
-			List<string> luaEventArgs = new List<string>(argCount - 1);
-			for (Int32 i = 2; i <= argCount; i++)
+			List<string> luaEventArgs = new List<string>(argCount);
+			for (Int32 i = 0; i <= argCount; i++)
 			{
-				luaEventArgs.Add(LuaToString(luaState, i, 0));
+				luaEventArgs.Add(LuaToString(luaState, i + 1, 0));
 			}
 
 			try
@@ -321,11 +350,6 @@ namespace SpellFire.Well.Controller
 			return commandQueue.Submit<UnitReaction>((() => CGUnit_C__UnitReaction(thisObject, unit)));
 		}
 
-		public IntPtr CGUnit_C__GetAuraHandler(IntPtr thisObject, Int32 auraIndex)
-		{
-			return commandQueue.Submit<IntPtr>((() => CGUnit_C__GetAura(thisObject, auraIndex)));
-		}
-
 		public string GetUnitNameHandler(IntPtr thisObject)
 		{
 			CommandCallback.GetUnitName GetUnitName =
@@ -339,11 +363,22 @@ namespace SpellFire.Well.Controller
 		{
 			return commandQueue.Submit<IntPtr>((() => CGUnit_C__UpdateDisplayInfo(thisObject, a1)));
 		}
-#endregion
+
+		public bool Spell_C__CastSpellHandler(Int32 spellID, IntPtr item, Int64 targetGUID, bool isTrade)
+		{
+			return commandQueue.Submit<bool>((() => Spell_C__CastSpell(spellID, item, targetGUID, isTrade)));
+		}
+		#endregion
 
 		public void Dispose()
 		{
 			DestroyLuaEventFrameHandler();
+
+			/* restore original wnd proc */
+			SystemWin32.SetWindowLong(
+				Process.GetCurrentProcess().MainWindowHandle,
+				SystemWin32.GWL_WNDPROC,
+				Marshal.GetFunctionPointerForDelegate(originalWndProc));
 		}
 	}
 }

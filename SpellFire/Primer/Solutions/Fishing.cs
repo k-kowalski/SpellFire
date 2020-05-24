@@ -14,10 +14,14 @@ namespace SpellFire.Primer.Solutions
 	{
 		private LinkedList<Int64> lastBobberGUIDs = new LinkedList<long>();
 
-		public Fishing(ControlInterface ci, Memory memory) : base(ci, memory)
+		private ControlInterface ci;
+
+		public Fishing(Client client) : base(client)
 		{
 			// start fishing initially
-			CastSpell("Fishing");
+			me.CastSpell("Fishing");
+
+			ci = client.ControlInterface;
 
 			this.Active = true;
 		}
@@ -26,26 +30,26 @@ namespace SpellFire.Primer.Solutions
 		{
 			Thread.Sleep(1000);
 
-			if (!GetObjectMgrAndPlayer())
+			if (!me.GetObjectMgrAndPlayer())
 			{
 				return;
 			}
 
-			foreach (GameObject gameObject in objectManager)
+			foreach (GameObject gameObject in me.ObjectManager)
 			{
 				Int64 gameObjectGUID = gameObject.GUID;
 				if (gameObject.Type == GameObjectType.GameWorldObject && ( ! lastBobberGUIDs.Contains(gameObjectGUID)))
 				{
 					if (gameObject.WorldObjectName.Contains("Fishing Bobber"))
 					{
-						byte state = memory.Read(gameObject.GetAddress() + 0xBC, 1)[0];
+						byte state = me.Memory.Read(gameObject.GetAddress() + 0xBC, 1)[0];
 						if (state == 1)
 						{
 							RandomSleep();
-							memory.Write(IntPtr.Zero + Offset.MouseoverGUID, BitConverter.GetBytes(gameObjectGUID));
+							me.Memory.Write(IntPtr.Zero + Offset.MouseoverGUID, BitConverter.GetBytes(gameObjectGUID));
 							ci.remoteControl.FrameScript__Execute("InteractUnit('mouseover')", 0, 0);
 							RandomSleep();
-							CastSpell("Fishing");
+							me.CastSpell("Fishing");
 
 							if (lastBobberGUIDs.Count == 5)
 							{
@@ -58,10 +62,7 @@ namespace SpellFire.Primer.Solutions
 			}
 		}
 
-		public override void Dispose()
-		{
-			/* no finish logic */
-		}
+		public override void Dispose() {}
 
 		/*
 		 * simulate humane behaviour

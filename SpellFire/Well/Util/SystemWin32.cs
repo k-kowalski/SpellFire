@@ -5,7 +5,12 @@ namespace SpellFire.Well.Util
 {
 	public static class SystemWin32
 	{
-		public static Int32 PROCESS_ALL_ACCESS = 0x1F0FFF;
+		public const UInt32 WM_KEYDOWN = 0x100;
+		public const UInt32 WM_KEYUP = 0x101;
+
+		public const Int32 GWL_WNDPROC = -0x4;
+
+		public const Int32 PROCESS_ALL_ACCESS = 0x1F0FFF;
 
 		[DllImport("user32.dll")]
 		public static extern Int16 VkKeyScan(char ch);
@@ -19,10 +24,18 @@ namespace SpellFire.Well.Util
 		[DllImport("kernel32.dll", SetLastError = true)]
 		public static extern bool WriteProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, Int32 dwSize, ref Int32 lpNumberOfBytesWritten);
 
-		[DllImport("user32.dll")]
-		public static extern Int32 SendMessage(IntPtr hWnd, Int32 Msg, UInt32 wParam, UInt32 lParam);
-
 		[DllImport("kernel32.dll")]
 		public static extern Int32 AllocConsole();
+
+		[DllImport("user32.dll", SetLastError = true)]
+		public static extern Int32 GetWindowLong(IntPtr hWnd, Int32 nIndex);
+
+		[DllImport("user32.dll", SetLastError=true)]
+		public static extern Int32 SetWindowLong(IntPtr hWnd, Int32 nIndex, IntPtr dwNewLong);
+
+		[DllImport("user32.dll", SetLastError = true)]
+		public static extern Int32 PostMessage(IntPtr hWnd, UInt32 msg, IntPtr wParam, IntPtr lParam);
+
+		public delegate IntPtr WndProc(IntPtr hWnd, UInt32 msg, IntPtr wParam, IntPtr lParam);
 	}
 }

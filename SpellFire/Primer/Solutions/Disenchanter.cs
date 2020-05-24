@@ -14,16 +14,17 @@ using SpellFire.Well.Util;
 
 namespace SpellFire.Primer.Solutions
 {
-	class Disenchanter : Solution
+	public class Disenchanter : Solution
 	{
-		private readonly LuaEventListener eventListener;
+
+		private ControlInterface ci;
 
 		private readonly string DisenchantLuaScript;
 
-		public Disenchanter(ControlInterface ci, Memory memory) : base(ci, memory)
+		public Disenchanter(Client client) : base(client)
 		{
-			eventListener = new LuaEventListener(ci);
-			eventListener.Bind("LOOT_OPENED", LootOpenedHandler);
+			ci = client.ControlInterface;
+			me.LuaEventListener.Bind("LOOT_OPENED", LootOpenedHandler);
 
 			DisenchantLuaScript = Encoding.UTF8.GetString(File.ReadAllBytes("Scripts/Disenchant.lua"));
 
@@ -37,7 +38,7 @@ namespace SpellFire.Primer.Solutions
 
 		public override void Tick()
 		{
-			if (!GetObjectMgrAndPlayer())
+			if (!me.GetObjectMgrAndPlayer())
 			{
 				return;
 			}
@@ -60,7 +61,7 @@ namespace SpellFire.Primer.Solutions
 
 		public override void Dispose()
 		{
-			eventListener.Dispose();
+			me.LuaEventListener.Dispose();
 		}
 	}
 }

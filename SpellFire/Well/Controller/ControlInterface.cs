@@ -20,6 +20,7 @@ namespace SpellFire.Well.Controller
 		public class HostControl : TimelessMarshalByRefObject
 		{
 			public event Action<LuaEventArgs> LuaEventFired;
+			public event Action<IntPtr, uint, IntPtr, IntPtr> WindowMessageDispatched;
 
 			public void PrintMessage(string message)
 			{
@@ -31,6 +32,11 @@ namespace SpellFire.Well.Controller
 			public void LuaEventTrigger(LuaEventArgs luaEventArgs)
 			{
 				LuaEventFired?.Invoke(luaEventArgs);
+			}
+
+			public void DispatchWindowMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
+			{
+				WindowMessageDispatched?.Invoke(hWnd, msg, wParam, lParam);
 			}
 		}
 
@@ -85,10 +91,6 @@ namespace SpellFire.Well.Controller
 			public UnitReaction CGUnit_C__UnitReaction(IntPtr thisObject, IntPtr unit) =>
 				CGUnit_C__UnitReactionEvent?.Invoke(thisObject, unit) ?? UnitReaction.Unknown;
 
-			public event CommandCallback.CGUnit_C__GetAura CGUnit_C__GetAuraEvent;
-			public IntPtr CGUnit_C__GetAura(IntPtr thisObject, Int32 auraIndex) =>
-				CGUnit_C__GetAuraEvent?.Invoke(thisObject, auraIndex) ?? IntPtr.Zero;
-
 			public event Func<IntPtr, string> GetUnitNameEvent;
 			public string GetUnitName(IntPtr thisObject) =>
 				GetUnitNameEvent?.Invoke(thisObject) ?? null;
@@ -96,6 +98,10 @@ namespace SpellFire.Well.Controller
 			public event CommandCallback.CGUnit_C__UpdateDisplayInfo CGUnit_C__UpdateDisplayInfoEvent;
 			public IntPtr CGUnit_C__UpdateDisplayInfo(IntPtr thisObject, bool a1) =>
 				CGUnit_C__UpdateDisplayInfoEvent?.Invoke(thisObject, a1) ?? IntPtr.Zero;
+
+			public event CommandCallback.Spell_C__CastSpell Spell_C__CastSpellEvent;
+			public bool Spell_C__CastSpell(Int32 spellID, IntPtr item, Int64 targetGUID, bool isTrade) =>
+				Spell_C__CastSpellEvent?.Invoke(spellID, item, targetGUID, isTrade) ?? false;
 			#endregion
 
 		}

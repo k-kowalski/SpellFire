@@ -30,7 +30,6 @@
 		{
 			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
 			this.panel1 = new System.Windows.Forms.Panel();
-			this.radarCanvas = new SpellFire.Primer.Gui.RadarCanvas();
 			this.buttonRefresh = new System.Windows.Forms.Button();
 			this.labelInfo = new System.Windows.Forms.Label();
 			this.label2 = new System.Windows.Forms.Label();
@@ -38,6 +37,7 @@
 			this.listBoxSolutions = new System.Windows.Forms.ListBox();
 			this.buttonToggle = new System.Windows.Forms.Button();
 			this.comboBoxProcesses = new System.Windows.Forms.ComboBox();
+			this.radarCanvas = new SpellFire.Primer.Gui.RadarCanvas();
 			this.panel1.SuspendLayout();
 			this.SuspendLayout();
 			// 
@@ -58,20 +58,11 @@
 			this.panel1.Size = new System.Drawing.Size(938, 505);
 			this.panel1.TabIndex = 0;
 			// 
-			// radarCanvas
-			// 
-			this.radarCanvas.BackColor = System.Drawing.SystemColors.ControlLight;
-			this.radarCanvas.Location = new System.Drawing.Point(235, 4);
-			this.radarCanvas.Name = "radarCanvas";
-			this.radarCanvas.Size = new System.Drawing.Size(691, 489);
-			this.radarCanvas.TabIndex = 10;
-			this.radarCanvas.Paint += new System.Windows.Forms.PaintEventHandler(this.radarCanvas_Paint);
-			// 
 			// buttonRefresh
 			// 
 			this.buttonRefresh.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
 			this.buttonRefresh.Image = ((System.Drawing.Image)(resources.GetObject("buttonRefresh.Image")));
-			this.buttonRefresh.Location = new System.Drawing.Point(153, 136);
+			this.buttonRefresh.Location = new System.Drawing.Point(143, 102);
 			this.buttonRefresh.Name = "buttonRefresh";
 			this.buttonRefresh.Size = new System.Drawing.Size(48, 39);
 			this.buttonRefresh.TabIndex = 9;
@@ -92,7 +83,7 @@
 			// label2
 			// 
 			this.label2.AutoSize = true;
-			this.label2.Location = new System.Drawing.Point(13, 189);
+			this.label2.Location = new System.Drawing.Point(13, 158);
 			this.label2.Name = "label2";
 			this.label2.Size = new System.Drawing.Size(76, 13);
 			this.label2.TabIndex = 8;
@@ -101,7 +92,7 @@
 			// label1
 			// 
 			this.label1.AutoSize = true;
-			this.label1.Location = new System.Drawing.Point(12, 135);
+			this.label1.Location = new System.Drawing.Point(13, 91);
 			this.label1.Name = "label1";
 			this.label1.Size = new System.Drawing.Size(108, 13);
 			this.label1.TabIndex = 7;
@@ -110,7 +101,7 @@
 			// listBoxSolutions
 			// 
 			this.listBoxSolutions.FormattingEnabled = true;
-			this.listBoxSolutions.Location = new System.Drawing.Point(12, 210);
+			this.listBoxSolutions.Location = new System.Drawing.Point(12, 179);
 			this.listBoxSolutions.Name = "listBoxSolutions";
 			this.listBoxSolutions.Size = new System.Drawing.Size(205, 95);
 			this.listBoxSolutions.TabIndex = 6;
@@ -118,7 +109,7 @@
 			// buttonToggle
 			// 
 			this.buttonToggle.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-			this.buttonToggle.Location = new System.Drawing.Point(73, 325);
+			this.buttonToggle.Location = new System.Drawing.Point(73, 294);
 			this.buttonToggle.Name = "buttonToggle";
 			this.buttonToggle.Size = new System.Drawing.Size(87, 35);
 			this.buttonToggle.TabIndex = 4;
@@ -129,11 +120,20 @@
 			// comboBoxProcesses
 			// 
 			this.comboBoxProcesses.FormattingEnabled = true;
-			this.comboBoxProcesses.Location = new System.Drawing.Point(12, 154);
+			this.comboBoxProcesses.Location = new System.Drawing.Point(16, 120);
 			this.comboBoxProcesses.Name = "comboBoxProcesses";
 			this.comboBoxProcesses.Size = new System.Drawing.Size(121, 21);
 			this.comboBoxProcesses.TabIndex = 0;
 			this.comboBoxProcesses.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.comboBoxProcesses_KeyPress);
+			// 
+			// radarCanvas
+			// 
+			this.radarCanvas.BackColor = System.Drawing.SystemColors.ControlLight;
+			this.radarCanvas.Location = new System.Drawing.Point(235, 4);
+			this.radarCanvas.Name = "radarCanvas";
+			this.radarCanvas.Size = new System.Drawing.Size(691, 489);
+			this.radarCanvas.TabIndex = 10;
+			this.radarCanvas.Paint += new System.Windows.Forms.PaintEventHandler(this.radarCanvas_Paint);
 			// 
 			// MainForm
 			// 

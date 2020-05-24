@@ -18,20 +18,22 @@ namespace SpellFire.Well.Controller
 		private readonly CommandHandler commandHandler;
 		private readonly PacketManager packetManager;
 
-		public RemoteMain(RemoteHooking.IContext context, string channelName)
+		public RemoteMain(RemoteHooking.IContext context, string channelName, Well.Util.Config config)
 		{
 			ctrlInterface = RemoteHooking.IpcConnectClient<ControlInterface>(channelName);
 
-			EstablishReverseConnection(channelName);
+			EstablishReverseRemotingConnection(channelName);
 
-			commandHandler = new CommandHandler(ctrlInterface);
+			commandHandler = new CommandHandler(ctrlInterface, config);
 
 			packetManager = new PacketManager(ctrlInterface, commandHandler);
 
-			ctrlInterface.hostControl.PrintMessage("Ready");
+			commandHandler.DetourWndProc();
+
+			ctrlInterface.hostControl.PrintMessage($"Ready");
 		}
 
-		public void Run(RemoteHooking.IContext context, string channelName)
+		public void Run(RemoteHooking.IContext context, string channelName, Well.Util.Config config)
 		{
 			LocalHook endScenePatch = null;
 			LocalHook invalidPtrPatch = null;
@@ -85,17 +87,18 @@ namespace SpellFire.Well.Controller
 			}
 		}
 
-		private void EstablishReverseConnection(String channelName)
+		private void EstablishReverseRemotingConnection(String channelName)
 		{
 			IDictionary properties = new Hashtable();
 			properties["name"] = channelName;
 			properties["portName"] = channelName + Guid.NewGuid().ToString("N");
 
-			BinaryServerFormatterSinkProvider binaryProv = new BinaryServerFormatterSinkProvider();
-			binaryProv.TypeFilterLevel = TypeFilterLevel.Full;
+			BinaryServerFormatterSinkProvider binaryProv = new BinaryServerFormatterSinkProvider
+			{
+				TypeFilterLevel = TypeFilterLevel.Full
+			};
 
-			IpcServerChannel _clientServerChannel = new IpcServerChannel(properties, binaryProv);
-			ChannelServices.RegisterChannel(_clientServerChannel, false);
+			ChannelServices.RegisterChannel(new IpcServerChannel(properties, binaryProv), false);
 		}
 	}
 }

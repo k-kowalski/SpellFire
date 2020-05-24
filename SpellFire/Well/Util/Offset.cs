@@ -29,8 +29,8 @@ namespace SpellFire.Well.Util
 			public const Int32 ClientSendPacket = 0x632B50;
 			public const Int32 NetGetCurrentConnection = 0x6B0970;
 			public const Int32 CGUnit_C__UnitReaction = 0x7251C0;
-			public const Int32 CGUnit_C__GetAura = 0x556E10;
 			public const Int32 CGUnit_C__UpdateDisplayInfo = 0x73E410;
+			public const Int32 Spell_C__CastSpell = 0x80DA40;
 		}
 
 		public static class VirtualFunction
@@ -48,7 +48,7 @@ namespace SpellFire.Well.Util
 
 
 
-
+		public const Int32 LastHardwareEvent = 0xB499A4;
 		public const Int32 TargetGUID = 0xBD07B0;
 		public const Int32 MouseoverGUID = 0xBD07A0;
 		public const Int32 ClientConnection = 0xC79CE0;
@@ -138,6 +138,22 @@ namespace SpellFire.Well.Util
 		/// creature entry
 		/// </summary>
 		public const Int32 CreatureType = 0x10;
+		/// <summary>
+		/// game object
+		/// </summary>
+		public const Int32 AuraTableCapacity1 = 0xDD0;
+		/// <summary>
+		/// game object
+		/// </summary>
+		public const Int32 AuraTableBase1 = 0xC50;
+		/// <summary>
+		/// game object
+		/// </summary>
+		public const Int32 AuraTableCapacity2 = 0xC54;
+		/// <summary>
+		/// game object
+		/// </summary>
+		public const Int32 AuraTableBase2 = 0xC58;
 
 
 		public static class DirectX

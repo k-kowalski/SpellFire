@@ -9,9 +9,9 @@ using SpellFire.Well.Net;
 
 namespace SpellFire.Primer.Solutions
 {
-	class PacketManip : Solution
+	public class PacketManip : Solution
 	{
-		public PacketManip(ControlInterface ci, Memory memory) : base(ci, memory)
+		public PacketManip(Client client) : base(client)
 		{
 
 			SpellPacket spellPacket = new SpellPacket
@@ -22,7 +22,7 @@ namespace SpellFire.Primer.Solutions
 			};
 
 
-			ci.remoteControl.SendPacket(spellPacket);
+			client.ControlInterface.remoteControl.SendPacket(spellPacket);
 
 			this.Active = false;
 		}

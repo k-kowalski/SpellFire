@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace SpellFire.Primer.Gui
@@ -16,9 +17,9 @@ namespace SpellFire.Primer.Gui
 		{
 			InitializeComponent();
 
-			this.mfController = new MainFormController(this);
+			mfController = new MainFormController(this);
 
-			this.mfController.InitializeSolutionListBox(this.listBoxSolutions);
+			mfController.InitializeSolutionListBox(listBoxSolutions);
 
 			radarFrontBuffer = new Bitmap(radarCanvas.Width, radarCanvas.Width);
 			radarBackBuffer = new Bitmap(radarCanvas.Width, radarCanvas.Width);
@@ -26,18 +27,24 @@ namespace SpellFire.Primer.Gui
 
 		public void PostInfo(string info, Color color)
 		{
-			this.labelInfo.Text = info;
-			this.labelInfo.ForeColor = color;
+			Invoke(new Action(() =>
+			{
+				labelInfo.Text = info;
+				labelInfo.ForeColor = color;
+			}));
 		}
 
 		public void SetToggleButtonText(string text)
 		{
-			this.buttonToggle.Text = text;
+			Invoke(new Action(() =>
+			{
+				buttonToggle.Text = text;
+			}));
 		}
 
 		private void MainForm_Load(object sender, EventArgs e)
 		{
-			this.mfController.RefreshProcessList(comboBoxProcesses);
+			mfController.RefreshProcessList(comboBoxProcesses);
 		}
 
 		/* makes combo box readonly */
@@ -48,14 +55,15 @@ namespace SpellFire.Primer.Gui
 
 		private void buttonToggle_Click(object sender, EventArgs e)
 		{
-			this.mfController.ToggleRunState(
-				listBoxSolutions.SelectedItem as string,
-				comboBoxProcesses.SelectedItem as ProcessEntry);
+			SolutionTypeEntry solEntry = listBoxSolutions.SelectedItem as SolutionTypeEntry;
+			ProcessEntry pEntry = comboBoxProcesses.SelectedItem as ProcessEntry;
+
+			Task.Run(() => this.mfController.ToggleRunState(solEntry, pEntry));
 		}
 
 		private void buttonRefresh_Click(object sender, EventArgs e)
 		{
-			this.mfController.RefreshProcessList(comboBoxProcesses);
+			mfController.RefreshProcessList(comboBoxProcesses);
 		}
 
 		private void radarCanvas_Paint(object sender, PaintEventArgs e)

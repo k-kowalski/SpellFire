@@ -21,21 +21,14 @@ namespace SpellFire.Primer.Gui
 			return process;
 		}
 
+		public static IEnumerable<ProcessEntry> GetRunningWoWProcessess()
+		{
+			return Process.GetProcessesByName("WoW").Select(wowProcess => new ProcessEntry(wowProcess));
+		}
+
 		public override string ToString()
 		{
 			return $"pid: {process.Id}";
-		}
-
-		public override bool Equals(object obj)
-		{
-			var processEntry = obj as ProcessEntry;
-
-			if (processEntry == null)
-			{
-				return false;
-			}
-
-			return this.process.Equals(processEntry.process);
 		}
 	}
 }

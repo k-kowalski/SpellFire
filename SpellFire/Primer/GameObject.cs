@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
 using SpellFire.Well.Model;
 using SpellFire.Well.Util;
@@ -19,6 +21,32 @@ namespace SpellFire.Primer
 
 		public Int32 CastingSpellId => memory.ReadInt32(address + Offset.CastingSpellId);
 		public Int32 ChannelSpellId => memory.ReadInt32(address + Offset.ChannelSpellId);
+
+		public IEnumerable<Aura> Auras
+		{
+			get
+			{
+				IntPtr auraTableBase;
+				Int32 auraTableCapacity = memory.ReadInt32(address + Offset.AuraTableCapacity1);
+				if (auraTableCapacity == -1)
+				{
+					auraTableCapacity = memory.ReadInt32(address + Offset.AuraTableCapacity2);
+					auraTableBase = memory.ReadPointer86(address + Offset.AuraTableBase2);
+				}
+				else
+				{
+					auraTableBase = address + Offset.AuraTableBase1;
+				}
+
+				Aura[] auras = new Aura[auraTableCapacity];
+				for (int i = 0; i < auraTableCapacity; i++)
+				{
+					auras[i] = memory.ReadStruct<Aura>(auraTableBase + (i * Marshal.SizeOf<Aura>()));
+				}
+
+				return auras;
+			}
+		}
 
 		public CreatureType UnitType
 		{

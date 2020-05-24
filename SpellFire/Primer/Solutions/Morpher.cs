@@ -75,15 +75,15 @@ namespace SpellFire.Primer.Solutions
 			public Int32 enchantId;
 		}
 
-		public Morpher(ControlInterface ci, Memory memory) : base(ci, memory)
+		public Morpher(Client client) : base(client)
 		{
-			GetObjectMgrAndPlayer();
+			client.GetObjectMgrAndPlayer();
 			Morph();
 		}
 
 		private void Morph()
 		{
-			IntPtr fields = memory.ReadPointer86(player.GetAddress() + Offset.Info);
+			IntPtr fields = me.Memory.ReadPointer86(me.Player.GetAddress() + Offset.Info);
 
 			for (int slot = 0; slot < InventorySlots.Length; slot++)
 			{
@@ -96,11 +96,11 @@ namespace SpellFire.Primer.Solutions
 				int offsetItem = (Offset.PlayerItem1ID + ((slot - 1) * 2)) * 4;
 				int offsetEnchant = offsetItem + sizeof(Int32); /* enchant immediately follows item */
 
-				memory.Write(fields + offsetItem, BitConverter.GetBytes(request.itemId));
-				memory.Write(fields + offsetEnchant, BitConverter.GetBytes(request.enchantId));
+				me.Memory.Write(fields + offsetItem, BitConverter.GetBytes(request.itemId));
+				me.Memory.Write(fields + offsetEnchant, BitConverter.GetBytes(request.enchantId));
 			}
 
-			ci.remoteControl.CGUnit_C__UpdateDisplayInfo(player.GetAddress(), true);
+			me.ControlInterface.remoteControl.CGUnit_C__UpdateDisplayInfo(me.Player.GetAddress(), true);
 		}
 
 		public override void Tick()

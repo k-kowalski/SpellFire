@@ -13,9 +13,9 @@ namespace SpellFire.Primer.Solutions
 
 		protected readonly Client me;
 
-		public Solution(Client client)
+		public Solution(Client me)
 		{
-			this.me = client;
+			this.me = me;
 		}
 
 		public abstract void Tick();

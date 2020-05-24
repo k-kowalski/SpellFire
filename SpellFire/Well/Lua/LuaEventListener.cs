@@ -39,9 +39,13 @@ namespace SpellFire.Well.Lua
 			ci.hostControl.LuaEventFired += DispatchLuaEvent;
 		}
 
-		public void Dispose()
+		~LuaEventListener()
 		{
 			ci.hostControl.LuaEventFired -= DispatchLuaEvent;
+		}
+
+		public void Dispose()
+		{
 			Active = false;
 		}
 
@@ -52,6 +56,15 @@ namespace SpellFire.Well.Lua
 
 		private void DispatchLuaEvent(LuaEventArgs luaEventArgs)
 		{
+#if false
+			/* trace events and their arguments */
+			Console.WriteLine(luaEventArgs.Name);
+			foreach (string arg in luaEventArgs.Args)
+			{
+				Console.WriteLine("\t" + arg);
+			}
+#endif
+
 			if (eventHandlers.TryGetValue(luaEventArgs.Name, out LuaEventHandler handler))
 			{
 				Task.Run(() => handler.Invoke(luaEventArgs));

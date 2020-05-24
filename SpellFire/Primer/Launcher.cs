@@ -63,7 +63,7 @@ namespace SpellFire.Primer
 
 			if (wowProcess.WaitForInputIdle())
 			{
-				Client client = new Client(wowProcess, config, config[$"routine{configClientId}"]);
+				Client client = new Client(wowProcess, config, config[$"solution{configClientId}"]);
 
 				string loginCharacter = config[$"character{configClientId}"];
 				Launcher.LoginClient(client, credentials[0], credentials[1], loginCharacter);

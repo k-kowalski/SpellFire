@@ -48,7 +48,14 @@ namespace SpellFire.Primer.Solutions.Mbox
 					Client caster = Slaves.FirstOrDefault(c =>
 						c.ControlInterface.remoteControl.GetUnitName(c.Player.GetAddress()) == casterName);
 
-					caster.CastSpellOnGuid(spellName, targetGuid);
+					if (caster != null)
+					{
+						caster.CastSpellOnGuid(spellName, targetGuid);
+					}
+					else
+					{
+						Console.WriteLine($"Couldn't find slave: {casterName}.");
+					}
 				})),
 				/* toggles AI(individual behaviour loops) */
 				"toggleai" => new Action<IList<string>>(((args) =>
@@ -68,7 +75,10 @@ namespace SpellFire.Primer.Solutions.Mbox
 						Console.WriteLine($"SLAVES AI is now {state}.");
 					}
 				})),
-				_ => null,
+				_ => new Action<IList<string>>(((args) =>
+				{
+					Console.WriteLine($"Unrecognized command: {cmd}.");
+				})),
 			};
 		}
 
@@ -96,11 +106,21 @@ namespace SpellFire.Primer.Solutions.Mbox
 				string slavePlayerName = slave.ControlInterface.remoteControl.GetUnitName(slave.Player.GetAddress());
 
 				/* set event listeners */
-				slave.LuaEventListener.Bind("PARTY_INVITE_REQUEST", args => slave
-					.ControlInterface.remoteControl.FrameScript__Execute("AcceptGroup()", 0, 0));
+				slave.LuaEventListener.Bind("PARTY_INVITE_REQUEST", args =>
+				{
+					if (args.Args[0] == me.ControlInterface.remoteControl.GetUnitName(me.Player.GetAddress()))
+					{
+						slave.ControlInterface.remoteControl.FrameScript__Execute("AcceptGroup()", 0, 0);
+					}
+					else
+					{
+						Console.Write($"[{slave.ControlInterface.remoteControl.GetUnitName(slave.Player.GetAddress())}] Received foreign invite from {args.Args[1]}.");
+					}
+
+				});
 				slave.LuaEventListener.Bind("PARTY_MEMBERS_CHANGED", args => slave
 					.ControlInterface.remoteControl.FrameScript__Execute("StaticPopup_Hide('PARTY_INVITE')", 0, 0));
-				slave.LuaEventListener.Bind("CHAT_MSG_WHISPER",args => /* TODO: display desktop toast notfication? */
+				slave.LuaEventListener.Bind("CHAT_MSG_WHISPER",args =>
 				{
 					Console.Write($"[{slave.ControlInterface.remoteControl.GetUnitName(slave.Player.GetAddress())}] Whisper to slave!");
 				});
@@ -126,86 +146,36 @@ namespace SpellFire.Primer.Solutions.Mbox
 		{
 			foreach (Client slave in Slaves)
 			{
-				if (slave.RoutineName != null)
+				try
 				{
-					MethodInfo routineInfo = GetType().GetMethod(slave.RoutineName,
-						BindingFlags.NonPublic | BindingFlags.Instance);
-					if (routineInfo != null)
+					if (slave.SolutionName == null)
 					{
-						Console.WriteLine($"Bound routine {slave.RoutineName}.");
+						continue;
+					}
+
+					Type solutionType = Type.GetType(slave.SolutionName);
+
+					if (Activator.CreateInstance(solutionType, slave, this) is Solution solution)
+					{
+						Console.WriteLine($"Bound solution: {slave.SolutionName}.");
 						slavesTasks.Add(
-							Task.Run((() =>
+							Task.Run(() =>
 							{
-								while (Active)
+								while (this.Active)
 								{
-									routineInfo.Invoke(this, new object[] {slave});
+									solution.Tick();
 								}
-							}))
+								solution.Dispose();
+							})
 						);
 					}
-					else
-					{
-						Console.WriteLine($"Could not find routine {slave.RoutineName}.");
-					}
 				}
-			}
-		}
-
-		private void Priest(Client c)
-		{
-			Thread.Sleep(200);
-			if (!slavesAI)
-			{
-				return;
-			}
-
-			if (c.IsOnCooldown("Smite")) /* global cooldown check */
-			{
-				return;
-			}
-
-			foreach (Client client in clients)
-			{
-				if (client.Player.HealthPct < 70
-				    && (!client.HasAura(client.Player, "Renew", null)))
+				catch (Exception e)
 				{
-					c.CastSpellOnGuid("Renew", client.Player.GUID);
-					return;
+					Console.WriteLine($"Could not launch solution {slave.SolutionName}.");
+					Console.WriteLine(e);
 				}
 			}
-
-			GameObject target = GetMasterAttackTarget(c);
-			if (target == null)
-			{
-				return;
-			}
-
-			c.ControlInterface.remoteControl.SelectUnit(target.GUID);
-			c.CastSpell("Smite");
-		}
-
-		private void Warlock(Client c)
-		{
-
-			if (c.IsOnCooldown("Shadow Bolt")) /* global cooldown check */
-			{
-				return;
-			}
-
-			Thread.Sleep(200);
-			if (!slavesAI)
-			{
-				return;
-			}
-
-			GameObject target = GetMasterAttackTarget(c);
-			if (target == null)
-			{
-				return;
-			}
-
-			c.ControlInterface.remoteControl.SelectUnit(target.GUID);
-			c.CastSpell("Shadow Bolt");
 		}
 
 		private GameObject GetMasterAttackTarget(Client c)
@@ -230,11 +200,124 @@ namespace SpellFire.Primer.Solutions.Mbox
 
 		public override void Tick()
 		{
-			Thread.Sleep(1000);
+			Thread.Sleep(200);
+			if (!masterAI)
+			{
+				return;
+			}
+
+			if (!me.GetObjectMgrAndPlayer())
+			{
+				return;
+			}
+
+			// master logic
 		}
 
 		public override void Dispose()
 		{
+			me.LuaEventListener.Dispose();
+
+			foreach (var task in slavesTasks)
+			{
+				task.Wait();
+			}
+		}
+
+		private class PriestSlave : Solution
+		{
+			private TestMboxSln mbox;
+
+			public PriestSlave(Client client, TestMboxSln mbox) : base(client)
+			{
+				this.mbox = mbox;
+			}
+
+			public override void Tick()
+			{
+				Thread.Sleep(200);
+				if (!mbox.slavesAI)
+				{
+					return;
+				}
+
+				if (!me.GetObjectMgrAndPlayer())
+				{
+					return;
+				}
+
+				if (me.IsOnCooldown("Smite")) /* global cooldown check */
+				{
+					return;
+				}
+
+				foreach (Client client in mbox.clients)
+				{
+					if (client.Player.HealthPct < 70
+					    && (!client.HasAura(client.Player, "Renew", null)))
+					{
+						me.CastSpellOnGuid("Renew", client.Player.GUID);
+						return;
+					}
+				}
+
+				GameObject target = mbox.GetMasterAttackTarget(me);
+				if (target == null)
+				{
+					return;
+				}
+
+				me.ControlInterface.remoteControl.SelectUnit(target.GUID);
+				me.CastSpell("Smite");
+			}
+
+			public override void Dispose()
+			{
+				me.LuaEventListener.Dispose();
+			}
+		}
+
+		private class WarlockSlave : Solution
+		{
+			private TestMboxSln mbox;
+
+			public WarlockSlave(Client client, TestMboxSln mbox) : base(client)
+			{
+				this.mbox = mbox;
+			}
+
+			public override void Tick()
+			{
+				Thread.Sleep(200);
+				if (!mbox.slavesAI)
+				{
+					return;
+				}
+
+				if (!me.GetObjectMgrAndPlayer())
+				{
+					return;
+				}
+
+				if (me.IsOnCooldown("Shadow Bolt")) /* global cooldown check */
+				{
+					return;
+				}
+
+				GameObject target = mbox.GetMasterAttackTarget(me);
+				if (target == null)
+				{
+					return;
+				}
+
+				me.ControlInterface.remoteControl.SelectUnit(target.GUID);
+				me.CastSpell("Shadow Bolt");
+			}
+
+			public override void Dispose()
+			{
+				me.LuaEventListener.Dispose();
+			}
 		}
 	}
 }

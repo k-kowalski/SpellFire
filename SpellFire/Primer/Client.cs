@@ -19,12 +19,12 @@ namespace SpellFire.Primer
 		public LuaEventListener LuaEventListener { get; private set; }
 		public GameObjectManager ObjectManager { get; private set; }
 		public GameObject Player { get; private set; }
-		public string RoutineName { get; }
+		public string SolutionName { get; }
 
-		public Client(Process process, Well.Util.Config config, string routineName)
+		public Client(Process process, Well.Util.Config config, string solutionName)
 		{
 			Process = process;
-			RoutineName = routineName;
+			SolutionName = solutionName;
 			Memory = new Memory(this.Process);
 
 			InjectClient(config);

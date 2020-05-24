@@ -22,16 +22,13 @@ namespace SpellFire.Primer.Solutions
 		private bool lootTargeted;
 		private Int64 currentlyOccupiedMobGUID;
 
-		private readonly LuaEventListener eventListener;
-
 		private ControlInterface ci;
 
 		public BalanceDruidFarm(Client client) : base(client)
 		{
 			ci = client.ControlInterface;
 
-			eventListener = new LuaEventListener(ci);
-			eventListener.Bind("LOOT_OPENED", LootOpenedHandler);
+			me.LuaEventListener.Bind("LOOT_OPENED", LootOpenedHandler);
 
 			loot = false;
 			lootTargeted = false;
@@ -168,7 +165,7 @@ namespace SpellFire.Primer.Solutions
 
 		public override void Dispose()
 		{
-			eventListener.Dispose();
+			me.LuaEventListener.Dispose();
 		}
 	}
 }

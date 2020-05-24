@@ -118,8 +118,10 @@ namespace SpellFire.Primer.Solutions.Mbox
 					}
 
 				});
-				slave.LuaEventListener.Bind("PARTY_MEMBERS_CHANGED", args => slave
-					.ControlInterface.remoteControl.FrameScript__Execute("StaticPopup_Hide('PARTY_INVITE')", 0, 0));
+				slave.LuaEventListener.Bind("PARTY_MEMBERS_CHANGED", args =>
+				{
+					slave.ControlInterface.remoteControl.FrameScript__Execute("StaticPopup_Hide('PARTY_INVITE')", 0, 0);
+				});
 				slave.LuaEventListener.Bind("CHAT_MSG_WHISPER",args =>
 				{
 					Console.Write($"[{slave.ControlInterface.remoteControl.GetUnitName(slave.Player.GetAddress())}] Whisper to slave!");

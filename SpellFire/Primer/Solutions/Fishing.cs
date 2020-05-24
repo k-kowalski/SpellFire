@@ -19,7 +19,7 @@ namespace SpellFire.Primer.Solutions
 		public Fishing(Client client) : base(client)
 		{
 			// start fishing initially
-			client.CastSpell("Fishing");
+			me.CastSpell("Fishing");
 
 			ci = client.ControlInterface;
 

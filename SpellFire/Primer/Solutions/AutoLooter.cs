@@ -20,16 +20,13 @@ namespace SpellFire.Primer.Solutions
 	/// </summary>
 	public class AutoLooter : Solution
 	{
-		private readonly LuaEventListener eventListener;
 
 		private ControlInterface ci;
 
 		public AutoLooter(Client client) : base(client)
 		{
 			ci = client.ControlInterface;
-
-			eventListener = new LuaEventListener(ci);
-			eventListener.Bind("LOOT_OPENED", LootOpenedHandler);
+			me.LuaEventListener.Bind("LOOT_OPENED", LootOpenedHandler);
 
 			this.Active = true;
 		}
@@ -90,7 +87,7 @@ namespace SpellFire.Primer.Solutions
 
 		public override void Dispose()
 		{
-			eventListener.Dispose();
+			me.LuaEventListener.Dispose();
 		}
 	}
 }

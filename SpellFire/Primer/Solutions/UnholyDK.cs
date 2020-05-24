@@ -23,7 +23,6 @@ namespace SpellFire.Primer.Solutions
 
 	public class UnholyDK : Solution
 	{
-		private readonly LuaEventListener eventListener;
 
 		private ControlInterface ci;
 
@@ -31,8 +30,7 @@ namespace SpellFire.Primer.Solutions
 		{
 			ci = client.ControlInterface;
 
-			eventListener = new LuaEventListener(ci);
-			eventListener.Bind("LOOT_OPENED", LootOpenedHandler);
+			me.LuaEventListener.Bind("LOOT_OPENED", LootOpenedHandler);
 
 			this.Active = true;
 		}
@@ -253,7 +251,7 @@ namespace SpellFire.Primer.Solutions
 
 		public override void Dispose()
 		{
-			eventListener.Dispose();
+			me.LuaEventListener.Dispose();
 		}
 	}
 }

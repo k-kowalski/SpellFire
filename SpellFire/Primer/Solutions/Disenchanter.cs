@@ -16,7 +16,6 @@ namespace SpellFire.Primer.Solutions
 {
 	public class Disenchanter : Solution
 	{
-		private readonly LuaEventListener eventListener;
 
 		private ControlInterface ci;
 
@@ -25,9 +24,7 @@ namespace SpellFire.Primer.Solutions
 		public Disenchanter(Client client) : base(client)
 		{
 			ci = client.ControlInterface;
-
-			eventListener = new LuaEventListener(ci);
-			eventListener.Bind("LOOT_OPENED", LootOpenedHandler);
+			me.LuaEventListener.Bind("LOOT_OPENED", LootOpenedHandler);
 
 			DisenchantLuaScript = Encoding.UTF8.GetString(File.ReadAllBytes("Scripts/Disenchant.lua"));
 
@@ -64,7 +61,7 @@ namespace SpellFire.Primer.Solutions
 
 		public override void Dispose()
 		{
-			eventListener.Dispose();
+			me.LuaEventListener.Dispose();
 		}
 	}
 }

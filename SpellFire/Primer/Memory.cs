@@ -70,7 +70,7 @@ namespace SpellFire.Primer
 			GCHandle handle = GCHandle.Alloc(data, GCHandleType.Pinned);
 			try
 			{
-				result = Marshal.PtrToStructure<Ty>(handle.AddrOfPinnedObject());
+				result = (Ty) Marshal.PtrToStructure(handle.AddrOfPinnedObject(), type);
 			}
 			finally
 			{

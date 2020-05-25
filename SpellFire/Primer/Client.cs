@@ -55,8 +55,8 @@ namespace SpellFire.Primer
 					LuaEventListener.Active = true;
 				}
 
-				IntPtr clientConnection = Memory.ReadPointer86(IntPtr.Zero + Offset.ClientConnection);
-				IntPtr objectManagerAddress = Memory.ReadPointer86(clientConnection + Offset.GameObjectManager);
+				IntPtr clientConnection = Memory.ReadPointer32(IntPtr.Zero + Offset.ClientConnection);
+				IntPtr objectManagerAddress = Memory.ReadPointer32(clientConnection + Offset.GameObjectManager);
 				ObjectManager = new GameObjectManager(Memory, objectManagerAddress);
 				Player = new GameObject(Memory, ControlInterface.remoteControl.ClntObjMgrGetActivePlayerObj());
 			}

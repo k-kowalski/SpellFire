@@ -17,7 +17,7 @@ namespace SpellFire.Primer
 		 */
 
 		public string WorldObjectName => memory.ReadString(
-			memory.ReadPointer86(memory.ReadPointer86(address + 0x1A4) + 0x90));
+			memory.ReadPointer32(memory.ReadPointer32(address + 0x1A4) + 0x90));
 
 		public Int32 CastingSpellId => memory.ReadInt32(address + Offset.CastingSpellId);
 		public Int32 ChannelSpellId => memory.ReadInt32(address + Offset.ChannelSpellId);
@@ -31,7 +31,7 @@ namespace SpellFire.Primer
 				if (auraTableCapacity == -1)
 				{
 					auraTableCapacity = memory.ReadInt32(address + Offset.AuraTableCapacity2);
-					auraTableBase = memory.ReadPointer86(address + Offset.AuraTableBase2);
+					auraTableBase = memory.ReadPointer32(address + Offset.AuraTableBase2);
 				}
 				else
 				{
@@ -52,7 +52,7 @@ namespace SpellFire.Primer
 		{
 			get
 			{
-				IntPtr creatureEntryAddress = memory.ReadPointer86(address + Offset.CreatureEntryAddress);
+				IntPtr creatureEntryAddress = memory.ReadPointer32(address + Offset.CreatureEntryAddress);
 				if (creatureEntryAddress != IntPtr.Zero)
 				{
 					return memory.ReadStruct<CreatureType>(creatureEntryAddress + Offset.CreatureType);
@@ -68,7 +68,7 @@ namespace SpellFire.Primer
 		{
 			get
 			{
-				IntPtr unitInfo = memory.ReadPointer86(address + Offset.Info);
+				IntPtr unitInfo = memory.ReadPointer32(address + Offset.Info);
 				return memory.ReadInt32(unitInfo + Offset.Health);
 			}
 		}
@@ -77,7 +77,7 @@ namespace SpellFire.Primer
 		{
 			get
 			{
-				IntPtr unitInfo = memory.ReadPointer86(address + Offset.Info);
+				IntPtr unitInfo = memory.ReadPointer32(address + Offset.Info);
 				Int32 currentHealth = memory.ReadInt32(unitInfo + Offset.Health);
 				Int32 maxHealth = memory.ReadInt32(unitInfo + Offset.MaxHealth);
 
@@ -89,7 +89,7 @@ namespace SpellFire.Primer
 		{
 			get
 			{
-				IntPtr unitInfo = memory.ReadPointer86(address + Offset.Info);
+				IntPtr unitInfo = memory.ReadPointer32(address + Offset.Info);
 				return memory.ReadInt32(unitInfo + Offset.RunicPower) / 10;
 			}
 		}
@@ -113,27 +113,27 @@ namespace SpellFire.Primer
 		}
 		public bool IsMoving()
 		{
-			IntPtr movInfo = memory.ReadPointer86(address + 216);
+			IntPtr movInfo = memory.ReadPointer32(address + 216);
 			return memory.ReadInt32(movInfo + 96) != 0;
 		}
 
 		public bool IsLootable()
 		{
-			IntPtr unitInfo = memory.ReadPointer86(address + Offset.Info);
+			IntPtr unitInfo = memory.ReadPointer32(address + Offset.Info);
 			Int32 flags = memory.ReadInt32(unitInfo + Offset.Flags);
 			return (flags & (byte)DynamicUnitFlags.Lootable) != 0;
 		}
 
 		public bool IsTaggedByOther()
 		{
-			IntPtr unitInfo = memory.ReadPointer86(address + Offset.Info);
+			IntPtr unitInfo = memory.ReadPointer32(address + Offset.Info);
 			Int32 flags = memory.ReadInt32(unitInfo + Offset.Flags);
 			return (flags & (byte)DynamicUnitFlags.TaggedByOther) != 0;
 		}
 
 		public bool IsMounted()
 		{
-			IntPtr unitInfo = memory.ReadPointer86(address + Offset.Info);
+			IntPtr unitInfo = memory.ReadPointer32(address + Offset.Info);
 			return memory.ReadInt32(unitInfo + Offset.MountDisplayID) > 0;
 		}
 

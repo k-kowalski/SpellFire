@@ -83,7 +83,7 @@ namespace SpellFire.Primer.Solutions
 
 		private void Morph()
 		{
-			IntPtr fields = me.Memory.ReadPointer86(me.Player.GetAddress() + Offset.Info);
+			IntPtr fields = me.Memory.ReadPointer32(me.Player.GetAddress() + Offset.Info);
 
 			for (int slot = 0; slot < InventorySlots.Length; slot++)
 			{

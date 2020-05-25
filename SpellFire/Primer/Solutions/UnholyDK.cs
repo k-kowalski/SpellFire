@@ -233,7 +233,7 @@ namespace SpellFire.Primer.Solutions
 
 		private DeathKnightRunesState GetAvailableRunes()
 		{
-			uint runeCountTotal = me.Memory.ReadUInt32(IntPtr.Zero + Offset.RuneCount);
+			uint runeCountTotal = (uint)me.Memory.ReadInt32(IntPtr.Zero + Offset.RuneCount);
 
 			DeathKnightRunesState state = new DeathKnightRunesState();
 

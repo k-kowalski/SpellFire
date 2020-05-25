@@ -11,11 +11,11 @@ namespace SpellFire.Primer
 
 		public IEnumerator<GameObject> GetEnumerator()
 		{
-			IntPtr currentGameObject = memory.ReadPointer86(this.address + Offset.FirstGameObject);
+			IntPtr currentGameObject = memory.ReadPointer32(this.address + Offset.FirstGameObject);
 			while (currentGameObject != IntPtr.Zero)
 			{
 				yield return new GameObject(memory, currentGameObject);
-				currentGameObject = memory.ReadPointer86(currentGameObject + Offset.NextGameObject);
+				currentGameObject = memory.ReadPointer32(currentGameObject + Offset.NextGameObject);
 			}
 		}
 

@@ -26,7 +26,6 @@ namespace SpellFire.Primer
 
 		public byte[] Read(IntPtr address, Int32 size)
 		{
-			lastOpProcessedBytes = 0;
 			byte[] buffer = new byte[size];
 			SystemWin32.ReadProcessMemory(processHandle, address, buffer, buffer.Length, ref lastOpProcessedBytes);
 			return buffer;
@@ -34,7 +33,6 @@ namespace SpellFire.Primer
 
 		public bool Write(IntPtr address, byte[] buffer)
 		{
-			lastOpProcessedBytes = 0;
 			return SystemWin32.WriteProcessMemory(processHandle, address, buffer, buffer.Length, ref lastOpProcessedBytes);
 		}
 
@@ -46,18 +44,19 @@ namespace SpellFire.Primer
 			{
 				byte[] chunk = Read(address, StringChunkLength);
 
-				for (int i = 0; i < chunk.Length; i++)
+				foreach (var character in chunk)
 				{
-					chars.Add(chunk[i]);
+					chars.Add(character);
 
-					if (chunk[i] == '\0')
+					if (character == '\0')
 					{
-						break;
+						goto end;
 					}
 				}
-
-				return Encoding.UTF8.GetString(chars.ToArray());
 			}
+
+			end:
+			return Encoding.UTF8.GetString(chars.ToArray());
 		}
 
 		public Ty ReadStruct<Ty>(IntPtr address) where Ty : struct
@@ -87,32 +86,12 @@ namespace SpellFire.Primer
 
 		public Int32 ReadInt32(IntPtr address)
 		{
-			return BitConverter.ToInt32( Read(address, sizeof(Int32)) , 0);
+			return BitConverter.ToInt32(Read(address, sizeof(Int32)) , 0);
 		}
 
-		public Int16 ReadInt16(IntPtr address)
+		public IntPtr ReadPointer32(IntPtr address)
 		{
-			return BitConverter.ToInt16(Read(address, sizeof(Int16)), 0);
-		}
-
-		public UInt64 ReadUInt64(IntPtr address)
-		{
-			return (UInt64)ReadInt64(address);
-		}
-
-		public UInt32 ReadUInt32(IntPtr address)
-		{
-			return (UInt32)ReadInt32(address);
-		}
-
-		public UInt16 ReadUInt16(IntPtr address)
-		{
-			return (UInt16)ReadInt16(address);
-		}
-
-		public IntPtr ReadPointer86(IntPtr address)
-		{
-			return new IntPtr( ReadInt32(address) );
+			return new IntPtr(ReadInt32(address));
 		}
 	}
 }

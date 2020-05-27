@@ -75,7 +75,7 @@ namespace SpellFire.Well.Controller
 
 	public class CommandHandler : TimelessMarshalByRefObject, IDisposable
 	{
-		private readonly Util.Config config;
+		private readonly GlobalConfig config;
 		[NonSerialized]
 		private CommandQueue commandQueue;
 		[NonSerialized]
@@ -109,7 +109,7 @@ namespace SpellFire.Well.Controller
 		private SystemWin32.WndProc originalWndProc;
 		private SystemWin32.WndProc WndProcPatchInstance;
 
-		public CommandHandler(ControlInterface ctrlInterface, Well.Util.Config config)
+		public CommandHandler(ControlInterface ctrlInterface, GlobalConfig config)
 		{
 			this.commandQueue = new CommandQueue(ctrlInterface);
 			this.ctrlInterface = ctrlInterface;
@@ -212,7 +212,7 @@ namespace SpellFire.Well.Controller
 			eventCallback = LuaEventHandler;
 			luaEventCallbackPtr = Marshal.GetFunctionPointerForDelegate(eventCallback);
 
-			luaEventFunctionName = config["luaPlugFunctionName"] ?? SFUtil.GetRandomAsciiString(4);
+			luaEventFunctionName = config.LuaPlugFunctionName ?? SFUtil.GetRandomAsciiString(4);
 			frameName = SFUtil.GetRandomAsciiString(5);
 
 			commandQueue.Submit<object>((() =>
@@ -374,11 +374,14 @@ namespace SpellFire.Well.Controller
 		{
 			DestroyLuaEventFrameHandler();
 
-			/* restore original wnd proc */
-			SystemWin32.SetWindowLong(
-				Process.GetCurrentProcess().MainWindowHandle,
-				SystemWin32.GWL_WNDPROC,
-				Marshal.GetFunctionPointerForDelegate(originalWndProc));
+			if (originalWndProc != null)
+			{
+				/* restore original wnd proc if hooked */
+				SystemWin32.SetWindowLong(
+					Process.GetCurrentProcess().MainWindowHandle,
+					SystemWin32.GWL_WNDPROC,
+					Marshal.GetFunctionPointerForDelegate(originalWndProc));
+			}
 		}
 	}
 }

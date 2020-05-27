@@ -18,7 +18,7 @@ namespace SpellFire.Well.Controller
 		private readonly CommandHandler commandHandler;
 		private readonly PacketManager packetManager;
 
-		public RemoteMain(RemoteHooking.IContext context, string channelName, Well.Util.Config config)
+		public RemoteMain(RemoteHooking.IContext context, string channelName, GlobalConfig config)
 		{
 			ctrlInterface = RemoteHooking.IpcConnectClient<ControlInterface>(channelName);
 
@@ -33,7 +33,7 @@ namespace SpellFire.Well.Controller
 			ctrlInterface.hostControl.PrintMessage($"Ready");
 		}
 
-		public void Run(RemoteHooking.IContext context, string channelName, Well.Util.Config config)
+		public void Run(RemoteHooking.IContext context, string channelName, GlobalConfig config)
 		{
 			LocalHook endScenePatch = null;
 			LocalHook invalidPtrPatch = null;

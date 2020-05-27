@@ -1,14 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
-using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using SpellFire.Well.Util;
 
 namespace SpellFire.Primer.Gui
 {
 	public partial class MainForm : Form
 	{
-		private MainFormController mfController;
+		private readonly Launcher launcher;
 
 		private Bitmap radarFrontBuffer;
 		private Bitmap radarBackBuffer;
@@ -17,12 +18,16 @@ namespace SpellFire.Primer.Gui
 		{
 			InitializeComponent();
 
-			mfController = new MainFormController(this);
-
-			mfController.InitializeSolutionListBox(listBoxSolutions);
-
 			radarFrontBuffer = new Bitmap(radarCanvas.Width, radarCanvas.Width);
 			radarBackBuffer = new Bitmap(radarCanvas.Width, radarCanvas.Width);
+
+			SFConfig config = SFConfig.LoadConfig();
+
+			launcher = new Launcher(this);
+
+			listBoxSolutions.DataSource = new List<SolutionTypeEntry>(SolutionTypeEntry.GetSolutionTypes());
+			comboBoxProcesses.DataSource = new List<ProcessEntry>(ProcessEntry.GetRunningWoWProcessess());
+			comboBoxPresets.DataSource = new List<Preset>(config.Presets);
 		}
 
 		public void PostInfo(string info, Color color)
@@ -42,11 +47,6 @@ namespace SpellFire.Primer.Gui
 			}));
 		}
 
-		private void MainForm_Load(object sender, EventArgs e)
-		{
-			mfController.RefreshProcessList(comboBoxProcesses);
-		}
-
 		/* makes combo box readonly */
 		private void comboBoxProcesses_KeyPress(object sender, KeyPressEventArgs e)
 		{
@@ -58,12 +58,26 @@ namespace SpellFire.Primer.Gui
 			SolutionTypeEntry solEntry = listBoxSolutions.SelectedItem as SolutionTypeEntry;
 			ProcessEntry pEntry = comboBoxProcesses.SelectedItem as ProcessEntry;
 
-			Task.Run(() => this.mfController.ToggleRunState(solEntry, pEntry));
+			Task.Run(() =>
+			{
+				launcher.AttachAndLaunch(pEntry, solEntry);
+			});
+		}
+
+		private void buttonPreset_Click(object sender, EventArgs e)
+		{
+			Preset preset = comboBoxPresets.SelectedItem as Preset;
+
+			Task.Run(() =>
+			{
+				launcher.LaunchPreset(preset);
+			});
 		}
 
 		private void buttonRefresh_Click(object sender, EventArgs e)
 		{
-			mfController.RefreshProcessList(comboBoxProcesses);
+			comboBoxProcesses.DataSource = null;
+			comboBoxProcesses.DataSource = new List<ProcessEntry>(ProcessEntry.GetRunningWoWProcessess());
 		}
 
 		private void radarCanvas_Paint(object sender, PaintEventArgs e)
@@ -78,7 +92,7 @@ namespace SpellFire.Primer.Gui
 
 		public void RadarSwapBuffers()
 		{
-			radarFrontBuffer = (Bitmap)radarBackBuffer.Clone();
+			radarFrontBuffer = radarBackBuffer.Clone() as Bitmap;
 			radarCanvas.Invalidate();
 		}
 

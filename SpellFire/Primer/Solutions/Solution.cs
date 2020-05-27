@@ -13,7 +13,7 @@ namespace SpellFire.Primer.Solutions
 
 		protected readonly Client me;
 
-		public Solution(Client me)
+		protected Solution(Client me)
 		{
 			this.me = me;
 		}

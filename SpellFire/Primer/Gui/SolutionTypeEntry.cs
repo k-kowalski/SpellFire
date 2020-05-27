@@ -28,7 +28,13 @@ namespace SpellFire.Primer.Gui
 			return Assembly
 				.GetExecutingAssembly()
 				.GetTypes()
-				.Where(type => type.IsPublic && type.IsSubclassOf(solutionBaseType) && type.IsClass && !type.IsAbstract)
+				.Where(type =>
+					type.IsPublic
+					&& type.IsSubclassOf(solutionBaseType)
+					&& type.IsClass
+					&& !type.IsAbstract
+					&& !type.IsSubclassOf(typeof(MultiboxSolution))
+					)
 				.Select(solutionType => new SolutionTypeEntry(solutionType));
 		}
 
@@ -36,7 +42,5 @@ namespace SpellFire.Primer.Gui
 		{
 			return type.Name;
 		}
-
-		public bool IsMultiboxSolution() => type.IsSubclassOf(typeof(MultiboxSolution));
 	}
 }

@@ -1,0 +1,41 @@
+// example config file
+{
+	"global": {
+		"wowDir": "X:/path/to/World of Warcraft 3.3.5a",
+		"luaPlugFunctionName": "myluacb"
+	},
+
+	"presets": [
+		{
+			"id": "solo",
+			"clients": [
+				{
+					"login": "YourLoginX",
+					"password": "YourPasswordX",
+					"character": "YourCharacterX",
+					"gameConfig": "X:/path/to/World of Warcraft 3.3.5a/WTF/Config_preset_X.wtf",
+					"solution": "SpellFire.Primer.Solutions.YourSolutionX"
+				}
+			]
+		},
+		{
+			"id": "multiboxing",
+			"clients": [
+				{
+					"login": "YourLoginX",
+					"password": "YourPasswordX",
+					"character": "YourCharacterX",
+					"gameConfig": "X:/path/to/World of Warcraft 3.3.5a/WTF/Config_preset_X.wtf",
+					"solution": "SpellFire.Primer.Solutions.YourMasterMboxSolution"
+				},
+				{
+					"login": "YourLoginY",
+					"password": "YourPasswordY",
+					"character": "YourCharacterY",
+					"gameConfig": "X:/path/to/World of Warcraft 3.3.5a/WTF/Config_preset_Y.wtf",
+					"solution": "SpellFire.Primer.Solutions.YourMasterMboxSolution+SlaveInnerClass"
+				}
+			]
+		}
+	]
+}

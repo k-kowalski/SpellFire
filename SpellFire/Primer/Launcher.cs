@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -16,57 +17,102 @@ namespace SpellFire.Primer
 	{
 		private static readonly string LoginLuaScript = Encoding.UTF8.GetString(File.ReadAllBytes("Scripts/Login.lua"));
 
-		private Config config;
 		private MainForm mainForm;
-		private string wowDir;
 
-		private Solution solution;
+		private Solution mainSolution;
 		private Task solutionTask;
 		private Task radarTask;
 
-		public Launcher(Config config, MainForm mainForm)
+		private readonly List<Client> injectedClients;
+
+		public Launcher( MainForm mainForm)
 		{
-			this.config = config;
+			injectedClients = new List<Client>();
 			this.mainForm = mainForm;
-			wowDir = config["wowDir"];
 		}
 
-		/// <summary>
-		/// Launches WoW clients, injects them and performs initialization actions
-		/// based on config
-		/// </summary>
-		/// <param></param>
-		/// <returns></returns>
-		public IEnumerable<Client> LaunchClientsFromConfig()
+		public void AttachAndLaunch(ProcessEntry processEntry, SolutionTypeEntry solutionTypeEntry)
 		{
-
-			List<Client> clients = new List<Client>();
-			foreach (string key in config.Keys())
+			if (solutionTypeEntry == null)
 			{
-				if (key.StartsWith("creds"))
-				{
-					int id = key[key.Length - 1] - '0';
-					clients.Add( LaunchClient(id) );
-				}
+				MessageBox.Show("Select solution to run.");
+				return;
 			}
 
-			return clients;
+			if (mainSolution != null)
+			{
+				TerminateRunningSolution();
+				return;
+			}
+
+			if (processEntry == null)
+			{
+				MessageBox.Show("No WoW process selected.");
+				return;
+			}
+
+			mainForm.PostInfo("Launching...", Color.Gold);
+
+			Client clientToRun = AttachToProcess(processEntry.GetProcess(), null);
+
+			RunSolution(solutionTypeEntry.GetSolutionType(), clientToRun);
 		}
 
-		public Client LaunchClient(int configClientId)
+		private Client AttachToProcess(Process process, ClientLaunchSettings settings)
 		{
-			string[] credentials = config[$"creds{configClientId}"].Split(':');
-
-			File.Copy(config[$"config{configClientId}"], wowDir + @"\WTF\Config.wtf", true);
-
-			Process wowProcess = Process.Start(wowDir + @"\Wow.exe");
-
-			if (wowProcess.WaitForInputIdle())
+			var injectedClient = injectedClients.FirstOrDefault(client => client.Process.Id == process.Id);
+			if (injectedClient == null)
 			{
-				Client client = new Client(wowProcess, config, config[$"solution{configClientId}"]);
+				injectedClient = new Client(process, settings);
+				injectedClients.Add(injectedClient);
+				process.Exited += (sender, args) => injectedClients.Remove(injectedClient);
+			}
 
-				string loginCharacter = config[$"character{configClientId}"];
-				Launcher.LoginClient(client, credentials[0], credentials[1], loginCharacter);
+			return injectedClient;
+		}
+
+		public void LaunchPreset(Preset preset)
+		{
+			if (preset == null)
+			{
+				MessageBox.Show("No preset selected.");
+				return;
+			}
+
+			var clientsToRun = new List<Client>();
+			if (preset.Clients.Length > 0)
+			{
+				foreach (ClientLaunchSettings settings in preset.Clients)
+				{
+					Client client = LaunchClient(settings);
+					clientsToRun.Add(client);
+				}
+			}
+			else
+			{
+				MessageBox.Show("No clients specified in preset.");
+				return;
+			}
+
+			string solutionName = preset.Clients[0].Solution;
+			if ( ! String.IsNullOrEmpty(solutionName))
+			{
+				RunSolution(Type.GetType(solutionName),
+					clientsToRun.Count() == 1 ? (object)clientsToRun[0] : clientsToRun);
+			}
+		}
+
+		private Client LaunchClient(ClientLaunchSettings settings)
+		{
+			File.Copy(settings.GameConfig, SFConfig.Global.WowDir + @"\WTF\Config.wtf", true);
+
+			Process process = Process.Start(SFConfig.Global.WowDir + @"\Wow.exe");
+
+			if (process.WaitForInputIdle())
+			{
+				Client client = AttachToProcess(process, settings);
+
+				Launcher.LoginClient(client, settings.Login, settings.Password, settings.Character);
 
 				return client;
 			}
@@ -93,61 +139,30 @@ namespace SpellFire.Primer
 			}
 		}
 
-		public void AttachAndLaunch(ProcessEntry processEntry, SolutionTypeEntry solutionTypeEntry)
+		private void RunSolution(Type solutionType, object solutionArg)
 		{
-			if (solution != null)
-			{
-				TerminateRunningSolution();
-				return;
-			}
+			mainSolution = Activator.CreateInstance(solutionType, solutionArg) as Solution;
 
-			mainForm.PostInfo("Launching...", Color.Gold);
-
-			object solutionArg = null;
-
-			if (solutionTypeEntry.IsMultiboxSolution())
-			{
-				solutionArg = LaunchClientsFromConfig();
-			}
-			else if (Int32.TryParse(config["quickLaunchId"], out int quickLaunchClientId))
-			{
-				solutionArg = LaunchClient(quickLaunchClientId);
-			}
-			else
-			{
-				if (processEntry == null)
-				{
-					MessageBox.Show("No WoW process selected.");
-					return;
-				}
-				else
-				{
-					solutionArg = new Client(processEntry.GetProcess(), config, null);
-				}
-			}
-
-			solution = Activator.CreateInstance(solutionTypeEntry.GetSolutionType(), solutionArg) as Solution;
-
-			mainForm.PostInfo($"Running solution {solutionTypeEntry}", Color.Blue);
+			mainForm.PostInfo($"Running solution {solutionType.Name}", Color.Green);
 			mainForm.SetToggleButtonText("Stop");
 
 			solutionTask = Task.Run((() =>
 			{
-				while (solution.Active)
+				while (mainSolution.Active)
 				{
-					solution.Tick();
+					mainSolution.Tick();
 				}
-				solution.Dispose();
+				mainSolution.Dispose();
 
-				mainForm.PostInfo($"Solution {solution.GetType().Name} stopped.", Color.DarkRed);
+				mainForm.PostInfo($"Solution {mainSolution.GetType().Name} stopped.", Color.DarkRed);
 				mainForm.SetToggleButtonText("Start");
 			}));
 
 			radarTask = Task.Run((() =>
 			{
-				while (solution.Active)
+				while (mainSolution.Active)
 				{
-					solution.RenderRadar(mainForm.GetRadarCanvas(), mainForm.GetRadarBackBuffer());
+					mainSolution.RenderRadar(mainForm.GetRadarCanvas(), mainForm.GetRadarBackBuffer());
 					mainForm.RadarSwapBuffers();
 				}
 			}));
@@ -155,10 +170,10 @@ namespace SpellFire.Primer
 
 		private void TerminateRunningSolution()
 		{
-			solution.Stop();
+			mainSolution.Stop();
 			solutionTask.Wait();
 			radarTask.Wait();
-			solution = null;
+			mainSolution = null;
 		}
 	}
 }

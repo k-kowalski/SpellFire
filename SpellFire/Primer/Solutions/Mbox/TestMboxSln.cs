@@ -150,16 +150,16 @@ namespace SpellFire.Primer.Solutions.Mbox
 			{
 				try
 				{
-					if (slave.SolutionName == null)
+					if (slave.LaunchSettings.Solution == null)
 					{
 						continue;
 					}
 
-					Type solutionType = Type.GetType(slave.SolutionName);
+					Type solutionType = Type.GetType(slave.LaunchSettings.Solution);
 
 					if (Activator.CreateInstance(solutionType, slave, this) is Solution solution)
 					{
-						Console.WriteLine($"Bound solution: {slave.SolutionName}.");
+						Console.WriteLine($"Bound solution: {slave.LaunchSettings.Solution}.");
 						slavesTasks.Add(
 							Task.Run(() =>
 							{
@@ -174,7 +174,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 				}
 				catch (Exception e)
 				{
-					Console.WriteLine($"Could not launch solution {slave.SolutionName}.");
+					Console.WriteLine($"Could not launch solution {slave.LaunchSettings.Solution}.");
 					Console.WriteLine(e);
 				}
 			}

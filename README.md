@@ -26,6 +26,7 @@ The system entails **two** components working together, their general descriptio
 
 Following technologies were used for implementation:
 - **.NET Framework**
+- **Json .NET**
 - **EasyHook** process hooking library
 
 ## **How can I use it?**

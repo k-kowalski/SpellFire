@@ -19,18 +19,18 @@ namespace SpellFire.Primer
 		public LuaEventListener LuaEventListener { get; private set; }
 		public GameObjectManager ObjectManager { get; private set; }
 		public GameObject Player { get; private set; }
-		public string SolutionName { get; }
+		public ClientLaunchSettings LaunchSettings { get; }
 
-		public Client(Process process, Well.Util.Config config, string solutionName)
+		public Client(Process process, ClientLaunchSettings launchSettings)
 		{
 			Process = process;
-			SolutionName = solutionName;
+			LaunchSettings = launchSettings;
 			Memory = new Memory(this.Process);
 
-			InjectClient(config);
+			InjectClient();
 		}
 
-		private void InjectClient(Well.Util.Config config)
+		private void InjectClient()
 		{
 			this.ControlInterface = new ControlInterface();
 
@@ -39,7 +39,7 @@ namespace SpellFire.Primer
 
 			string injectionLibraryPath = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "Well.dll");
 			EasyHook.RemoteHooking.Inject(this.Process.Id, injectionLibraryPath, null,
-				channelName, config);
+				channelName, SFConfig.Global);
 
 			this.LuaEventListener = new LuaEventListener(this.ControlInterface);
 		}

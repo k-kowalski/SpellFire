@@ -2,7 +2,8 @@
 {
 	"global": {
 		"wowDir": "X:/path/to/World of Warcraft 3.3.5a",
-		"luaPlugFunctionName": "myluacb"
+		"luaPlugFunctionName": "myluacb",
+		"dllName": "RandomDLL.dll"
 	},
 
 	"presets": [

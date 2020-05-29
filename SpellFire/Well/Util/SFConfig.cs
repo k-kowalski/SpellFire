@@ -34,6 +34,9 @@ namespace SpellFire.Well.Util
 
 		[JsonProperty("luaPlugFunctionName")]
 		public string LuaPlugFunctionName { get; set; }
+
+		[JsonProperty("dllName")]
+		public string DllName { get; set; }
 	}
 
 	public class Preset

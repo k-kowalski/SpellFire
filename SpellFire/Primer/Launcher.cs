@@ -25,8 +25,11 @@ namespace SpellFire.Primer
 
 		private readonly List<Client> injectedClients;
 
-		public Launcher( MainForm mainForm)
+		public Launcher(MainForm mainForm)
 		{
+			/* automatically rename injection dll */
+			File.Copy("Well.dll", SFConfig.Global.DllName, true);
+
 			injectedClients = new List<Client>();
 			this.mainForm = mainForm;
 		}

@@ -37,7 +37,7 @@ namespace SpellFire.Primer
 			string channelName = null;
 			EasyHook.RemoteHooking.IpcCreateServer(ref channelName, System.Runtime.Remoting.WellKnownObjectMode.Singleton, this.ControlInterface);
 
-			string injectionLibraryPath = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "Well.dll");
+			string injectionLibraryPath = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), SFConfig.Global.DllName);
 			EasyHook.RemoteHooking.Inject(this.Process.Id, injectionLibraryPath, null,
 				channelName, SFConfig.Global);
 

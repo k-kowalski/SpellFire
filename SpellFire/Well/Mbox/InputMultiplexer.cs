@@ -29,14 +29,7 @@ namespace SpellFire.Well.Mbox
 
 		~InputMultiplexer()
 		{
-			try
-			{
-				source.WindowMessageDispatched -= MessageDispatcher;
-			}
-			catch (RemotingException e)
-			{
-				Console.WriteLine(e);
-			}
+			source.WindowMessageDispatched -= MessageDispatcher;
 		}
 			
 		private void MessageDispatcher(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)

@@ -78,7 +78,6 @@
     </Compile>
     <Compile Include="GameObject.cs" />
     <Compile Include="GameObjectManager.cs" />
-    <Compile Include="Memory.cs" />
     <Compile Include="MemoryMappedObject.cs" />
     <Compile Include="Primer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

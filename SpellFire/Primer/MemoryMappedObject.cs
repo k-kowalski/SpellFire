@@ -1,4 +1,5 @@
 ﻿using System;
+using SpellFire.Well.Util;
 
 namespace SpellFire.Primer
 {

@@ -9,6 +9,7 @@ using System.Runtime.Remoting.Channels.Ipc;
 using System.Runtime.Serialization.Formatters;
 using System.Threading;
 using SpellFire.Well.Net;
+using SpellFire.Well.Warden;
 
 namespace SpellFire.Well.Controller
 {
@@ -17,6 +18,8 @@ namespace SpellFire.Well.Controller
 		private readonly ControlInterface ctrlInterface;
 		private readonly CommandHandler commandHandler;
 		private readonly PacketManager packetManager;
+
+		private readonly Warden.WardenBuster wardenBuster;
 
 		public RemoteMain(RemoteHooking.IContext context, string channelName, GlobalConfig config)
 		{
@@ -29,6 +32,8 @@ namespace SpellFire.Well.Controller
 			packetManager = new PacketManager(ctrlInterface, commandHandler);
 
 			commandHandler.DetourWndProc();
+
+			wardenBuster = new WardenBuster(ctrlInterface.hostControl);
 
 			ctrlInterface.hostControl.PrintMessage($"Ready");
 		}
@@ -71,7 +76,6 @@ namespace SpellFire.Well.Controller
 				while (true)
 				{
 					Thread.Sleep(500);
-
 					ctrlInterface.hostControl.Ping();
 				}
 			}
@@ -84,6 +88,8 @@ namespace SpellFire.Well.Controller
 				endScenePatch.Dispose();
 				invalidPtrPatch.Dispose();
 				LocalHook.Release();
+
+				wardenBuster.Dispose();
 			}
 		}
 

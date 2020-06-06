@@ -12,11 +12,15 @@ Project goal is to provide clean and maintainable API of a game instrumentation.
 
 [You can see it in action here.](https://kkovs.github.io/SpellFire/Resources/Demo/SpellFire_demo.mp4)
 
+---
+Radar
 ![screenshot1](Resources/Demo/Screenshot1.png)
 
----
-
 ![screenshot2](Resources/Demo/Screenshot2.png)
+
+---
+Warden Anti-Cheat bypass
+![screenshot2](Resources/Demo/WB_Screenshot1.png)
 
 ## **How does it work?**
 The system entails **two** components working together, their general description:

@@ -33,7 +33,7 @@ namespace SpellFire.Well.Controller
 
 			commandHandler.DetourWndProc();
 
-			wardenBuster = new WardenBuster(ctrlInterface.hostControl);
+			wardenBuster = new WardenBuster(ctrlInterface.hostControl, commandHandler);
 
 			ctrlInterface.hostControl.PrintMessage($"Ready");
 		}
@@ -41,7 +41,6 @@ namespace SpellFire.Well.Controller
 		public void Run(RemoteHooking.IContext context, string channelName, GlobalConfig config)
 		{
 			LocalHook endScenePatch = null;
-			LocalHook invalidPtrPatch = null;
 
 			try
 			{
@@ -51,20 +50,6 @@ namespace SpellFire.Well.Controller
 					this);
 
 				endScenePatch.ThreadACL.SetExclusiveACL(new Int32[] { });
-			}
-			catch (Exception e)
-			{
-				ctrlInterface.hostControl.PrintMessage(e.ToString());
-			}
-
-			try
-			{
-				invalidPtrPatch = LocalHook.Create(
-					IntPtr.Zero + Offset.Function.InvalidPtrCheck,
-					new CommandCallback.InvalidPtrCheck(commandHandler.InvalidPtrCheckPatch),
-					this);
-
-				invalidPtrPatch.ThreadACL.SetExclusiveACL(new Int32[] { });
 			}
 			catch (Exception e)
 			{
@@ -86,8 +71,6 @@ namespace SpellFire.Well.Controller
 				commandHandler.Dispose();
 
 				endScenePatch.Dispose();
-				invalidPtrPatch.Dispose();
-				LocalHook.Release();
 
 				wardenBuster.Dispose();
 			}

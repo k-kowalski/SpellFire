@@ -12,6 +12,20 @@ namespace SpellFire.Well.Util
 
 		public const Int32 PROCESS_ALL_ACCESS = 0x1F0FFF;
 
+		public enum MemoryProtection : Int32
+		{
+			PAGE_EXECUTE_READ = 0x20
+		}
+
+		[DllImport("kernel32.dll", CharSet = CharSet.Auto)]
+		public static extern IntPtr GetModuleHandle(string lpModuleName);
+
+		[DllImport("kernel32", CharSet = CharSet.Ansi, ExactSpelling = true, SetLastError = true)]
+		public static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
+
+		[DllImport("kernel32.dll")]
+		public static extern bool VirtualProtect(IntPtr lpAddress, UIntPtr dwSize, MemoryProtection flNewProtect, ref uint lpflOldProtect);
+
 		[DllImport("user32.dll")]
 		public static extern Int16 VkKeyScan(char ch);
 
@@ -37,5 +51,25 @@ namespace SpellFire.Well.Util
 		public static extern Int32 PostMessage(IntPtr hWnd, UInt32 msg, IntPtr wParam, IntPtr lParam);
 
 		public delegate IntPtr WndProc(IntPtr hWnd, UInt32 msg, IntPtr wParam, IntPtr lParam);
+		public delegate bool VirtualProtectDelegate(IntPtr lpAddress, UIntPtr dwSize, MemoryProtection flNewProtect, ref uint lpflOldProtect);
+
+		[DllImport("kernel32.dll")]
+		public static extern int VirtualQuery(
+			ref IntPtr lpAddress,
+			ref MEMORY_BASIC_INFORMATION lpBuffer,
+			int dwLength
+		);
+
+		[StructLayout(LayoutKind.Sequential)]
+		public struct MEMORY_BASIC_INFORMATION
+		{
+			public IntPtr BaseAddress;
+			public IntPtr AllocationBase;
+			public uint AllocationProtect;
+			public IntPtr RegionSize;
+			public uint State;
+			public uint Protect;
+			public uint Type;
+		}
 	}
 }

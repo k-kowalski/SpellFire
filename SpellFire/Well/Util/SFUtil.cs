@@ -37,5 +37,15 @@ namespace SpellFire.Well.Util
 				return str;
 			}
 		}
+
+		public static IntPtr GetIntPtr(this UIntPtr uintptr)
+		{
+			return unchecked((IntPtr) (long) (ulong) uintptr);
+		}
+
+		public static UIntPtr GetUIntPtr(this IntPtr intptr)
+		{
+			return unchecked((UIntPtr) (ulong) (long) intptr);
+		}
 	}
 }

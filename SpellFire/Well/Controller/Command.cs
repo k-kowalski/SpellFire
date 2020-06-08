@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading;
 using SpellFire.Well.Lua;
 using SpellFire.Well.Net;
 
@@ -109,11 +110,17 @@ namespace SpellFire.Well.Controller
 		private SystemWin32.WndProc originalWndProc;
 		private SystemWin32.WndProc WndProcPatchInstance;
 
+		private bool wardenScan = false;
+
 		public CommandHandler(ControlInterface ctrlInterface, GlobalConfig config)
 		{
 			this.commandQueue = new CommandQueue(ctrlInterface);
 			this.ctrlInterface = ctrlInterface;
 			this.config = config;
+
+			eventCallback = LuaEventHandler;
+			luaEventCallbackPtr = Marshal.GetFunctionPointerForDelegate(eventCallback);
+			frameName = SFUtil.GetRandomAsciiString(5);
 
 			ResolveEndSceneAddress();
 			RegisterFunctions();
@@ -204,42 +211,75 @@ namespace SpellFire.Well.Controller
 
 		public void InitializeLuaEventFrameHandler()
 		{
-			if (frameName != null || luaEventFunctionName != null)
+			if (luaEventFunctionName != null)
 			{
 				return;
 			}
 
-			eventCallback = LuaEventHandler;
-			luaEventCallbackPtr = Marshal.GetFunctionPointerForDelegate(eventCallback);
+			while (wardenScan)
+			{
+				Thread.Sleep(200);
+			}
 
 			luaEventFunctionName = config.LuaPlugFunctionName ?? SFUtil.GetRandomAsciiString(4);
-			frameName = SFUtil.GetRandomAsciiString(5);
 
 			commandQueue.Submit<object>((() =>
 			{
 				FrameScript__RegisterFunction(luaEventFunctionName, luaEventCallbackPtr);
-				FrameScript__Execute($"{frameName} = CreateFrame('Frame'); {frameName}:SetScript('OnEvent', function(self, eventName, ...) {luaEventFunctionName}(eventName, ...) end); {frameName}:RegisterAllEvents();", 0, 0);
+				FrameScript__Execute($"if not {frameName} then  {frameName} = CreateFrame('Frame'); end; {frameName}:SetScript('OnEvent', function(self, eventName, ...) {luaEventFunctionName}(eventName, ...) end); {frameName}:RegisterAllEvents();", 0, 0);
 
 				return null;
 			}));
 		}
 
+		public void InitializeLuaEventFrameHandler_W()
+		{
+			if (luaEventFunctionName != null)
+			{
+				return;
+			}
+
+			luaEventFunctionName = config.LuaPlugFunctionName ?? SFUtil.GetRandomAsciiString(4);
+
+			FrameScript__RegisterFunction(luaEventFunctionName, luaEventCallbackPtr);
+			FrameScript__Execute($"if not {frameName} then  {frameName} = CreateFrame('Frame'); end; {frameName}:SetScript('OnEvent', function(self, eventName, ...) {luaEventFunctionName}(eventName, ...) end); {frameName}:RegisterAllEvents();", 0, 0);
+
+			wardenScan = false;
+		}
+
+		public void DestroyLuaEventFrameHandler_W()
+		{
+			wardenScan = true;
+
+			if (luaEventFunctionName == null)
+			{
+				return;
+			}
+
+			FrameScript__Execute($"{frameName}:UnregisterAllEvents(); {frameName}:SetScript('OnEvent', nil);",
+				0, 0);
+			FrameScript__UnregisterFunction(luaEventFunctionName);
+
+			luaEventFunctionName = null;
+		}
+
 		public void DestroyLuaEventFrameHandler()
 		{
-			if (frameName == null || luaEventFunctionName == null)
+
+			if (luaEventFunctionName == null)
 			{
 				return;
 			}
 
 			commandQueue.Submit<object>(() =>
 			{
-				FrameScript__Execute($"{frameName}:UnregisterAllEvents(); {frameName}:SetScript('OnEvent', nil);", 0, 0);
+				FrameScript__Execute($"{frameName}:UnregisterAllEvents(); {frameName}:SetScript('OnEvent', nil);",
+					0, 0);
 				FrameScript__UnregisterFunction(luaEventFunctionName);
 
 				return null;
 			});
 
-			frameName = null;
 			luaEventFunctionName = null;
 		}
 

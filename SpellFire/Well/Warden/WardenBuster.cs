@@ -192,6 +192,7 @@ namespace SpellFire.Well.Warden
 			if (overlapped)
 			{
 				PatchInvalidPtrCheck();
+				commandHandler.InitializeLuaEventFrameHandler_W();
 			}
 
 			return res;
@@ -206,6 +207,7 @@ namespace SpellFire.Well.Warden
 			if (overlapped)
 			{
 				PatchInvalidPtrCheck();
+				commandHandler.InitializeLuaEventFrameHandler_W();
 			}
 		}
 
@@ -231,6 +233,7 @@ namespace SpellFire.Well.Warden
 				{
 					hc.PrintMessage($"Warden[{DateTime.Now}] Preventing scan at 0x{scanStart:X}, size {size}. Unhooking...");
 
+					commandHandler.DestroyLuaEventFrameHandler_W();
 					invalidPtrCheckPatch.Dispose();
 					LocalHook.Release();
 					return true;

@@ -79,6 +79,7 @@
     <Compile Include="Util\SystemWin32.cs" />
     <Compile Include="Util\TimelessMarshalByRefObject.cs" />
     <Compile Include="Util\Vector3.cs" />
+    <Compile Include="Warden\PageCheckHook.cs" />
     <Compile Include="Warden\WardenBuster.cs" />
   </ItemGroup>
   <ItemGroup>

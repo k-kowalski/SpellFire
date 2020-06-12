@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -17,7 +18,7 @@ namespace SpellFire.Well.Warden
 
 	public class WardenBuster : IDisposable
 	{
-		private readonly byte[] WardenScanCode = {
+		private readonly byte[] WardenScanMemoryCode = {
 			0x56, 0x57, 0xFC, 0x8B, 0x54,
 			0x24, 0x14, 0x8B, 0x74, 0x24,
 			0x10, 0x8B, 0x44, 0x24, 0x0C,
@@ -28,18 +29,33 @@ namespace SpellFire.Well.Warden
 			0x5E, 0xC3
 		};
 
+		private readonly byte[] WardenPageCheckCode = {
+			0x8B, 0x45, 0x08, 0x8A, 0x04, 0x07,
+			0x88, 0x44, 0x3E, 0x1C, 0x47, 0x3B,
+			0xFB, 0x72, 0xF1, 0x5F, 0x5B, 0xC9,
+			0xC2, 0x04, 0x00
+		};
+
 		private readonly Memory memory;
 
 		private readonly ControlInterface.HostControl hc;
-		private CommandHandler commandHandler;
+		private readonly CommandHandler commandHandler;
 
 		private LocalHook virtualProtectPatch;
 		private SystemWin32.VirtualProtectDelegate originalVirtualProtect;
+
+		private LocalHook virtualQueryPatch;
+		private SystemWin32.VirtualQueryDelegate originalVirtualQuery;
 
 		private LocalHook wardenScanPatch;
 		private WardenScan originalWardenScan;
 
 		private LocalHook invalidPtrCheckPatch;
+
+		private readonly UInt32 thisModuleBase;
+		private readonly UInt32 thisModuleEnd;
+
+		private PageCheckHook wardenPageCheckPatch;
 
 		public WardenBuster(ControlInterface.HostControl hc, CommandHandler commandHandler)
 		{
@@ -48,8 +64,14 @@ namespace SpellFire.Well.Warden
 
 			memory = new Memory(Process.GetCurrentProcess());
 
+			/* our host module is EasyHook32.dll */
+			ProcessModule thisModule = Process.GetCurrentProcess().GetModule("EasyHook32.dll");
+			thisModuleBase = (uint)thisModule.BaseAddress.ToInt32();
+			thisModuleEnd = (uint)thisModule.BaseAddress.ToInt32() + (uint)thisModule.ModuleMemorySize;
+
 			PatchInvalidPtrCheck();
 
+			PatchVirtualQuery();
 			PatchVirtualProtect();
 		}
 
@@ -76,31 +98,72 @@ namespace SpellFire.Well.Warden
 			virtualProtectPatch.ThreadACL.SetExclusiveACL(new Int32[] { });
 		}
 
-		bool VirtualProtectPatchHandler(IntPtr lpAddress, UIntPtr dwSize, SystemWin32.MemoryProtection flNewProtect,
+		private bool VirtualProtectPatchHandler(IntPtr lpAddress, UIntPtr dwSize, SystemWin32.MemoryProtection flNewProtect,
 			ref uint lpflOldProtect)
 		{
 			if (flNewProtect == SystemWin32.MemoryProtection.PAGE_EXECUTE_READ)
 			{
-				IntPtr wardenScan = FindWardenScan(lpAddress.GetUIntPtr(), dwSize.ToUInt32());
-				if (wardenScan != IntPtr.Zero)
+				IntPtr wardenMemoryScan =
+					FindWardenSignature(lpAddress.GetUIntPtr(), dwSize.ToUInt32(), WardenScanMemoryCode);
+				if (wardenMemoryScan != IntPtr.Zero)
 				{
 					hc.PrintMessage($"Warden base module starts at 0x{lpAddress.ToInt32():X}, ends at 0x{(lpAddress + (int)dwSize.ToUInt32()).ToInt32():X}");
-					PatchWardenScan(wardenScan);
+
+					wardenScanPatch?.Dispose();
+					PatchWardenScan(wardenMemoryScan);
+				}
+
+				IntPtr wardenPageCheckScan = FindWardenSignature(lpAddress.GetUIntPtr(), dwSize.ToUInt32(), WardenPageCheckCode);
+				if (wardenPageCheckScan != IntPtr.Zero)
+				{
+					wardenPageCheckPatch?.Dispose();
+					wardenPageCheckPatch = new PageCheckHook(memory, PageCheckPatchHandler, wardenPageCheckScan);
 				}
 			}
+
 
 			return originalVirtualProtect(lpAddress, dwSize, flNewProtect, ref lpflOldProtect);
 		}
 
-		private IntPtr FindWardenScan(UIntPtr startAddress, UInt32 searchSpan)
+		private void PatchVirtualQuery()
 		{
-			long endOffset = startAddress.ToUInt32() + searchSpan - WardenScanCode.Length;
+			IntPtr vqAddress = SystemWin32.GetProcAddress(SystemWin32.GetModuleHandle("kernel32.dll"), "VirtualQueryEx");
+			originalVirtualQuery = Marshal.GetDelegateForFunctionPointer<SystemWin32.VirtualQueryDelegate>(vqAddress);
+
+			virtualQueryPatch = LocalHook.Create(
+				vqAddress,
+				new SystemWin32.VirtualQueryDelegate(VirtualQueryPatchHandler), 
+				this);
+
+			virtualQueryPatch.ThreadACL.SetExclusiveACL(new Int32[] { });
+		}
+
+		private int VirtualQueryPatchHandler(IntPtr lpAddress, ref SystemWin32.MEMORY_BASIC_INFORMATION lpBuffer, uint dwLength)
+		{
+			var res = originalVirtualQuery(lpAddress, ref lpBuffer, dwLength);
+
+			UInt32 regionBase = (uint)lpBuffer.BaseAddress.ToInt32();
+			UInt32 regionEnd = (uint)lpBuffer.BaseAddress.ToInt32() + (uint)lpBuffer.RegionSize.ToInt32();
+
+			if (regionBase >= thisModuleBase && regionEnd <= thisModuleEnd)
+			{
+				hc.PrintMessage($"Warden[{DateTime.Now}] Querying occupied address: {lpAddress}, shadowing region as MEM_FREE & PAGE_NOACCESS");
+				lpBuffer.State = SystemWin32.MemoryState.MEM_FREE;
+				lpBuffer.Protect = SystemWin32.MemoryProtection.PAGE_NOACCESS;
+			}
+
+			return res;
+		}
+
+		private IntPtr FindWardenSignature(UIntPtr startAddress, UInt32 searchSpan, byte[] signature)
+		{
+			long endOffset = startAddress.ToUInt32() + searchSpan - signature.Length;
 			for (UIntPtr address = startAddress; address.ToUInt32() < endOffset; address += 1)
 			{
-				byte[] readBytes = memory.Read(address.GetIntPtr(), WardenScanCode.Length);
-				if (readBytes.SequenceEqual(WardenScanCode))
+				byte[] readBytes = memory.Read(address.GetIntPtr(), signature.Length);
+				if (readBytes.SequenceEqual(signature))
 				{
-					hc.PrintMessage($"Found Warden scan function at 0x{(int)address.ToUInt32():X}, offset from base module: 0x{(address - (int)startAddress.ToUInt32()).ToUInt32():X}");
+					hc.PrintMessage($"Found Warden function at 0x{(int)address.ToUInt32():X}, offset from base module: 0x{(address - (int)startAddress.ToUInt32()).ToUInt32():X}");
 					return address.GetIntPtr();
 				}
 			}
@@ -128,12 +191,22 @@ namespace SpellFire.Well.Warden
 
 			if (overlapped)
 			{
-				hc.PrintMessage($"Warden[{DateTime.Now}] Restoring hook...");
 				PatchInvalidPtrCheck();
-				hc.PrintMessage($"Warden[{DateTime.Now}] Hook restored");
 			}
 
 			return res;
+		}
+
+		private void PageCheckPatchHandler(IntPtr src, int offset, int size, IntPtr dest)
+		{
+			bool overlapped = FixOverlappingModifications(src + offset, size);
+
+			memory.Write(dest + offset, memory.Read(src + offset, size - offset));
+
+			if (overlapped)
+			{
+				PatchInvalidPtrCheck();
+			}
 		}
 
 		private bool FixOverlappingModifications(IntPtr scanAddress, int size)
@@ -147,10 +220,10 @@ namespace SpellFire.Well.Warden
 				JMP/CALL opcode and 4 bytes of jump address
 
 				i.e. for JMP
-				0xE9 AddressByte_1 AddressByte_2 AddressByte_3 AddressByte_4
+				0xE9 AddressByte[0] AddressByte[1] AddressByte[2] AddressByte[3]
 
 			 */
-			Int32 modEnd = Offset.Function.InvalidPtrCheck + 5;  
+			Int32 modEnd = Offset.Function.InvalidPtrCheck + 5;
 
 			if (scanEnd > modStart)
 			{
@@ -169,9 +242,10 @@ namespace SpellFire.Well.Warden
 
 		public void Dispose()
 		{
+			invalidPtrCheckPatch.Dispose();
 			virtualProtectPatch.Dispose();
 			wardenScanPatch.Dispose();
-			invalidPtrCheckPatch.Dispose();
+			wardenPageCheckPatch.Dispose();
 			LocalHook.Release();
 		}
 	}

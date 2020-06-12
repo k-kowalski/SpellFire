@@ -14,7 +14,9 @@ namespace SpellFire.Well.Util
 
 		public enum MemoryProtection : Int32
 		{
-			PAGE_EXECUTE_READ = 0x20
+			PAGE_EXECUTE_READ = 0x20,
+			PAGE_EXECUTE_READWRITE = 0x40,
+			PAGE_NOACCESS = 0x1
 		}
 
 		[DllImport("kernel32.dll", CharSet = CharSet.Auto)]
@@ -52,12 +54,13 @@ namespace SpellFire.Well.Util
 
 		public delegate IntPtr WndProc(IntPtr hWnd, UInt32 msg, IntPtr wParam, IntPtr lParam);
 		public delegate bool VirtualProtectDelegate(IntPtr lpAddress, UIntPtr dwSize, MemoryProtection flNewProtect, ref uint lpflOldProtect);
+		public delegate int VirtualQueryDelegate(IntPtr lpAddress, ref MEMORY_BASIC_INFORMATION lpBuffer, uint dwLength);
 
 		[DllImport("kernel32.dll")]
 		public static extern int VirtualQuery(
-			ref IntPtr lpAddress,
+			IntPtr lpAddress,
 			ref MEMORY_BASIC_INFORMATION lpBuffer,
-			int dwLength
+			uint dwLength
 		);
 
 		[StructLayout(LayoutKind.Sequential)]
@@ -67,9 +70,14 @@ namespace SpellFire.Well.Util
 			public IntPtr AllocationBase;
 			public uint AllocationProtect;
 			public IntPtr RegionSize;
-			public uint State;
-			public uint Protect;
+			public MemoryState State;
+			public MemoryProtection Protect;
 			public uint Type;
+		}
+
+		public enum MemoryState : Int32
+		{
+			MEM_FREE = 0x10000
 		}
 	}
 }

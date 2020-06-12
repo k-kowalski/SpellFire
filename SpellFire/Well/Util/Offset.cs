@@ -155,6 +155,10 @@ namespace SpellFire.Well.Util
 		/// </summary>
 		public const Int32 AuraTableBase2 = 0xC58;
 
+		/// <summary>
+		/// warden page check loop interior
+		/// </summary>
+		public const Int32 PageCheckReturnOffset = 0xF;
 
 		public static class DirectX
 		{

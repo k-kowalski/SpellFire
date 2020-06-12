@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -46,6 +48,30 @@ namespace SpellFire.Well.Util
 		public static UIntPtr GetUIntPtr(this IntPtr intptr)
 		{
 			return unchecked((UIntPtr) (ulong) (long) intptr);
+		}
+
+		public static string ReadMemoryAsHex(Memory memory, IntPtr address, Int32 len)
+		{
+			var ba = memory.Read(address, len);
+			return BitConverter.ToString(ba).Replace("-", "");
+		}
+
+		public static ProcessModule GetModule(this Process process, string name)
+		{
+			foreach (ProcessModule module in process.Modules)
+			{
+				if (module.ModuleName == name)
+				{
+					return module;
+				}
+			}
+
+			throw new Exception("Module not found.");
+		}
+
+		public static void DumpMemory(Memory memory, IntPtr address, UInt32 size, string fileName)
+		{
+			File.WriteAllBytes(fileName, memory.Read(address, (int)size));
 		}
 	}
 }

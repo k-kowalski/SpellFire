@@ -52,8 +52,8 @@ namespace SpellFire.Well.Warden
 
 		private LocalHook invalidPtrCheckPatch;
 
-		private readonly UInt32 thisModuleBase;
-		private readonly UInt32 thisModuleEnd;
+		private readonly uint thisModuleBase;
+		private readonly uint thisModuleEnd;
 
 		private PageCheckHook wardenPageCheckPatch;
 
@@ -107,17 +107,23 @@ namespace SpellFire.Well.Warden
 					FindWardenSignature(lpAddress.GetUIntPtr(), dwSize.ToUInt32(), WardenScanMemoryCode);
 				if (wardenMemoryScan != IntPtr.Zero)
 				{
-					hc.PrintMessage($"Warden base module starts at 0x{lpAddress.ToInt32():X}, ends at 0x{(lpAddress + (int)dwSize.ToUInt32()).ToInt32():X}");
+					hc.PrintMessage($"Found Warden Memory Scan function at 0x{wardenMemoryScan.ToInt32():X}, offset from base module: 0x{(wardenMemoryScan.ToInt32() - lpAddress.ToInt32()):X}");
 
 					wardenScanPatch?.Dispose();
 					PatchWardenScan(wardenMemoryScan);
 				}
 
-				IntPtr wardenPageCheckScan = FindWardenSignature(lpAddress.GetUIntPtr(), dwSize.ToUInt32(), WardenPageCheckCode);
-				if (wardenPageCheckScan != IntPtr.Zero)
+				IntPtr wardenPageCheck = FindWardenSignature(lpAddress.GetUIntPtr(), dwSize.ToUInt32(), WardenPageCheckCode);
+				if (wardenPageCheck != IntPtr.Zero)
 				{
+					hc.PrintMessage($"Found Warden Page Check code at 0x{wardenPageCheck.ToInt32():X}, offset from base module: 0x{(wardenPageCheck.ToInt32() - lpAddress.ToInt32()):X}");
 					wardenPageCheckPatch?.Dispose();
-					wardenPageCheckPatch = new PageCheckHook(memory, PageCheckPatchHandler, wardenPageCheckScan);
+					wardenPageCheckPatch = new PageCheckHook(memory, PageCheckPatchHandler, wardenPageCheck);
+				}
+
+				if (wardenMemoryScan != IntPtr.Zero || wardenPageCheck != IntPtr.Zero)
+				{
+					hc.PrintMessage($"Warden base module starts at 0x{lpAddress.ToInt32():X}, size {dwSize.ToUInt32()}");
 				}
 			}
 
@@ -163,7 +169,6 @@ namespace SpellFire.Well.Warden
 				byte[] readBytes = memory.Read(address.GetIntPtr(), signature.Length);
 				if (readBytes.SequenceEqual(signature))
 				{
-					hc.PrintMessage($"Found Warden function at 0x{(int)address.ToUInt32():X}, offset from base module: 0x{(address - (int)startAddress.ToUInt32()).ToUInt32():X}");
 					return address.GetIntPtr();
 				}
 			}

@@ -41,12 +41,15 @@ namespace SpellFire.Well.Warden
 
 		private readonly Memory memory;
 
+		/* used for preventing handler from garbage collection */
 		private readonly PageCheck pageCheckHandlerInstance;
 
 		private readonly IntPtr codeCaveAddress;
 		
 		private readonly IntPtr targetAddress;
 		private readonly byte[] originalPageCheckBytes;
+
+		private readonly byte[] jmpShellcode = new byte[5];
 
 		public PageCheckHook(Memory memory, PageCheck pageCheckHandlerInstance, IntPtr targetAddress)
 		{
@@ -56,8 +59,6 @@ namespace SpellFire.Well.Warden
 			IntPtr hookAddress = Marshal.GetFunctionPointerForDelegate(pageCheckHandlerInstance);
 
 			IntPtr endAddress = targetAddress + Offset.PageCheckReturnOffset;
-
-			byte[] jmpShellcode = new byte[5];
 
 			uint oldProtect = 0;
 			SystemWin32.VirtualProtect(targetAddress, (UIntPtr)jmpShellcode.Length, SystemWin32.MemoryProtection.PAGE_EXECUTE_READWRITE, ref oldProtect);
@@ -88,7 +89,10 @@ namespace SpellFire.Well.Warden
 
 		public void Dispose()
 		{
-			memory.Write(targetAddress, originalPageCheckBytes);
+			if (memory.Read(targetAddress, jmpShellcode.Length).SequenceEqual(jmpShellcode))
+			{
+				memory.Write(targetAddress, originalPageCheckBytes);
+			}
 			Marshal.FreeHGlobal(codeCaveAddress);
 		}
 	}

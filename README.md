@@ -10,6 +10,8 @@ Right now only supported WoW version is **3.3.5a (build 12340)**, however struct
 
 Project goal is to provide clean and maintainable API of a game instrumentation.
 
+Framework includes protection measures against Blizzard's Warden Anti-Cheat system, which should make usage immensely secure. Note however, that you can **never guarantee total undetectability**.
+
 [You can see it in action here.](https://kkovs.github.io/SpellFire/Resources/Demo/SpellFire_demo.mp4)
 
 ---
@@ -31,7 +33,7 @@ The system entails **two** components working together, their general descriptio
 Following technologies were used for implementation:
 - **.NET Framework**
 - **Json .NET**
-- **EasyHook** process hooking library
+- **EasyHook**
 
 ## **How can I use it?**
 - Configure to your needs or use already shipped logic

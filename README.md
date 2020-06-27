@@ -14,14 +14,24 @@ Framework includes protection measures against Blizzard's Warden Anti-Cheat syst
 
 [You can see it in action here.](https://kkovs.github.io/SpellFire/Resources/Demo/SpellFire_demo.mp4)
 
----
-Radar
+## **Features**
+Things you can build and achieve with SpellFire include, but are not limited to:
+- **Rotation/Farm Bots**
+- **Profession Bots (i.e. fishing, enchanting)**
+- **Hacks**
+- **Multiboxing**
+- **Game objects tracking**
+- **General game automation**
+
+Find example solutions in **SpellFire/Primer/Solutions** folder.
+
+### Game Radar
 ![screenshot1](Resources/Demo/Screenshot1.png)
 
 ![screenshot2](Resources/Demo/Screenshot2.png)
 
 ---
-Warden Anti-Cheat bypass
+### Warden Anti-Cheat bypass
 ![screenshot2](Resources/Demo/WB_Screenshot1.png)
 
 ## **How does it work?**

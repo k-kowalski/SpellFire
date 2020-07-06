@@ -161,8 +161,13 @@ namespace SpellFire.Primer
 
 		public string ExecLuaAndGetResult(string luaScript, string resultLuaVariable)
 		{
-			ControlInterface.remoteControl.FrameScript__Execute(luaScript, 0, 0);
+			ExecLua(luaScript);
 			return ControlInterface.remoteControl.FrameScript__GetLocalizedText(Player.GetAddress(), resultLuaVariable, 0);
+		}
+
+		public void ExecLua(string luaScript)
+		{
+			ControlInterface.remoteControl.FrameScript__Execute(luaScript, 0, 0);
 		}
 
 		public bool IsInWorld()

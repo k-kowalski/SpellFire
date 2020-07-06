@@ -7,6 +7,7 @@ namespace SpellFire.Well.Util
 	{
 		public const UInt32 WM_KEYDOWN = 0x100;
 		public const UInt32 WM_KEYUP = 0x101;
+		public const UInt32 WM_SETTEXT = 0xC;
 
 		public const Int32 GWL_WNDPROC = -0x4;
 
@@ -54,6 +55,9 @@ namespace SpellFire.Well.Util
 
 		[DllImport("user32.dll", SetLastError = true)]
 		public static extern Int32 PostMessage(IntPtr hWnd, UInt32 msg, IntPtr wParam, IntPtr lParam);
+
+		[DllImport("user32.dll", SetLastError = true)]
+		public static extern Int32 SendMessage(IntPtr hWnd, UInt32 msg, IntPtr wParam, string lParam);
 
 		public delegate IntPtr WndProc(IntPtr hWnd, UInt32 msg, IntPtr wParam, IntPtr lParam);
 		public delegate bool VirtualProtectDelegate(IntPtr lpAddress, UIntPtr dwSize, MemoryProtection flNewProtect, ref uint lpflOldProtect);

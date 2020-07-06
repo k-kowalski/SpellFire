@@ -133,7 +133,7 @@ namespace SpellFire.Primer
 			}
 			else
 			{
-				client.Memory.Write(IntPtr.Zero + Offset.LastHardwareEvent, BitConverter.GetBytes(Environment.TickCount));
+				client.RefreshLastHardwareEvent();
 				while (!client.IsInWorld())
 				{
 					client.ControlInterface.remoteControl.FrameScript__Execute(loginScriptFmt, 0, 0);

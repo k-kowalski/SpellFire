@@ -177,6 +177,10 @@ namespace SpellFire.Primer.Solutions.Mbox
 				{
 					slave.ExecLua("for i = 1, GetNumLootItems() do LootSlot(i) ConfirmLootSlot(i) end");
 				});
+				slave.LuaEventListener.Bind("PLAYER_REGEN_ENABLED", args =>
+				{
+					slave.ExecLua("FollowUnit('party1')");
+				});
 
 				#region SlaveQuestEvents
 				slave.LuaEventListener.Bind("QUEST_DETAIL", args =>
@@ -303,26 +307,6 @@ namespace SpellFire.Primer.Solutions.Mbox
 			}
 		}
 
-		private GameObject GetMasterAttackTarget(Client c)
-		{
-			Int64 targetGUID = me.GetTargetGUID();
-			if (targetGUID == 0)
-			{
-				return null;
-			}
-
-			GameObject target = c.ObjectManager.FirstOrDefault(gameObj => gameObj.GUID == targetGUID);
-
-			if (target == null || target.Health == 0 ||
-			    c.ControlInterface.remoteControl
-				.CGUnit_C__UnitReaction(c.Player.GetAddress(), target.GetAddress()) > UnitReaction.Neutral)
-			{
-				return null;
-			}
-
-			return target;
-		}
-
 		public override void Tick()
 		{
 			Thread.Sleep(200);
@@ -396,6 +380,76 @@ namespace SpellFire.Primer.Solutions.Mbox
 			}
 		}
 
+		private static Int64[] GetRaidTargetGuids(Client c)
+		{
+			const int raidTargetsMax = 8;
+
+			byte[] raidTargetsBytes = c.Memory.Read(IntPtr.Zero + Offset.RaidTargets, raidTargetsMax * sizeof(Int64));
+			Int64[] targetGuids = new Int64[raidTargetsMax];
+
+			for (int i = 0; i < raidTargetsMax; i++)
+			{
+				targetGuids[i] = BitConverter.ToInt64(raidTargetsBytes, i * sizeof(Int64));
+			}
+
+			return targetGuids;
+		}
+
+		private static GameObject SelectRaidTargetByPriority(Int64[] raidTargetGuids, RaidTarget[] targetPriorities, Client c)
+		{
+			foreach (var marker in targetPriorities)
+			{
+				Int64 targetGuid = raidTargetGuids[(int)marker];
+				if (targetGuid == 0)
+				{
+					continue;
+				}
+
+				GameObject gameObj = c.ObjectManager.FirstOrDefault(obj => obj.GUID == targetGuid);
+				if (gameObj != null
+				    && gameObj.Health > 0
+				    && c.ControlInterface.remoteControl
+					    .CGUnit_C__UnitReaction(c.Player.GetAddress(), gameObj.GetAddress()) <= UnitReaction.Neutral)
+				{
+					return gameObj;
+				}
+			}
+
+			return null;
+		}
+
+		private static void FaceTowards(Client c, GameObject targetObj)
+		{
+			if (c.Player.IsMoving())
+			{
+				return;
+			}
+
+			Int64 targetGuid = targetObj.GUID;
+			Vector3 targetCoords = targetObj.Coordinates;
+
+			float angle = c.Player.Coordinates.AngleBetween(targetCoords);
+
+			c.ControlInterface.remoteControl.CGPlayer_C__ClickToMove(
+				c.Player.GetAddress(), ClickToMoveType.Face, ref targetGuid, ref targetCoords, angle);
+		}
+
+		private static readonly RaidTarget[] AttackPriorities =
+		{
+			RaidTarget.Skull,
+			RaidTarget.Cross,
+			RaidTarget.Square,
+		};
+
+		private static readonly RaidTarget[] CrowdControlTarget =
+		{
+			RaidTarget.Diamond,
+		};
+
+		private const float RangedAttackRange = 35f;
+
+		#region Slave
+
 		private class Priest : Solution
 		{
 			private ProdMbox mbox;
@@ -437,13 +491,23 @@ namespace SpellFire.Primer.Solutions.Mbox
 					}
 				}
 
-				GameObject target = mbox.GetMasterAttackTarget(me);
+				Int64[] targetGuids = GetRaidTargetGuids(me);
+				GameObject target = SelectRaidTargetByPriority(targetGuids, AttackPriorities, me);
 				if (target == null)
 				{
 					return;
 				}
 
-				me.ControlInterface.remoteControl.SelectUnit(target.GUID);
+				if (me.Player.GetDistance(target) > RangedAttackRange)
+				{
+					return;
+				}
+
+				if (me.GetTargetGUID() != target.GUID)
+				{
+					me.ControlInterface.remoteControl.SelectUnit(target.GUID);
+				}
+				FaceTowards(me, target);
 				me.CastSpell("Smite");
 			}
 
@@ -484,20 +548,24 @@ namespace SpellFire.Primer.Solutions.Mbox
 					return;
 				}
 
-				GameObject target = mbox.GetMasterAttackTarget(me);
+				Int64[] targetGuids = GetRaidTargetGuids(me);
+				GameObject target = SelectRaidTargetByPriority(targetGuids, AttackPriorities, me);
 				if (target == null)
 				{
 					return;
 				}
 
-				me.ControlInterface.remoteControl.SelectUnit(target.GUID);
+				if (me.Player.GetDistance(target) > RangedAttackRange)
+				{
+					return;
+				}
 
-//				if ( ! me.HasAura(target, "Moonfire", me.Player))
-//				{
-//					me.CastSpell("Moonfire");
-//					return;
-//				}
 
+				if (me.GetTargetGUID() != target.GUID)
+				{
+					me.ControlInterface.remoteControl.SelectUnit(target.GUID);
+				}
+				FaceTowards(me, target);
 				me.CastSpell("Wrath");
 			}
 
@@ -538,20 +606,29 @@ namespace SpellFire.Primer.Solutions.Mbox
 					return;
 				}
 
-				GameObject target = mbox.GetMasterAttackTarget(me);
+				Int64[] targetGuids = GetRaidTargetGuids(me);
+				GameObject target = SelectRaidTargetByPriority(targetGuids, AttackPriorities, me);
 				if (target == null)
 				{
 					return;
 				}
 
-				me.ControlInterface.remoteControl.SelectUnit(target.GUID);
+				if (me.Player.GetDistance(target) > RangedAttackRange)
+				{
+					return;
+				}
 
+				if (me.GetTargetGUID() != target.GUID)
+				{
+					me.ControlInterface.remoteControl.SelectUnit(target.GUID);
+				}
+
+				FaceTowards(me, target);
 				if (!me.HasAura(target, "Flame Shock", me.Player))
 				{
 					me.CastSpell("Flame Shock");
 					return;
 				}
-
 				me.CastSpell("Lightning Bolt");
 			}
 
@@ -592,14 +669,43 @@ namespace SpellFire.Primer.Solutions.Mbox
 					return;
 				}
 
-				GameObject target = mbox.GetMasterAttackTarget(me);
+				Int64[] targetGuids = GetRaidTargetGuids(me);
+
+				GameObject ccTarget = SelectRaidTargetByPriority(targetGuids,
+					CrowdControlTarget,
+					me);
+				if (ccTarget != null)
+				{
+					if (!me.HasAura(ccTarget, "Polymorph", me.Player))
+					{
+						me.CastSpellOnGuid("Polymorph", ccTarget.GUID);
+						return;
+					}
+					return;
+				}
+
+				GameObject target = SelectRaidTargetByPriority(targetGuids, AttackPriorities, me);
 				if (target == null)
 				{
 					return;
 				}
 
-				me.ControlInterface.remoteControl.SelectUnit(target.GUID);
+				if (me.Player.GetDistance(target) > RangedAttackRange)
+				{
+					return;
+				}
 
+				if (me.GetTargetGUID() != target.GUID)
+				{
+					me.ControlInterface.remoteControl.SelectUnit(target.GUID);
+				}
+
+				FaceTowards(me, target);
+				if (!me.IsOnCooldown("Fire Blast"))
+				{
+					me.CastSpell("Fire Blast");
+					return;
+				}
 				me.CastSpell("Fireball");
 			}
 
@@ -609,5 +715,6 @@ namespace SpellFire.Primer.Solutions.Mbox
 			}
 		}
 
+		#endregion
 	}
 }

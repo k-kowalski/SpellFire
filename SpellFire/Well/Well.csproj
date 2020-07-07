@@ -66,6 +66,7 @@
     <Compile Include="Model\DynamicUnitFlags.cs" />
     <Compile Include="Model\GameObjectType.cs" />
     <Compile Include="Model\CreatureType.cs" />
+    <Compile Include="Model\RaidTarget.cs" />
     <Compile Include="Model\UnitReaction.cs" />
     <Compile Include="Navigation\NavigationEngine.cs" />
     <Compile Include="Net\DataStore.cs" />

@@ -56,6 +56,7 @@ namespace SpellFire.Well.Util
 		public const Int32 PlayerGUID = 0xCA1238;
 		public const Int32 WorldLoaded = 0xBD0792;
 		public const Int32 MapId = 0xAB63BC;
+		public const Int32 RaidTargets = 0xBEB528;
 
 		/// <summary>
 		/// client connection

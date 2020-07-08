@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -8,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using SpellFire.Primer.Gui;
 using SpellFire.Well.Controller;
 using SpellFire.Well.Lua;
 using SpellFire.Well.Mbox;
@@ -133,7 +135,10 @@ namespace SpellFire.Primer.Solutions.Mbox
 				Keys.Oemplus, // bind '+'
 			});
 
-			me.GetObjectMgrAndPlayer();
+			if (!me.GetObjectMgrAndPlayer())
+			{
+				return;
+			}
 
 			string masterPlayerName = me.ControlInterface.remoteControl.GetUnitName(me.Player.GetAddress());
 			SystemWin32.SendMessage(
@@ -180,6 +185,12 @@ namespace SpellFire.Primer.Solutions.Mbox
 				slave.LuaEventListener.Bind("PLAYER_REGEN_ENABLED", args =>
 				{
 					slave.ExecLua("FollowUnit('party1')");
+				});
+
+				/* command executor in game */
+				slave.LuaEventListener.Bind("do", args =>
+				{
+					GetCommand(args.Args[0]).Invoke(new List<string>(args.Args.Skip(1)));
 				});
 
 				#region SlaveQuestEvents
@@ -313,7 +324,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 		};
 		private static readonly string[] SelfBuffs =
 		{
-			"Seal of Righteousness",
+			"Seal of Righteousness", "Righteous Fury"
 		};
 
 		public override void Tick()
@@ -450,7 +461,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 			{
 				foreach (var partyBuff in partyBuffs)
 				{
-					if (!self.HasAura(client.Player, partyBuff, null))
+					if (client.Player.Health > 0 && !self.HasAura(client.Player, partyBuff, null))
 					{
 						if (client.Player.GetDistance(self.Player) < RangedAttackRange/* use RAR for buff range */)
 						{
@@ -463,7 +474,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 
 			foreach (var selfBuff in selfBuffs)
 			{
-				if (!self.HasAura(self.Player, selfBuff, null))
+				if (self.Player.Health > 0 && !self.HasAura(self.Player, selfBuff, null))
 				{
 					self.CastSpell(selfBuff);
 					return;
@@ -482,6 +493,11 @@ namespace SpellFire.Primer.Solutions.Mbox
 		{
 			RaidTarget.Diamond,
 		};
+
+		public override void RenderRadar(RadarCanvas radarCanvas, Bitmap radarBackBuffer)
+		{
+			// nothing
+		}
 
 		private const float RangedAttackRange = 35f;
 
@@ -647,7 +663,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 			};
 			private static readonly string[] SelfBuffs =
 			{
-				"Lightning Shield",
+				"Water Shield",
 			};
 
 			public Shaman(Client client, ProdMbox mbox) : base(client)
@@ -728,11 +744,23 @@ namespace SpellFire.Primer.Solutions.Mbox
 				"Frost Armor",
 			};
 
+			private string stockScript;
+
 			public Mage(Client client, ProdMbox mbox) : base(client)
 			{
 				this.mbox = mbox;
+				stockScript = File.ReadAllText("Scripts/Stock.lua");
 
+				me.LuaEventListener.Bind("TRADE_SHOW", args =>
+				{
+					me.ExecLua(stockScript);
+				});
 
+				me.LuaEventListener.Bind("TRADE_PLAYER_ITEM_CHANGED", args =>
+				{
+					Thread.Sleep(300); /*  it looks that some servers need delay */
+					me.ExecLua("AcceptTrade()");
+				});
 			}
 
 			public override void Tick()
@@ -769,7 +797,6 @@ namespace SpellFire.Primer.Solutions.Mbox
 						me.CastSpellOnGuid("Polymorph", ccTarget.GUID);
 						return;
 					}
-					return;
 				}
 
 				GameObject target = SelectRaidTargetByPriority(targetGuids, AttackPriorities, me);

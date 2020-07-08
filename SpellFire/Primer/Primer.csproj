@@ -131,6 +131,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <None Include="Scripts\Stock.lua" />
     <None Include="Scripts\Disenchant.lua" />
     <None Include="Scripts\Login.lua" />
   </ItemGroup>

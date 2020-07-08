@@ -307,6 +307,15 @@ namespace SpellFire.Primer.Solutions.Mbox
 			}
 		}
 
+		private static readonly string[] PartyBuffs =
+		{
+			"Blessing of Wisdom",
+		};
+		private static readonly string[] SelfBuffs =
+		{
+			"Seal of Righteousness",
+		};
+
 		public override void Tick()
 		{
 			Thread.Sleep(200);
@@ -323,6 +332,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 			}
 
 			LootAround(me);
+			BuffUp(me, this, PartyBuffs, SelfBuffs);
 		}
 
 		public override void Dispose()
@@ -434,6 +444,33 @@ namespace SpellFire.Primer.Solutions.Mbox
 				c.Player.GetAddress(), ClickToMoveType.Face, ref targetGuid, ref targetCoords, angle);
 		}
 
+		private static void BuffUp(Client self, ProdMbox mbox, string[] partyBuffs, string[] selfBuffs)
+		{
+			foreach (Client client in mbox.clients)
+			{
+				foreach (var partyBuff in partyBuffs)
+				{
+					if (!self.HasAura(client.Player, partyBuff, null))
+					{
+						if (client.Player.GetDistance(self.Player) < RangedAttackRange/* use RAR for buff range */)
+						{
+							self.CastSpellOnGuid(partyBuff, client.Player.GUID);
+							return;
+						}
+					}
+				}
+			}
+
+			foreach (var selfBuff in selfBuffs)
+			{
+				if (!self.HasAura(self.Player, selfBuff, null))
+				{
+					self.CastSpell(selfBuff);
+					return;
+				}
+			}
+		}
+
 		private static readonly RaidTarget[] AttackPriorities =
 		{
 			RaidTarget.Skull,
@@ -453,6 +490,14 @@ namespace SpellFire.Primer.Solutions.Mbox
 		private class Priest : Solution
 		{
 			private ProdMbox mbox;
+			private static readonly string[] PartyBuffs =
+			{
+				"Power Word: Fortitude",
+			};
+			private static readonly string[] SelfBuffs =
+			{
+				"Inner Fire",
+			};
 
 			public Priest(Client client, ProdMbox mbox) : base(client)
 			{
@@ -481,15 +526,8 @@ namespace SpellFire.Primer.Solutions.Mbox
 					return;
 				}
 
-				foreach (Client client in mbox.clients)
-				{
-					if (client.Player.HealthPct < 50
-					    && (!me.HasAura(client.Player, "Renew", null)))
-					{
-						me.CastSpellOnGuid("Renew", client.Player.GUID);
-						return;
-					}
-				}
+				BuffUp(me, mbox, PartyBuffs, SelfBuffs);
+				HealUp();
 
 				Int64[] targetGuids = GetRaidTargetGuids(me);
 				GameObject target = SelectRaidTargetByPriority(targetGuids, AttackPriorities, me);
@@ -508,18 +546,42 @@ namespace SpellFire.Primer.Solutions.Mbox
 					me.ControlInterface.remoteControl.SelectUnit(target.GUID);
 				}
 				FaceTowards(me, target);
-				me.CastSpell("Smite");
+				if (!me.Player.IsCastingOrChanneling())
+				{
+					me.CastSpell(!me.IsOnCooldown("Mind Blast") ? "Mind Blast" : "Mind Flay");
+				}
 			}
 
 			public override void Dispose()
 			{
 				me.LuaEventListener.Dispose();
 			}
+
+			private void HealUp()
+			{
+				foreach (Client client in mbox.clients)
+				{
+					if (client.Player.HealthPct < 50
+					    && (!me.HasAura(client.Player, "Renew", null)))
+					{
+						me.CastSpellOnGuid("Renew", client.Player.GUID);
+						return;
+					}
+				}
+			}
 		}
 
 		private class Druid : Solution
 		{
 			private ProdMbox mbox;
+			private static readonly string[] PartyBuffs =
+			{
+				"Mark of the Wild",
+				"Thorns",
+			};
+			private static readonly string[] SelfBuffs =
+			{
+			};
 
 			public Druid(Client client, ProdMbox mbox) : base(client)
 			{
@@ -547,6 +609,8 @@ namespace SpellFire.Primer.Solutions.Mbox
 				{
 					return;
 				}
+
+				BuffUp(me, mbox, PartyBuffs, SelfBuffs);
 
 				Int64[] targetGuids = GetRaidTargetGuids(me);
 				GameObject target = SelectRaidTargetByPriority(targetGuids, AttackPriorities, me);
@@ -578,6 +642,13 @@ namespace SpellFire.Primer.Solutions.Mbox
 		private class Shaman : Solution
 		{
 			private ProdMbox mbox;
+			private static readonly string[] PartyBuffs =
+			{
+			};
+			private static readonly string[] SelfBuffs =
+			{
+				"Lightning Shield",
+			};
 
 			public Shaman(Client client, ProdMbox mbox) : base(client)
 			{
@@ -605,6 +676,8 @@ namespace SpellFire.Primer.Solutions.Mbox
 				{
 					return;
 				}
+				BuffUp(me, mbox, PartyBuffs, SelfBuffs);
+				CheckShamanEnchant();
 
 				Int64[] targetGuids = GetRaidTargetGuids(me);
 				GameObject target = SelectRaidTargetByPriority(targetGuids, AttackPriorities, me);
@@ -624,27 +697,42 @@ namespace SpellFire.Primer.Solutions.Mbox
 				}
 
 				FaceTowards(me, target);
-				if (!me.HasAura(target, "Flame Shock", me.Player))
-				{
-					me.CastSpell("Flame Shock");
-					return;
-				}
-				me.CastSpell("Lightning Bolt");
+				me.CastSpell(!me.IsOnCooldown("Earth Shock") ? "Earth Shock" : "Lightning Bolt");
 			}
 
 			public override void Dispose()
 			{
 				me.LuaEventListener.Dispose();
 			}
+
+			private void CheckShamanEnchant()
+			{
+				var enchCheck = "hasMainHandEnchant, mainHandExpiration, mainHandCharges, hasOffHandEnchant, offHandExpiration, offHandCharges = GetWeaponEnchantInfo()";
+				var res = me.ExecLuaAndGetResult(enchCheck, "hasMainHandEnchant");
+				if (String.IsNullOrEmpty(res))
+				{
+					me.CastSpell("Flametongue Weapon");
+				}
+			}
 		}
 
 		private class Mage : Solution
 		{
 			private ProdMbox mbox;
+			private static readonly string[] PartyBuffs =
+			{
+				"Arcane Intellect",
+			};
+			private static readonly string[] SelfBuffs =
+			{
+				"Frost Armor",
+			};
 
 			public Mage(Client client, ProdMbox mbox) : base(client)
 			{
 				this.mbox = mbox;
+
+
 			}
 
 			public override void Tick()
@@ -668,9 +756,9 @@ namespace SpellFire.Primer.Solutions.Mbox
 				{
 					return;
 				}
+				BuffUp(me, mbox, PartyBuffs, SelfBuffs);
 
 				Int64[] targetGuids = GetRaidTargetGuids(me);
-
 				GameObject ccTarget = SelectRaidTargetByPriority(targetGuids,
 					CrowdControlTarget,
 					me);
@@ -701,12 +789,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 				}
 
 				FaceTowards(me, target);
-				if (!me.IsOnCooldown("Fire Blast"))
-				{
-					me.CastSpell("Fire Blast");
-					return;
-				}
-				me.CastSpell("Fireball");
+				me.CastSpell(!me.IsOnCooldown("Fire Blast") ? "Fire Blast" : "Fireball");
 			}
 
 			public override void Dispose()

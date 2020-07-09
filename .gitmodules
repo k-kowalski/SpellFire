@@ -1,0 +1,3 @@
+[submodule "SpellFire/Scryer/recastnavigation"]
+	path = SpellFire/Scryer/recastnavigation
+	url = https://github.com/recastnavigation/recastnavigation

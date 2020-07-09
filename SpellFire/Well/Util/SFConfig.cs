@@ -37,6 +37,9 @@ namespace SpellFire.Well.Util
 
 		[JsonProperty("dllName")]
 		public string DllName { get; set; }
+
+		[JsonProperty("mmapsDirPath")]
+		public string MovementMapsDirectoryPath { get; set; }
 	}
 
 	public class Preset

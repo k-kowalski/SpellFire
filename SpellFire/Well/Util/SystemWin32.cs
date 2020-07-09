@@ -19,6 +19,9 @@ namespace SpellFire.Well.Util
 			PAGE_NOACCESS = 0x1
 		}
 
+		[DllImport("kernel32.dll")]
+		public static extern IntPtr LoadLibrary(string lpFileName);
+
 		[DllImport("kernel32.dll", CharSet = CharSet.Auto)]
 		public static extern IntPtr GetModuleHandle(string lpModuleName);
 

@@ -3,8 +3,6 @@
 #include <DetourNavMesh.h>
 #include <DetourNavMeshQuery.h>
 
-const int32_t MMAP_MAGIC = 0x4D4D4150;
-
 struct MmapTileHeader
 {
 	int32_t mmapMagic;

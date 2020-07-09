@@ -12,19 +12,23 @@ namespace SpellFire.Well.Navigation
 	public class NavigationEngine
 	{
 		private const string NavigationModule = "Scryer.dll";
-		#region Imports
 
+		#region Imports
 		[DllImport(NavigationModule, CallingConvention = CallingConvention.Cdecl)]
 		private static extern void InitializeNavigation(string movementMapsDirectoryPath);
 
 		[DllImport(NavigationModule, CallingConvention = CallingConvention.Cdecl)]
 		private static extern bool LoadMap(Int32 mapId);
-
 		#endregion
 
 		public NavigationEngine()
 		{
 			InitializeNavigation(SFConfig.Global.MovementMapsDirectoryPath);
+		}
+
+		public bool SetCurrentMap(Int32 mapId)
+		{
+			return LoadMap(mapId);
 		}
 	}
 }

@@ -21,7 +21,7 @@ namespace SpellFire.Primer.Solutions
 		public NavigationTest(Client client) : base(client)
 		{
 			var ne = new NavigationEngine();
-
+			ne.SetCurrentMap(me.Memory.ReadInt32(IntPtr.Zero + Offset.MapId));
 			this.Active = false;
 		}
 

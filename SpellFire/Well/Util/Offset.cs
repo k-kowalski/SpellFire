@@ -55,6 +55,7 @@ namespace SpellFire.Well.Util
 		public const Int32 RuneCount = 0xC24388;
 		public const Int32 PlayerGUID = 0xCA1238;
 		public const Int32 WorldLoaded = 0xBD0792;
+		public const Int32 MapId = 0xAB63BC;
 
 		/// <summary>
 		/// client connection

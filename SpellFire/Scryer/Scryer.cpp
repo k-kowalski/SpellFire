@@ -6,6 +6,7 @@
 #include "Utils.h"
 #include <fstream>
 #include <iostream>
+#include <filesystem>
 
 static std::string mmapsDirectoryPath;
 
@@ -14,11 +15,12 @@ static std::unordered_map<int32_t, std::shared_ptr<MapNavMesh>> cachedNavmeshes;
 void Navigation::InitializeNavigation(const char* movementMapsDirectoryPath)
 {
 	mmapsDirectoryPath = std::string(movementMapsDirectoryPath);
-	std::cout << "Hello path: " << mmapsDirectoryPath << std::endl;
 }
 
 bool Navigation::LoadMap(int32_t mapId)
 {
+	std::cout << Utils::ScryerLogTag << "Loading map for id: " << mapId << std::endl;
+
 	std::ifstream mmapParamsStream;
 	mmapParamsStream.open(
 		mmapsDirectoryPath + Utils::PadLeadingZeros(mapId, 3) + ".mmap",
@@ -28,7 +30,7 @@ bool Navigation::LoadMap(int32_t mapId)
 	mmapParamsStream.read(reinterpret_cast<char*>(&navmeshParams), sizeof(dtNavMeshParams));
 	mmapParamsStream.close();
 
-	std::shared_ptr<MapNavMesh> mapNavmesh;
+	std::shared_ptr<MapNavMesh> mapNavmesh = std::make_shared<MapNavMesh>();
 	cachedNavmeshes[mapId] = mapNavmesh;
 	
 	if (dtStatusFailed(mapNavmesh->navmesh->init(&navmeshParams)))
@@ -42,13 +44,20 @@ bool Navigation::LoadMap(int32_t mapId)
 		for (int y = 1; y <= 64; y++)
 		{
 			std::ifstream mmapTileStream;
-			mmapTileStream.open(
-				mmapsDirectoryPath
+
+			std::string mmapTileFileName = mmapsDirectoryPath
 				+ Utils::PadLeadingZeros(mapId, 3)
 				+ Utils::PadLeadingZeros(x, 2)
 				+ Utils::PadLeadingZeros(y, 2)
-				+ ".mmtile",
-				std::ifstream::binary);
+				+ ".mmtile";
+
+			/* missing tiles are ok */
+			if (!std::filesystem::exists(mmapTileFileName))
+			{
+				continue;
+			}
+			
+			mmapTileStream.open(mmapTileFileName, std::ifstream::binary);
 
 			MmapTileHeader mmapTileHeader;
 			mmapTileStream.read(reinterpret_cast<char*>(&mmapTileHeader), sizeof(MmapTileHeader));
@@ -70,5 +79,13 @@ bool Navigation::LoadMap(int32_t mapId)
 		}
 	}
 
-	return mapNavmesh->InitializeNavmeshQuery();
+	if (!mapNavmesh->InitializeNavmeshQuery())
+	{
+		std::cerr << Utils::ScryerLogTag << "Couldn't initialize navmesh query" << std::endl;
+		return false;
+	}
+
+	std::cout << Utils::ScryerLogTag << "Map loading successful" << std::endl;
+
+	return true;
 }

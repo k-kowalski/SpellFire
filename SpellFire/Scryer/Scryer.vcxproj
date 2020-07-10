@@ -164,6 +164,7 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="Scryer.h" />
     <ClInclude Include="Utils.h" />
+    <ClInclude Include="Vector3.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />

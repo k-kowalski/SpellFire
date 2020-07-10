@@ -2,6 +2,9 @@
 #include <cstdint>
 #include <DetourNavMesh.h>
 #include <DetourNavMeshQuery.h>
+#include "Vector3.h"
+
+constexpr int32_t MaxPathLength = 1024;
 
 struct MmapTileHeader
 {
@@ -15,13 +18,14 @@ struct MmapTileHeader
 
 struct MapNavMesh
 {
-	const int32_t MaxPathLength = 1024;
 	dtNavMesh* navmesh;
 	dtNavMeshQuery* navmeshQuery;
+	dtQueryFilter queryFilter;
 
 	MapNavMesh();
 	~MapNavMesh();
 
 	bool InitializeNavmeshQuery();
+	dtPolyRef FindNearestNavmeshPoly(Vector3& pos, float* nearestPoint);
 };
 

@@ -24,3 +24,12 @@ bool MapNavMesh::InitializeNavmeshQuery()
 {
 	return dtStatusSucceed(navmeshQuery->init(navmesh, MaxPathLength));
 }
+
+dtPolyRef MapNavMesh::FindNearestNavmeshPoly(Vector3& pos, float* nearestPoint)
+{
+	float extents[3] = { 5.0f, 5.0f, 5.0f };
+
+	dtPolyRef polyRef;
+	navmeshQuery->findNearestPoly(pos.Data(), extents, &queryFilter, &polyRef, nearestPoint);
+	return polyRef;
+}

@@ -10,7 +10,7 @@
 
 static std::string mmapsDirectoryPath;
 
-static std::unordered_map<int32_t, std::shared_ptr<MapNavMesh>> cachedNavmeshes;
+static MapNavMesh* mapNavmesh;
 
 void Navigation::InitializeNavigation(const char* movementMapsDirectoryPath)
 {
@@ -30,8 +30,7 @@ bool Navigation::LoadMap(int32_t mapId)
 	mmapParamsStream.read(reinterpret_cast<char*>(&navmeshParams), sizeof(dtNavMeshParams));
 	mmapParamsStream.close();
 
-	std::shared_ptr<MapNavMesh> mapNavmesh = std::make_shared<MapNavMesh>();
-	cachedNavmeshes[mapId] = mapNavmesh;
+	mapNavmesh = new MapNavMesh();
 	
 	if (dtStatusFailed(mapNavmesh->navmesh->init(&navmeshParams)))
 	{
@@ -88,4 +87,59 @@ bool Navigation::LoadMap(int32_t mapId)
 	std::cout << Utils::ScryerLogTag << "Map loading successful" << std::endl;
 
 	return true;
+}
+
+bool Navigation::CalculatePath(Vector3 start, Vector3 end, Vector3* outPathNodeBuffer, int32_t* outPathNodeCount)
+{
+	Vector3 startRecast = start.WowToRecast();
+	Vector3 endRecast = end.WowToRecast();
+
+	Vector3 pointStart;
+	Vector3 pointEnd;
+
+	dtPolyRef startPoly = mapNavmesh->FindNearestNavmeshPoly(startRecast, pointStart.Data());
+	dtPolyRef endPoly = mapNavmesh->FindNearestNavmeshPoly(endRecast, pointEnd.Data());
+
+	if (startPoly == endPoly)
+	{
+		outPathNodeBuffer = &end;
+		*outPathNodeCount = 1;
+		return true;
+	}
+
+	dtPolyRef polyPath[MaxPathLength];
+	int32_t polyPathSize;
+
+	if (dtStatusSucceed(mapNavmesh->navmeshQuery->findPath(
+		startPoly, endPoly,
+		pointStart.Data(),
+		pointEnd.Data(),
+		&mapNavmesh->queryFilter, polyPath, &polyPathSize, MaxPathLength)))
+	{
+		if (dtStatusSucceed(mapNavmesh->navmeshQuery->findStraightPath(
+			pointStart.Data(),
+			pointEnd.Data(),
+			polyPath,
+			polyPathSize,
+			reinterpret_cast<float*>(outPathNodeBuffer),
+			nullptr, nullptr, outPathNodeCount, MaxPathLength)))
+		{
+			for (int i = 0; i < (*outPathNodeCount); i++)
+			{
+				outPathNodeBuffer[i] = outPathNodeBuffer[i].RecastToWow();
+			}
+
+			return true;
+		}
+		else
+		{
+			std::cerr << Utils::ScryerLogTag << "Couldn't find path within polygons" << std::endl;
+		}
+	}
+	else
+	{
+		std::cerr << Utils::ScryerLogTag << "Couldn't find path" << std::endl;
+	}
+
+	return false;
 }

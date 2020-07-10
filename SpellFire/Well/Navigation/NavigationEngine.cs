@@ -12,6 +12,7 @@ namespace SpellFire.Well.Navigation
 	public class NavigationEngine
 	{
 		private const string NavigationModule = "Scryer.dll";
+		private readonly Vector3[] PathNodesBuffer = new Vector3[1024];
 
 		#region Imports
 		[DllImport(NavigationModule, CallingConvention = CallingConvention.Cdecl)]
@@ -19,6 +20,13 @@ namespace SpellFire.Well.Navigation
 
 		[DllImport(NavigationModule, CallingConvention = CallingConvention.Cdecl)]
 		private static extern bool LoadMap(Int32 mapId);
+
+		[DllImport(NavigationModule, CallingConvention = CallingConvention.Cdecl)]
+		private static extern unsafe bool CalculatePath(
+			Vector3 start,
+			Vector3 end,
+			Vector3* pathNodesBuffer,
+			out Int32 outPathNodeCount);
 		#endregion
 
 		public NavigationEngine()
@@ -29,6 +37,23 @@ namespace SpellFire.Well.Navigation
 		public bool SetCurrentMap(Int32 mapId)
 		{
 			return LoadMap(mapId);
+		}
+
+		public IList<Vector3> GetPath(Vector3 start, Vector3 end)
+		{
+			Int32 count;
+			unsafe
+			{
+				fixed (Vector3* pathNodesBufferPtr = PathNodesBuffer)
+				{
+					if (CalculatePath(start, end, pathNodesBufferPtr, out count) && count > 1)
+					{
+						return new ArraySegment<Vector3>(PathNodesBuffer, 0, count);
+					}
+				}
+			}
+
+			return null;
 		}
 	}
 }

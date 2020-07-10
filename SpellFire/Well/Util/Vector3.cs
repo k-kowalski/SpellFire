@@ -32,5 +32,10 @@ namespace SpellFire.Well.Util
 		{
 			return (float) Math.Atan2(other.y - this.y, other.x - this.x);
 		}
+
+		public override string ToString()
+		{
+			return $"x:{x}  y:{y}  z:{z}";
+		}
 	}
 }

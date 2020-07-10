@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using SpellFire.Well.Controller;
 using SpellFire.Well.Util;
 
 namespace SpellFire.Well.Navigation
@@ -48,7 +49,7 @@ namespace SpellFire.Well.Navigation
 				{
 					if (CalculatePath(start, end, pathNodesBufferPtr, out count) && count > 1)
 					{
-						return new ArraySegment<Vector3>(PathNodesBuffer, 0, count);
+						return new ArraySegment<Vector3>(PathNodesBuffer, 1, count);
 					}
 				}
 			}

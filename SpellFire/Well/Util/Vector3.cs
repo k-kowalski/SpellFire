@@ -7,6 +7,8 @@ namespace SpellFire.Well.Util
 	[StructLayout(LayoutKind.Sequential)]
 	public struct Vector3
 	{
+		public static readonly Vector3 Zero = new Vector3(0, 0, 0);
+
 		public readonly float x;
 		public readonly float y;
 		public readonly float z;
@@ -31,6 +33,11 @@ namespace SpellFire.Well.Util
 		public float AngleBetween(Vector3 other)
 		{
 			return (float) Math.Atan2(other.y - this.y, other.x - this.x);
+		}
+
+		public float Distance(Vector3 other)
+		{
+			return (this - other).Length();
 		}
 
 		public override string ToString()

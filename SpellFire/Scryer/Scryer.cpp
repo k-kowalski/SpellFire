@@ -100,13 +100,6 @@ bool Navigation::CalculatePath(Vector3 start, Vector3 end, Vector3* outPathNodeB
 	dtPolyRef startPoly = mapNavmesh->FindNearestNavmeshPoly(startRecast, pointStart.Data());
 	dtPolyRef endPoly = mapNavmesh->FindNearestNavmeshPoly(endRecast, pointEnd.Data());
 
-	if (startPoly == endPoly)
-	{
-		outPathNodeBuffer = &end;
-		*outPathNodeCount = 1;
-		return true;
-	}
-
 	dtPolyRef polyPath[MaxPathLength];
 	int32_t polyPathSize;
 

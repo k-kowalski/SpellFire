@@ -20,6 +20,7 @@ Things you can build and achieve with SpellFire include, but are not limited to:
 - **Profession Bots (i.e. fishing, enchanting)**
 - **Hacks**
 - **Multiboxing**
+- **Pathfinding**
 - **Game objects tracking**
 - **General game automation**
 
@@ -44,6 +45,7 @@ Following technologies were used for implementation:
 - **.NET Framework**
 - **Json .NET**
 - **EasyHook**
+- **Recast Navigation**
 
 ## **How can I use it?**
 - Configure to your needs or use already shipped logic

@@ -36,9 +36,10 @@ Find example solutions in **SpellFire/Primer/Solutions** folder.
 ![screenshot2](Resources/Demo/WB_Screenshot1.png)
 
 ## **How does it work?**
-The system entails **two** components working together, their general description:
+The system entails **three** components working together, their general description:
 
 - **Primer**, an application that contains business logic(i.e. routines that specify what game should do and when).
+- **Scryer**, pathfinding and navigation module
 - **Well**, a library that is injected into orchestrated process and exposes API that **Primer** consumes as well as contains business model.
 
 Following technologies were used for implementation:

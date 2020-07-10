@@ -10,7 +10,7 @@
 
 static std::string mmapsDirectoryPath;
 
-static MapNavMesh* mapNavmesh;
+static std::unique_ptr<MapNavMesh> mapNavmesh;
 
 void Navigation::InitializeNavigation(const char* movementMapsDirectoryPath)
 {
@@ -30,7 +30,7 @@ bool Navigation::LoadMap(int32_t mapId)
 	mmapParamsStream.read(reinterpret_cast<char*>(&navmeshParams), sizeof(dtNavMeshParams));
 	mmapParamsStream.close();
 
-	mapNavmesh = new MapNavMesh();
+	mapNavmesh = std::make_unique<MapNavMesh>();
 	
 	if (dtStatusFailed(mapNavmesh->navmesh->init(&navmeshParams)))
 	{

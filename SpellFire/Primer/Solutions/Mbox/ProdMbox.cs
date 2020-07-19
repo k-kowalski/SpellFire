@@ -343,7 +343,58 @@ namespace SpellFire.Primer.Solutions.Mbox
 			}
 
 			LootAround(me);
-			BuffUp(me, this, PartyBuffs, SelfBuffs);
+			BuffUp(me, this, PartyBuffs, SelfBuffs, PaladinBuffsForClass);
+		}
+
+		private static string PaladinBuffsForClass(UnitClass unitClass)
+		{
+			return unitClass switch
+			{
+				UnitClass.Paladin => "Blessing of Kings",
+				_ => "Blessing of Wisdom"
+			};
+		}
+		private static void BuffUp(Client self, ProdMbox mbox, string[] partyBuffs, string[] selfBuffs,
+			Func<UnitClass, string> classBuffFilter = null)
+		{
+			foreach (Client client in mbox.clients)
+			{
+				if (classBuffFilter == null)
+				{
+					foreach (var partyBuff in partyBuffs)
+					{
+						if (client.Player.Health > 0 && !self.HasAura(client.Player, partyBuff, null))
+						{
+							if (client.Player.GetDistance(self.Player) < RangedAttackRange/* use RAR for buff range */)
+							{
+								self.CastSpellOnGuid(partyBuff, client.Player.GUID);
+								return;
+							}
+						}
+					}
+				}
+				else
+				{
+					var partyBuff = classBuffFilter(client.Player.UnitClass);
+					if (client.Player.Health > 0 && !self.HasAura(client.Player, partyBuff, null))
+					{
+						if (client.Player.GetDistance(self.Player) < RangedAttackRange/* use RAR for buff range */)
+						{
+							self.CastSpellOnGuid(partyBuff, client.Player.GUID);
+							return;
+						}
+					}
+				}
+			}
+
+			foreach (var selfBuff in selfBuffs)
+			{
+				if (self.Player.Health > 0 && !self.HasAura(self.Player, selfBuff, null))
+				{
+					self.CastSpell(selfBuff);
+					return;
+				}
+			}
 		}
 
 		public override void Dispose()
@@ -453,33 +504,6 @@ namespace SpellFire.Primer.Solutions.Mbox
 
 			c.ControlInterface.remoteControl.CGPlayer_C__ClickToMove(
 				c.Player.GetAddress(), ClickToMoveType.Face, ref targetGuid, ref targetCoords, angle);
-		}
-
-		private static void BuffUp(Client self, ProdMbox mbox, string[] partyBuffs, string[] selfBuffs)
-		{
-			foreach (Client client in mbox.clients)
-			{
-				foreach (var partyBuff in partyBuffs)
-				{
-					if (client.Player.Health > 0 && !self.HasAura(client.Player, partyBuff, null))
-					{
-						if (client.Player.GetDistance(self.Player) < RangedAttackRange/* use RAR for buff range */)
-						{
-							self.CastSpellOnGuid(partyBuff, client.Player.GUID);
-							return;
-						}
-					}
-				}
-			}
-
-			foreach (var selfBuff in selfBuffs)
-			{
-				if (self.Player.Health > 0 && !self.HasAura(self.Player, selfBuff, null))
-				{
-					self.CastSpell(selfBuff);
-					return;
-				}
-			}
 		}
 
 		private static readonly RaidTarget[] AttackPriorities =

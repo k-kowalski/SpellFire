@@ -64,6 +64,16 @@ namespace SpellFire.Primer
 			}
 		}
 
+		public UnitClass UnitClass
+		{
+			get
+			{
+				IntPtr unitInfo = memory.ReadPointer32(address + Offset.Info);
+				/* Unit class is 2nd byte in UnitBytes0 */
+				return memory.ReadStruct<UnitClass>(unitInfo + Offset.UnitBytes0 + 1);
+			}
+		}
+
 		public Int32 Health
 		{
 			get

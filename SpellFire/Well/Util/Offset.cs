@@ -95,6 +95,10 @@ namespace SpellFire.Well.Util
 		/// info
 		/// </summary>
 		public const Int32 PlayerItem1ID = 0x11B;
+		/// <summary>
+		/// info
+		/// </summary>
+		public const Int32 UnitBytes0 = 0x5C;
 
 		/// <summary>
 		/// game object

@@ -186,6 +186,10 @@ namespace SpellFire.Primer.Solutions.Mbox
 				{
 					slave.ExecLua("FollowUnit('party1')");
 				});
+				slave.LuaEventListener.Bind("RESURRECT_REQUEST", args =>
+				{
+					slave.ExecLua("AcceptResurrect()");
+				});
 
 				/* command executor in game */
 				slave.LuaEventListener.Bind("do", args =>
@@ -226,6 +230,11 @@ namespace SpellFire.Primer.Solutions.Mbox
 				/* invite slaves to party */
 				me.ExecLua($"InviteUnit('{slavePlayerName}')");
 			}
+
+			me.LuaEventListener.Bind("RESURRECT_REQUEST", args =>
+			{
+				me.ExecLua("AcceptResurrect()");
+			});
 
 			me.LuaEventListener.Bind("LOOT_OPENED", args =>
 			{
@@ -318,10 +327,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 			}
 		}
 
-		private static readonly string[] PartyBuffs =
-		{
-			"Blessing of Wisdom",
-		};
+		private static readonly string[] PartyBuffs = {};
 		private static readonly string[] SelfBuffs =
 		{
 			"Seal of Righteousness", "Righteous Fury"

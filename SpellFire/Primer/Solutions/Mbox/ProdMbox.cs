@@ -417,6 +417,11 @@ namespace SpellFire.Primer.Solutions.Mbox
 		{
 			const float lootingRange = 6f;
 
+			if (c.Player.IsInCombat())
+			{
+				return;
+			}
+
 			IEnumerable<GameObject> lootables =
 				c.ObjectManager.Where(gameObj => gameObj.Type == GameObjectType.Unit && gameObj.IsLootable());
 

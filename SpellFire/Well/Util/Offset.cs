@@ -74,7 +74,7 @@ namespace SpellFire.Well.Util
 		/// <summary>
 		/// info
 		/// </summary>
-		public const Int32 Flags = 0x13C;
+		public const Int32 DynamicFlags = 0x13C;
 		/// <summary>
 		/// info
 		/// </summary>
@@ -99,6 +99,10 @@ namespace SpellFire.Well.Util
 		/// info
 		/// </summary>
 		public const Int32 UnitBytes0 = 0x5C;
+		/// <summary>
+		/// info
+		/// </summary>
+		public const Int32 Flags = 0xEC;
 
 		/// <summary>
 		/// game object

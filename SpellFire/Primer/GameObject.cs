@@ -9,6 +9,8 @@ namespace SpellFire.Primer
 {
 	public class GameObject : MemoryMappedObject
 	{
+		public GameObject(Memory memory, IntPtr address) : base(memory, address) { }
+
 		public Int64 GUID => memory.ReadInt64(address + Offset.GUID);
 		public GameObjectType Type => memory.ReadStruct<GameObjectType>(address + Offset.Type);
 
@@ -130,14 +132,14 @@ namespace SpellFire.Primer
 		public bool IsLootable()
 		{
 			IntPtr unitInfo = memory.ReadPointer32(address + Offset.Info);
-			Int32 flags = memory.ReadInt32(unitInfo + Offset.Flags);
+			Int32 flags = memory.ReadInt32(unitInfo + Offset.DynamicFlags);
 			return (flags & (byte)DynamicUnitFlags.Lootable) != 0;
 		}
 
 		public bool IsTaggedByOther()
 		{
 			IntPtr unitInfo = memory.ReadPointer32(address + Offset.Info);
-			Int32 flags = memory.ReadInt32(unitInfo + Offset.Flags);
+			Int32 flags = memory.ReadInt32(unitInfo + Offset.DynamicFlags);
 			return (flags & (byte)DynamicUnitFlags.TaggedByOther) != 0;
 		}
 
@@ -147,6 +149,11 @@ namespace SpellFire.Primer
 			return memory.ReadInt32(unitInfo + Offset.MountDisplayID) > 0;
 		}
 
-		public GameObject(Memory memory, IntPtr address) : base(memory, address) { }
+		public bool IsInCombat()
+		{
+			IntPtr unitInfo = memory.ReadPointer32(address + Offset.Info);
+			Int32 flags = memory.ReadInt32(unitInfo + Offset.Flags);
+			return (flags & (int)UnitFlags.IsInCombat) != 0;
+		}
 	}
 }

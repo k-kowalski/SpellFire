@@ -190,6 +190,14 @@ namespace SpellFire.Primer.Solutions.Mbox
 				{
 					slave.ExecLua("AcceptResurrect()");
 				});
+				slave.LuaEventListener.Bind("LFG_ROLE_CHECK_SHOW", args =>
+				{
+					slave.ExecLua("CompleteLFGRoleCheck(true)");
+				});
+				slave.LuaEventListener.Bind("LFG_PROPOSAL_SHOW", args =>
+				{
+					slave.ExecLua("LFDDungeonReadyDialogEnterDungeonButton:Click()");
+				});
 
 				/* command executor in game */
 				slave.LuaEventListener.Bind("do", args =>
@@ -234,6 +242,10 @@ namespace SpellFire.Primer.Solutions.Mbox
 			me.LuaEventListener.Bind("RESURRECT_REQUEST", args =>
 			{
 				me.ExecLua("AcceptResurrect()");
+			});
+			me.LuaEventListener.Bind("LFG_PROPOSAL_SHOW", args =>
+			{
+				me.ExecLua("LFDDungeonReadyDialogEnterDungeonButton:Click()");
 			});
 
 			me.LuaEventListener.Bind("LOOT_OPENED", args =>

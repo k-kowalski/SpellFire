@@ -5,6 +5,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using SpellFire.Primer.Gui;
@@ -72,6 +73,42 @@ namespace SpellFire.Primer
 			}
 
 			return injectedClient;
+		}
+
+		public void WarmupPreset(Preset preset)
+		{
+			List<Task> launchTasks = new List<Task>();
+
+			if (preset.Clients.Length > 0)
+			{
+				File.Copy(preset.Clients[0].GameConfig, SFConfig.Global.WowDir + @"\WTF\Config.wtf", true);
+
+				foreach (ClientLaunchSettings settings in preset.Clients)
+				{
+					Process process = Process.Start(SFConfig.Global.WowDir + @"\Wow.exe");
+					launchTasks.Add(Task.Run((() =>
+					{
+						if (process.WaitForInputIdle())
+						{
+							Thread.Sleep(1000);
+							Client client = AttachToProcess(process, settings);
+
+							Launcher.LoginClient(client, settings.Login, settings.Password, settings.Character);
+						}
+					})));
+					Thread.Sleep(1000);
+				}
+			}
+			else
+			{
+				MessageBox.Show("No clients specified in preset.");
+				return;
+			}
+
+			foreach (var task in launchTasks)
+			{
+				task.Wait();
+			}
 		}
 
 		public void LaunchPreset(Preset preset)

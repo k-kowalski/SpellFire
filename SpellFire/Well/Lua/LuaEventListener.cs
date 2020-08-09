@@ -67,7 +67,17 @@ namespace SpellFire.Well.Lua
 			string key = luaEventArgs.Name == "COMBAT_LOG_EVENT_UNFILTERED" ? luaEventArgs.Args[1] : luaEventArgs.Name;
 			if (eventHandlers.TryGetValue(key, out LuaEventHandler handler))
 			{
-				Task.Run(() => handler.Invoke(luaEventArgs));
+				Task.Run(() =>
+				{
+					try
+					{
+						handler.Invoke(luaEventArgs);
+					}
+					catch (Exception e)
+					{
+						Console.WriteLine(e);
+					}
+				});
 			}
 		}
 	}

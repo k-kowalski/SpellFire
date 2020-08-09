@@ -60,7 +60,16 @@ namespace SpellFire.Primer.Solutions.Mbox
 				{
 					string casterName = args[0];
 					string spellName = args[1];
-					Int64 targetGuid = me.GetTargetGUID();
+
+					Int64 targetGuid = 0;
+					if (args.Count > 2 && args[2] == "mo") // optional mouseover
+					{
+						targetGuid = me.Memory.ReadInt64(IntPtr.Zero + Offset.MouseoverGUID);
+					}
+					else
+					{
+						targetGuid = me.GetTargetGUID();
+					}
 
 					Client caster = Slaves.FirstOrDefault(c =>
 						c.ControlInterface.remoteControl.GetUnitName(c.Player.GetAddress()) == casterName);
@@ -68,6 +77,24 @@ namespace SpellFire.Primer.Solutions.Mbox
 					if (caster != null)
 					{
 						caster.CastSpellOnGuid(spellName, targetGuid);
+					}
+					else
+					{
+						Console.WriteLine($"Couldn't find slave: {casterName}.");
+					}
+				})),
+				/* use item */
+				"ui" => new Action<IList<string>>(((args) =>
+				{
+					string casterName = args[0];
+					string itemName = args[1];
+
+					Client caster = Slaves.FirstOrDefault(c =>
+						c.ControlInterface.remoteControl.GetUnitName(c.Player.GetAddress()) == casterName);
+
+					if (caster != null)
+					{
+						caster.ExecLua($"UseInventoryItem( GetInventorySlotInfo('{itemName}') )");
 					}
 					else
 					{
@@ -166,7 +193,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 					}
 					else
 					{
-						Console.Write($"[{slave.ControlInterface.remoteControl.GetUnitName(slave.Player.GetAddress())}] Received foreign invite from {args.Args[1]}.");
+						Console.WriteLine($"[{slave.ControlInterface.remoteControl.GetUnitName(slave.Player.GetAddress())}] Received foreign invite from {args.Args[1]}.");
 					}
 
 				});
@@ -176,7 +203,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 				});
 				slave.LuaEventListener.Bind("CHAT_MSG_WHISPER", args =>
 				{
-					Console.Write($"[{slave.ControlInterface.remoteControl.GetUnitName(slave.Player.GetAddress())}] Whisper to slave!");
+					Console.WriteLine($"[{slave.ControlInterface.remoteControl.GetUnitName(slave.Player.GetAddress())}] Whisper to slave!");
 				});
 				slave.LuaEventListener.Bind("LOOT_OPENED", args =>
 				{
@@ -342,7 +369,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 		private static readonly string[] PartyBuffs = {};
 		private static readonly string[] SelfBuffs =
 		{
-			"Seal of Righteousness", "Righteous Fury"
+			"Seal of Light", "Righteous Fury"
 		};
 
 		public override void Tick()
@@ -361,14 +388,19 @@ namespace SpellFire.Primer.Solutions.Mbox
 			}
 
 			LootAround(me);
-			BuffUp(me, this, PartyBuffs, SelfBuffs, PaladinBuffsForClass);
+			if (!me.Player.IsInCombat())
+			{
+				BuffUp(me, this, PartyBuffs, SelfBuffs, PaladinBuffsForClass);
+			}
+
+
 		}
 
 		private static string PaladinBuffsForClass(UnitClass unitClass)
 		{
 			return unitClass switch
 			{
-				UnitClass.Paladin => "Blessing of Kings",
+				UnitClass.Paladin => "Blessing of Sanctuary",
 				_ => "Blessing of Wisdom"
 			};
 		}
@@ -381,7 +413,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 				{
 					foreach (var partyBuff in partyBuffs)
 					{
-						if (client.Player.Health > 0 && !self.HasAura(client.Player, partyBuff, null))
+						if (client.GetObjectMgrAndPlayer() && client.Player.Health > 0 && !self.HasAura(client.Player, partyBuff, null))
 						{
 							if (client.Player.GetDistance(self.Player) < RangedAttackRange/* use RAR for buff range */)
 							{
@@ -394,7 +426,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 				else
 				{
 					var partyBuff = classBuffFilter(client.Player.UnitClass);
-					if (client.Player.Health > 0 && !self.HasAura(client.Player, partyBuff, null))
+					if (client.GetObjectMgrAndPlayer() && client.Player.Health > 0 && !self.HasAura(client.Player, partyBuff, null))
 					{
 						if (client.Player.GetDistance(self.Player) < RangedAttackRange/* use RAR for buff range */)
 						{
@@ -525,6 +557,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 
 			float angle = c.Player.Coordinates.AngleBetween(targetCoords);
 
+			c.ControlInterface.remoteControl.CGPlayer_C__ClickToMoveStop(c.Player.GetAddress());
 			c.ControlInterface.remoteControl.CGPlayer_C__ClickToMove(
 				c.Player.GetAddress(), ClickToMoveType.Face, ref targetGuid, ref targetCoords, angle);
 		}
@@ -555,11 +588,13 @@ namespace SpellFire.Primer.Solutions.Mbox
 			private ProdMbox mbox;
 			private static readonly string[] PartyBuffs =
 			{
-				"Power Word: Fortitude",
+				//"Power Word: Fortitude",
+				"Divine Spirit",
+				//"Shadow Protection"
 			};
 			private static readonly string[] SelfBuffs =
 			{
-				"Inner Fire",
+				"Inner Fire", "Vampiric Embrace"
 			};
 
 			public Priest(Client client, ProdMbox mbox) : base(client)
@@ -589,8 +624,10 @@ namespace SpellFire.Primer.Solutions.Mbox
 					return;
 				}
 
-				BuffUp(me, mbox, PartyBuffs, SelfBuffs);
-				HealUp();
+				if (!me.Player.IsInCombat())
+				{
+					BuffUp(me, mbox, PartyBuffs, SelfBuffs);
+				}
 
 				Int64[] targetGuids = GetRaidTargetGuids(me);
 				GameObject target = SelectRaidTargetByPriority(targetGuids, AttackPriorities, me);
@@ -608,10 +645,28 @@ namespace SpellFire.Primer.Solutions.Mbox
 				{
 					me.ControlInterface.remoteControl.SelectUnit(target.GUID);
 				}
+
 				FaceTowards(me, target);
 				if (!me.Player.IsCastingOrChanneling())
 				{
-					me.CastSpell(!me.IsOnCooldown("Mind Blast") ? "Mind Blast" : "Mind Flay");
+					bool isDPUp = me.HasAura(target, "Devouring Plague", me.Player);
+					if (isDPUp)
+					{
+//						bool isSWPUp = me.HasAura(target, "Shadow Word: Pain", me.Player);
+//						if (isSWPUp)
+//						{
+							me.CastSpell(!me.IsOnCooldown("Mind Blast") ? "Mind Blast" : "Mind Flay");
+//						}
+//						else
+//						{
+//							me.CastSpell("Shadow Word: Pain");
+//						}
+					}
+					else
+					{
+						me.CastSpell("Devouring Plague");
+					}
+
 				}
 			}
 
@@ -640,7 +695,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 			private static readonly string[] PartyBuffs =
 			{
 				"Mark of the Wild",
-				"Thorns",
+				//"Thorns",
 			};
 			private static readonly string[] SelfBuffs =
 			{
@@ -673,7 +728,10 @@ namespace SpellFire.Primer.Solutions.Mbox
 					return;
 				}
 
-				BuffUp(me, mbox, PartyBuffs, SelfBuffs);
+				if (!me.Player.IsInCombat())
+				{
+					BuffUp(me, mbox, PartyBuffs, SelfBuffs);
+				}
 
 				Int64[] targetGuids = GetRaidTargetGuids(me);
 				GameObject target = SelectRaidTargetByPriority(targetGuids, AttackPriorities, me);
@@ -693,7 +751,18 @@ namespace SpellFire.Primer.Solutions.Mbox
 					me.ControlInterface.remoteControl.SelectUnit(target.GUID);
 				}
 				FaceTowards(me, target);
-				me.CastSpell("Wrath");
+
+
+				bool isISUp = me.HasAura(target, "Insect Swarm", me.Player);
+				if (isISUp)
+				{
+					me.CastSpell("Wrath");
+				}
+				else
+				{
+					me.CastSpell("Insect Swarm");
+				}
+
 			}
 
 			public override void Dispose()
@@ -739,7 +808,10 @@ namespace SpellFire.Primer.Solutions.Mbox
 				{
 					return;
 				}
-				BuffUp(me, mbox, PartyBuffs, SelfBuffs);
+				if (!me.Player.IsInCombat())
+				{
+					BuffUp(me, mbox, PartyBuffs, SelfBuffs);
+				}
 				CheckShamanEnchant();
 
 				Int64[] targetGuids = GetRaidTargetGuids(me);
@@ -760,7 +832,19 @@ namespace SpellFire.Primer.Solutions.Mbox
 				}
 
 				FaceTowards(me, target);
-				me.CastSpell(!me.IsOnCooldown("Earth Shock") ? "Earth Shock" : "Lightning Bolt");
+
+				bool isFSUp = me.HasAura(target, "Flame Shock", me.Player);
+				if (isFSUp)
+				{
+					me.CastSpell(!me.IsOnCooldown("Earth Shock") ? "Earth Shock" : "Lightning Bolt");
+				}
+				else
+				{
+					if (!me.IsOnCooldown("Flame Shock"))
+					{
+						me.CastSpell("Flame Shock");
+					}
+				}
 			}
 
 			public override void Dispose()
@@ -788,7 +872,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 			};
 			private static readonly string[] SelfBuffs =
 			{
-				"Frost Armor",
+				"Mage Armor",
 			};
 
 			private string stockScript;
@@ -831,7 +915,10 @@ namespace SpellFire.Primer.Solutions.Mbox
 				{
 					return;
 				}
-				BuffUp(me, mbox, PartyBuffs, SelfBuffs);
+				if (!me.Player.IsInCombat())
+				{
+					BuffUp(me, mbox, PartyBuffs, SelfBuffs);
+				}
 
 				Int64[] targetGuids = GetRaidTargetGuids(me);
 				GameObject ccTarget = SelectRaidTargetByPriority(targetGuids,

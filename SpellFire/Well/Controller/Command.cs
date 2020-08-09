@@ -318,7 +318,6 @@ namespace SpellFire.Well.Controller
 			catch (Exception)
 			{
 				/* host connection broken, ignore exception and die */
-				//TODO: Lua message queue and there catch connection exceptions
 			}
 
 			return 0;

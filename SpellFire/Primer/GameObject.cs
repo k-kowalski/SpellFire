@@ -155,5 +155,10 @@ namespace SpellFire.Primer
 			Int32 flags = memory.ReadInt32(unitInfo + Offset.Flags);
 			return (flags & (int)UnitFlags.IsInCombat) != 0;
 		}
+
+		public bool IsAutoAttacking()
+		{
+			return memory.ReadInt32(address + Offset.IsAutoAttacking) != 0;
+		}
 	}
 }

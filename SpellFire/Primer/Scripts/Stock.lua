@@ -1,5 +1,5 @@
---targetItemID = 22018 --glacier
-targetItemID = 2136 --purified
+targetItemID = 8077 --mineral
+
 targetCount = 12
 currentCount = 0
 
@@ -36,8 +36,12 @@ function TradeStock()
 			slotCount = GetContainerNumSlots(bagIndex)
 			for slotIndex = 0, slotCount do
 				local itemID = GetContainerItemID(bagIndex, slotIndex)
-				if itemID == targetItemID then
-					UseContainerItem(bagIndex, slotIndex)
+				if itemID then
+					local itemName = GetItemInfo(itemID)
+					if itemName:find('Conjured') and itemName:find('Water') then
+						UseContainerItem(bagIndex, slotIndex)
+						return
+					end
 				end
 			end
 		end

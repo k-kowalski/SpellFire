@@ -71,6 +71,11 @@ namespace SpellFire.Primer.Solutions.Mbox
 						targetGuid = me.GetTargetGUID();
 					}
 
+					if (targetGuid == 0)
+					{
+						return;
+					}
+
 					Client caster = Slaves.FirstOrDefault(c =>
 						c.ControlInterface.remoteControl.GetUnitName(c.Player.GetAddress()) == casterName);
 
@@ -94,7 +99,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 
 					if (caster != null)
 					{
-						caster.ExecLua($"UseInventoryItem( GetInventorySlotInfo('{itemName}') )");
+						caster.ExecLua($"UseInventoryItem(GetInventorySlotInfo('{itemName}'))");
 					}
 					else
 					{
@@ -284,8 +289,8 @@ namespace SpellFire.Primer.Solutions.Mbox
 			{
 				me.ExecLua(@"
 					method, partyMaster, raidMaster = GetLootMethod()
-					if method ~= 'master' then
-						SetLootMethod('master', 'player')
+					if method ~= 'freeforall' then
+						SetLootMethod('freeforall', 'player')
 					end");
 			});
 
@@ -388,12 +393,67 @@ namespace SpellFire.Primer.Solutions.Mbox
 			}
 
 			LootAround(me);
+
+			if (me.IsOnCooldown("Seal of Light")) /* global cooldown check */
+			{
+				return;
+			}
+
 			if (!me.Player.IsInCombat())
 			{
 				BuffUp(me, this, PartyBuffs, SelfBuffs, PaladinBuffsForClass);
 			}
 
+			Int64 targetGUID = me.GetTargetGUID();
+			if (targetGUID == 0)
+			{
+				return;
+			}
 
+			GameObject target = me.ObjectManager.FirstOrDefault(gameObj => gameObj.GUID == targetGUID);
+
+			if (target == null || target.Health == 0 ||
+			    me.ControlInterface.remoteControl.CGUnit_C__UnitReaction(me.Player.GetAddress(), target.GetAddress()) >
+			    UnitReaction.Neutral)
+			{
+				return;
+			}
+
+			if (me.Player.GetDistance(target) > MeleeAttackRange)
+			{
+				return;
+			}
+
+			FaceTowards(me, target);
+			if (!me.Player.IsCastingOrChanneling())
+			{
+				if (!me.Player.IsAutoAttacking())
+				{
+					me.ExecLua("AttackTarget()");
+				}
+
+				if (!me.IsOnCooldown("Hammer of Wrath") && target.HealthPct < 25)
+				{
+					me.CastSpell("Hammer of Wrath");
+				}
+
+				if (!me.IsOnCooldown("Judgement of Light"))
+				{
+					me.CastSpell("Judgement of Light");
+				}
+				else
+				{
+					bool isHSUp = me.HasAura(me.Player, "Holy Shield", me.Player);
+					if (isHSUp)
+					{
+						// pass
+					}
+					else
+					{
+						me.CastSpell("Holy Shield");
+					}
+				}
+			}
 		}
 
 		private static string PaladinBuffsForClass(UnitClass unitClass)
@@ -459,7 +519,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 
 		private static void LootAround(Client c)
 		{
-			const float lootingRange = 6f;
+			const float lootingRange = 8f;
 
 			if (c.Player.IsInCombat())
 			{
@@ -549,6 +609,8 @@ namespace SpellFire.Primer.Solutions.Mbox
 		{
 			if (c.Player.IsMoving())
 			{
+				// break any happening movement to prevent 'infinite move bug'
+				c.ExecLua($"MoveBackwardStart();MoveBackwardStop()");
 				return;
 			}
 
@@ -580,6 +642,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 		}
 
 		private const float RangedAttackRange = 35f;
+		private const float MeleeAttackRange = 5f;
 
 		#region Slave
 
@@ -649,7 +712,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 				FaceTowards(me, target);
 				if (!me.Player.IsCastingOrChanneling())
 				{
-					bool isDPUp = me.HasAura(target, "Devouring Plague", me.Player);
+					bool isDPUp = me.HasAura(target, "Vampiric Touch", me.Player);
 					if (isDPUp)
 					{
 //						bool isSWPUp = me.HasAura(target, "Shadow Word: Pain", me.Player);
@@ -664,7 +727,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 					}
 					else
 					{
-						me.CastSpell("Devouring Plague");
+						me.CastSpell("Vampiric Touch");
 					}
 
 				}
@@ -836,7 +899,14 @@ namespace SpellFire.Primer.Solutions.Mbox
 				bool isFSUp = me.HasAura(target, "Flame Shock", me.Player);
 				if (isFSUp)
 				{
-					me.CastSpell(!me.IsOnCooldown("Earth Shock") ? "Earth Shock" : "Lightning Bolt");
+					if (!me.IsOnCooldown("Chain Lightning"))
+					{
+						me.CastSpell("Chain Lightning");
+					}
+					else
+					{
+						me.CastSpell("Lightning Bolt");
+					}
 				}
 				else
 				{

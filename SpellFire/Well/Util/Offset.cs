@@ -164,6 +164,10 @@ namespace SpellFire.Well.Util
 		/// game object
 		/// </summary>
 		public const Int32 AuraTableBase2 = 0xC58;
+		/// <summary>
+		/// game object
+		/// </summary>
+		public const Int32 IsAutoAttacking = 0xA20;
 
 		/// <summary>
 		/// warden page check loop interior

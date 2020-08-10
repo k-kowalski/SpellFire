@@ -102,6 +102,10 @@ namespace SpellFire.Well.Controller
 			public event CommandCallback.Spell_C__CastSpell Spell_C__CastSpellEvent;
 			public bool Spell_C__CastSpell(Int32 spellID, IntPtr item, Int64 targetGUID, bool isTrade) =>
 				Spell_C__CastSpellEvent?.Invoke(spellID, item, targetGUID, isTrade) ?? false;
+
+			public event CommandCallback.Spell_C__HandleTerrainClick Spell_C__HandleTerrainClickEvent;
+			public bool Spell_C__HandleTerrainClick(ref TerrainClick tc) =>
+				Spell_C__HandleTerrainClickEvent?.Invoke(ref tc) ?? false;
 			#endregion
 
 		}

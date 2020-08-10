@@ -106,6 +106,50 @@ namespace SpellFire.Primer.Solutions.Mbox
 						Console.WriteLine($"Couldn't find slave: {casterName}.");
 					}
 				})),
+				/* cast terrain-targetable spell */
+				"ctts" => new Action<IList<string>>(((args) =>
+				{
+					string casterName = args[0];
+					string spellName = args[1];
+
+					Int64 targetGuid = 0;
+					if (args.Count > 2 && args[2] == "mo") // optional mouseover
+					{
+						targetGuid = me.Memory.ReadInt64(IntPtr.Zero + Offset.MouseoverGUID);
+					}
+					else
+					{
+						targetGuid = me.GetTargetGUID();
+					}
+
+					if (targetGuid == 0)
+					{
+						return;
+					}
+
+					Client caster = Slaves.FirstOrDefault(c =>
+						c.ControlInterface.remoteControl.GetUnitName(c.Player.GetAddress()) == casterName);
+
+					if (caster != null)
+					{
+						GameObject targetObject = caster.ObjectManager.FirstOrDefault(obj => obj.GUID == targetGuid);
+						if (targetObject != null)
+						{
+							var targetCoords = targetObject.Coordinates - Vector3.Random();
+							var terrainClick = new TerrainClick{Coordinates = targetCoords};
+							caster.CastSpell(spellName);
+							caster.ControlInterface.remoteControl.Spell_C__HandleTerrainClick(ref terrainClick);
+						}
+						else
+						{
+							Console.WriteLine($"Target not found.");
+						}
+					}
+					else
+					{
+						Console.WriteLine($"Couldn't find slave: {casterName}.");
+					}
+				})),
 				/* toggles AI(individual behaviour loops) */
 				"ta" => new Action<IList<string>>(((args) =>
 				{

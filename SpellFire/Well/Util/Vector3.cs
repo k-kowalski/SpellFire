@@ -20,6 +20,12 @@ namespace SpellFire.Well.Util
 			this.z = z;
 		}
 
+		public static Vector3 Random()
+		{
+			return new Vector3((float)SFUtil.RandomGenerator.NextDouble(),
+				(float)SFUtil.RandomGenerator.NextDouble(), (float)SFUtil.RandomGenerator.NextDouble());
+		}
+
 		public static Vector3 operator -(Vector3 left, Vector3 right)
 		{
 			return new Vector3(left.x - right.x, left.y - right.y, left.z - right.z);
@@ -27,7 +33,7 @@ namespace SpellFire.Well.Util
 
 		public float Length()
 		{
-			return (float) Math.Sqrt(x *x + y*y + z*z);
+			return (float) Math.Sqrt(x*x + y*y + z*z);
 		}
 
 		public float AngleBetween(Vector3 other)

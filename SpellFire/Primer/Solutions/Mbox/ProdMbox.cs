@@ -41,10 +41,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 						if (switchArg.Equals("st"))
 						{
 							// break follow
-							slave
-								.ControlInterface
-								.remoteControl
-								.FrameScript__Execute($"MoveBackwardStart();MoveBackwardStop()", 0, 0);
+							slave.ExecLua($"ToggleAutoRun();ToggleAutoRun()");
 						}
 						else if (switchArg.Equals("fw"))
 						{
@@ -81,7 +78,11 @@ namespace SpellFire.Primer.Solutions.Mbox
 
 					if (caster != null)
 					{
-						caster.CastSpellOnGuid(spellName, targetGuid);
+						if (!caster.IsOnCooldown(spellName))
+						{
+							caster.ExecLua("SpellStopCasting()");
+							caster.CastSpellOnGuid(spellName, targetGuid);
+						}
 					}
 					else
 					{
@@ -137,8 +138,12 @@ namespace SpellFire.Primer.Solutions.Mbox
 						{
 							var targetCoords = targetObject.Coordinates - Vector3.Random();
 							var terrainClick = new TerrainClick{Coordinates = targetCoords};
-							caster.CastSpell(spellName);
-							caster.ControlInterface.remoteControl.Spell_C__HandleTerrainClick(ref terrainClick);
+							if (!caster.IsOnCooldown(spellName))
+							{
+								caster.ExecLua("SpellStopCasting()");
+								caster.CastSpell(spellName);
+								caster.ControlInterface.remoteControl.Spell_C__HandleTerrainClick(ref terrainClick);
+							}
 						}
 						else
 						{
@@ -329,15 +334,6 @@ namespace SpellFire.Primer.Solutions.Mbox
 				me.ExecLua("for i = 1, GetNumLootItems() do LootSlot(i) ConfirmLootSlot(i) end");
 			});
 
-			me.LuaEventListener.Bind("PARTY_MEMBERS_CHANGED", args =>
-			{
-				me.ExecLua(@"
-					method, partyMaster, raidMaster = GetLootMethod()
-					if method ~= 'freeforall' then
-						SetLootMethod('freeforall', 'player')
-					end");
-			});
-
 			/* command executor in game */
 			me.LuaEventListener.Bind("do", args =>
 			{
@@ -349,25 +345,6 @@ namespace SpellFire.Primer.Solutions.Mbox
 			me.LuaEventListener.Bind("QUEST_ACCEPTED", args =>
 			{
 				me.ExecLua($"QuestLogPushQuest({args.Args[0]})");
-			});
-			me.LuaEventListener.Bind("GOSSIP_SHOW", args =>
-			{
-				me.ExecLua(@"
-						activeQuests = GetNumGossipActiveQuests()
-						for questIndex = 0, activeQuests do
-							SelectGossipActiveQuest(questIndex)
-						end");
-			});
-			me.LuaEventListener.Bind("QUEST_PROGRESS", args =>
-			{
-				me.ExecLua("CompleteQuest()");
-			});
-			me.LuaEventListener.Bind("QUEST_COMPLETE", args =>
-			{
-				me.ExecLua(@"
-						if GetNumQuestChoices() == 0 then
-								GetQuestReward(nil)
-						end");
 			});
 			#endregion
 
@@ -476,7 +453,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 					me.ExecLua("AttackTarget()");
 				}
 
-				if (!me.IsOnCooldown("Hammer of Wrath") && target.HealthPct < 25)
+				if (!me.IsOnCooldown("Hammer of Wrath") && target.HealthPct < 20)
 				{
 					me.CastSpell("Hammer of Wrath");
 				}
@@ -653,8 +630,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 		{
 			if (c.Player.IsMoving())
 			{
-				// break any happening movement to prevent 'infinite move bug'
-				c.ExecLua($"MoveBackwardStart();MoveBackwardStop()");
+				c.ExecLua($"ToggleAutoRun();ToggleAutoRun()");
 				return;
 			}
 
@@ -663,7 +639,6 @@ namespace SpellFire.Primer.Solutions.Mbox
 
 			float angle = c.Player.Coordinates.AngleBetween(targetCoords);
 
-			c.ControlInterface.remoteControl.CGPlayer_C__ClickToMoveStop(c.Player.GetAddress());
 			c.ControlInterface.remoteControl.CGPlayer_C__ClickToMove(
 				c.Player.GetAddress(), ClickToMoveType.Face, ref targetGuid, ref targetCoords, angle);
 		}
@@ -701,7 +676,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 			};
 			private static readonly string[] SelfBuffs =
 			{
-				"Inner Fire", "Vampiric Embrace"
+				"Inner Fire", "Vampiric Embrace", "Shadowform"
 			};
 
 			public Priest(Client client, ProdMbox mbox) : base(client)
@@ -759,15 +734,15 @@ namespace SpellFire.Primer.Solutions.Mbox
 					bool isDPUp = me.HasAura(target, "Vampiric Touch", me.Player);
 					if (isDPUp)
 					{
-//						bool isSWPUp = me.HasAura(target, "Shadow Word: Pain", me.Player);
-//						if (isSWPUp)
-//						{
+						bool isSWPUp = me.HasAura(target, "Shadow Word: Pain", me.Player);
+						if (isSWPUp)
+						{
 							me.CastSpell(!me.IsOnCooldown("Mind Blast") ? "Mind Blast" : "Mind Flay");
-//						}
-//						else
-//						{
-//							me.CastSpell("Shadow Word: Pain");
-//						}
+						}
+						else
+						{
+							me.CastSpell("Shadow Word: Pain");
+						}
 					}
 					else
 					{
@@ -806,6 +781,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 			};
 			private static readonly string[] SelfBuffs =
 			{
+				"Moonkin Form"
 			};
 
 			public Druid(Client client, ProdMbox mbox) : base(client)
@@ -859,17 +835,23 @@ namespace SpellFire.Primer.Solutions.Mbox
 				}
 				FaceTowards(me, target);
 
-
-				bool isISUp = me.HasAura(target, "Insect Swarm", me.Player);
-				if (isISUp)
+				if (!me.Player.IsCastingOrChanneling())
 				{
-					me.CastSpell("Wrath");
-				}
-				else
-				{
-					me.CastSpell("Insect Swarm");
-				}
+					if (!me.HasAura(me.Player, "Moonkin Form", me.Player))
+					{
+						me.CastSpell("Moonkin Form");
+					}
 
+					bool isISUp = me.HasAura(target, "Insect Swarm", me.Player);
+					if (isISUp)
+					{
+						me.CastSpell("Wrath");
+					}
+					else
+					{
+						me.CastSpell("Insect Swarm");
+					}
+				}
 			}
 
 			public override void Dispose()
@@ -940,23 +922,26 @@ namespace SpellFire.Primer.Solutions.Mbox
 
 				FaceTowards(me, target);
 
-				bool isFSUp = me.HasAura(target, "Flame Shock", me.Player);
-				if (isFSUp)
+				if (!me.Player.IsCastingOrChanneling())
 				{
-					if (!me.IsOnCooldown("Chain Lightning"))
+					bool isFSUp = me.HasAura(target, "Flame Shock", me.Player);
+					if (isFSUp)
 					{
-						me.CastSpell("Chain Lightning");
+						if (!me.IsOnCooldown("Chain Lightning"))
+						{
+							me.CastSpell("Chain Lightning");
+						}
+						else
+						{
+							me.CastSpell("Lightning Bolt");
+						}
 					}
 					else
 					{
-						me.CastSpell("Lightning Bolt");
-					}
-				}
-				else
-				{
-					if (!me.IsOnCooldown("Flame Shock"))
-					{
-						me.CastSpell("Flame Shock");
+						if (!me.IsOnCooldown("Flame Shock"))
+						{
+							me.CastSpell("Flame Shock");
+						}
 					}
 				}
 			}
@@ -1064,7 +1049,10 @@ namespace SpellFire.Primer.Solutions.Mbox
 				}
 
 				FaceTowards(me, target);
-				me.CastSpell(!me.IsOnCooldown("Fire Blast") ? "Fire Blast" : "Fireball");
+				if (!me.Player.IsCastingOrChanneling())
+				{
+					me.CastSpell(!me.IsOnCooldown("Fire Blast") ? "Fire Blast" : "Fireball");
+				}
 			}
 
 			public override void Dispose()

@@ -146,13 +146,13 @@ namespace SpellFire.Primer
 
 		public void CastSpell(string spellName)
 		{
-			ControlInterface.remoteControl.FrameScript__Execute($"CastSpellByName('{spellName}')", 0, 0);
+			ControlInterface.remoteControl.FrameScript__Execute($"CastSpellByName(\"{spellName}\")", 0, 0);
 		}
 
 		public void CastSpellOnGuid(string spellName, Int64 targetGuid)
 		{
 			string spellLink = ExecLuaAndGetResult(
-				$"link = GetSpellLink('{spellName}')",
+				$"link = GetSpellLink(\"{spellName}\")",
 				"link");
 			string spellID = spellLink.Split('|')[2].Split(':')[1];
 			ControlInterface.remoteControl.Spell_C__CastSpell(Int32.Parse(spellID), IntPtr.Zero,

@@ -77,21 +77,24 @@ namespace SpellFire.Primer
 
 		public void WarmupPreset(Preset preset)
 		{
-			List<Task> launchTasks = new List<Task>();
-
+			var launchTasks = new List<Task>();
+			var clientsToRun = new List<Client>();
 			if (preset.Clients.Length > 0)
 			{
-				File.Copy(preset.Clients[0].GameConfig, SFConfig.Global.WowDir + @"\WTF\Config.wtf", true);
+				/* take 2nd client preset */
+				File.Copy(preset.Clients[1].GameConfig, SFConfig.Global.WowDir + @"\WTF\Config.wtf", true);
 
 				foreach (ClientLaunchSettings settings in preset.Clients)
 				{
 					Process process = Process.Start(SFConfig.Global.WowDir + @"\Wow.exe");
+
 					launchTasks.Add(Task.Run((() =>
 					{
 						if (process.WaitForInputIdle())
 						{
-							Thread.Sleep(1000);
-							Client client = AttachToProcess(process, settings);
+							Thread.Sleep(1500);
+							var client = AttachToProcess(process, settings);
+							clientsToRun.Add(client);
 
 							Launcher.LoginClient(client, settings.Login, settings.Password, settings.Character);
 						}
@@ -108,6 +111,15 @@ namespace SpellFire.Primer
 			foreach (var task in launchTasks)
 			{
 				task.Wait();
+			}
+
+			var orderedClientsToRun = clientsToRun.OrderBy(client => Array.IndexOf(preset.Clients, client.LaunchSettings));
+
+			string solutionName = preset.Clients[0].Solution;
+			if (!String.IsNullOrEmpty(solutionName))
+			{
+				RunSolution(Type.GetType(solutionName),
+					orderedClientsToRun.Count() == 1 ? (object)orderedClientsToRun.First() : orderedClientsToRun);
 			}
 		}
 
@@ -150,6 +162,7 @@ namespace SpellFire.Primer
 
 			if (process.WaitForInputIdle())
 			{
+				Thread.Sleep(1500);
 				Client client = AttachToProcess(process, settings);
 
 				Launcher.LoginClient(client, settings.Login, settings.Password, settings.Character);
@@ -181,6 +194,12 @@ namespace SpellFire.Primer
 
 		private void RunSolution(Type solutionType, object solutionArg)
 		{
+			/* for multibox solutions extract wrapping solution */
+			if (solutionType.IsNested)
+			{
+				solutionType = solutionType.DeclaringType;
+			}
+
 			mainSolution = Activator.CreateInstance(solutionType, solutionArg) as Solution;
 
 			mainForm.PostInfo($"Running solution {solutionType.Name}", Color.Green);

@@ -16,14 +16,31 @@ using SpellFire.Well.Mbox;
 using SpellFire.Well.Model;
 using SpellFire.Well.Util;
 
-namespace SpellFire.Primer.Solutions.Mbox
+namespace SpellFire.Primer.Solutions.Mbox.Prod
 {
-	public class ProdMbox : MultiboxSolution
+	public partial class ProdMbox : MultiboxSolution
 	{
 		private readonly InputMultiplexer inputMultiplexer;
 		private bool slavesAI;
 		private bool masterAI;
 		private IList<Task> slavesTasks = new List<Task>();
+		private IList<Solution> slavesSolutions = new List<Solution>();
+		private Solution masterSolution;
+
+		private static readonly RaidTarget[] AttackPriorities =
+		{
+			RaidTarget.Skull,
+			RaidTarget.Cross,
+			RaidTarget.Square,
+		};
+
+		private static readonly RaidTarget[] CrowdControlTarget =
+		{
+			RaidTarget.Diamond,
+		};
+
+		private const float RangedAttackRange = 35f;
+		private const float MeleeAttackRange = 6f;
 
 		private Action<IList<string>> GetCommand(string cmd)
 		{
@@ -137,7 +154,7 @@ namespace SpellFire.Primer.Solutions.Mbox
 						if (targetObject != null)
 						{
 							var targetCoords = targetObject.Coordinates - Vector3.Random();
-							var terrainClick = new TerrainClick{Coordinates = targetCoords};
+							var terrainClick = new TerrainClick { Coordinates = targetCoords };
 							if (!caster.IsOnCooldown(spellName))
 							{
 								caster.ExecLua("SpellStopCasting()");
@@ -190,6 +207,14 @@ namespace SpellFire.Primer.Solutions.Mbox
 							.ControlInterface
 							.remoteControl
 							.InteractUnit(targetObj.GetAddress());
+					}
+				})),
+				/* exit all slaves */
+				"ex" => new Action<IList<string>>(((args) =>
+				{
+					foreach (Client slave in Slaves)
+					{
+						slave.ExecLua($"Quit()");
 					}
 				})),
 
@@ -318,6 +343,9 @@ namespace SpellFire.Primer.Solutions.Mbox
 
 				/* invite slaves to party */
 				me.ExecLua($"InviteUnit('{slavePlayerName}')");
+
+				/* fps throttle */
+				slave.ExecLua($"SetCVar('maxfps', 30)");
 			}
 
 			me.LuaEventListener.Bind("RESURRECT_REQUEST", args =>
@@ -349,15 +377,61 @@ namespace SpellFire.Primer.Solutions.Mbox
 			#endregion
 
 			/* turn on follow initially */
-			GetCommand("fw").Invoke(new List<string>(new[] {"fw"}));
+			GetCommand("fw").Invoke(new List<string>(new[] { "fw" }));
 
 			this.Active = true;
 
 			AssignRoutines();
 		}
 
+		public override void Tick()
+		{
+			masterSolution.Tick(); /* act as master's Tick()' */
+		}
+
+		public override void RenderRadar(RadarCanvas radarCanvas, Bitmap radarBackBuffer)
+		{
+			masterSolution.RenderRadar(radarCanvas, radarBackBuffer); /* act as master's RenderRadar()' */
+		}
+
+		public override void Dispose()
+		{
+			foreach (var solution in slavesSolutions)
+			{
+				solution.Stop();
+			}
+
+			foreach (var task in slavesTasks)
+			{
+				task.Wait();
+			}
+		}
+
 		private void AssignRoutines()
 		{
+			/* master */
+			try
+			{
+				if (me.LaunchSettings.Solution == null)
+				{
+					goto AssignSlaves;
+				}
+
+				Type solutionType = Type.GetType(me.LaunchSettings.Solution);
+
+				masterSolution = Activator.CreateInstance(solutionType, me, this) as Solution;
+				if (masterSolution != null)
+				{
+					Console.WriteLine($"Bound Master solution: {me.LaunchSettings.Solution}.");
+				}
+			}
+			catch (Exception e)
+			{
+				Console.WriteLine($"Could not launch Master solution {me.LaunchSettings.Solution}.");
+				Console.WriteLine(e);
+			}
+
+			AssignSlaves:
 			foreach (Client slave in Slaves)
 			{
 				try
@@ -371,7 +445,8 @@ namespace SpellFire.Primer.Solutions.Mbox
 
 					if (Activator.CreateInstance(solutionType, slave, this) is Solution solution)
 					{
-						Console.WriteLine($"Bound solution: {slave.LaunchSettings.Solution}.");
+						Console.WriteLine($"Bound Slave solution: {slave.LaunchSettings.Solution}.");
+
 						slavesTasks.Add(
 							Task.Run(() =>
 							{
@@ -382,109 +457,18 @@ namespace SpellFire.Primer.Solutions.Mbox
 								solution.Dispose();
 							})
 						);
+
+						slavesSolutions.Add(solution);
 					}
 				}
 				catch (Exception e)
 				{
-					Console.WriteLine($"Could not launch solution {slave.LaunchSettings.Solution}.");
+					Console.WriteLine($"Could not launch Slave solution {slave.LaunchSettings.Solution}.");
 					Console.WriteLine(e);
 				}
 			}
 		}
 
-		private static readonly string[] PartyBuffs = {};
-		private static readonly string[] SelfBuffs =
-		{
-			"Seal of Light", "Righteous Fury"
-		};
-
-		public override void Tick()
-		{
-			Thread.Sleep(200);
-			me.RefreshLastHardwareEvent();
-
-			if (!masterAI)
-			{
-				return;
-			}
-
-			if (!me.GetObjectMgrAndPlayer())
-			{
-				return;
-			}
-
-			LootAround(me);
-
-			if (me.IsOnCooldown("Seal of Light")) /* global cooldown check */
-			{
-				return;
-			}
-
-			if (!me.Player.IsInCombat())
-			{
-				BuffUp(me, this, PartyBuffs, SelfBuffs, PaladinBuffsForClass);
-			}
-
-			Int64 targetGUID = me.GetTargetGUID();
-			if (targetGUID == 0)
-			{
-				return;
-			}
-
-			GameObject target = me.ObjectManager.FirstOrDefault(gameObj => gameObj.GUID == targetGUID);
-
-			if (target == null || target.Health == 0 ||
-			    me.ControlInterface.remoteControl.CGUnit_C__UnitReaction(me.Player.GetAddress(), target.GetAddress()) >
-			    UnitReaction.Neutral)
-			{
-				return;
-			}
-
-			if (me.Player.GetDistance(target) > MeleeAttackRange)
-			{
-				return;
-			}
-
-			FaceTowards(me, target);
-			if (!me.Player.IsCastingOrChanneling())
-			{
-				if (!me.Player.IsAutoAttacking())
-				{
-					me.ExecLua("AttackTarget()");
-				}
-
-				if (!me.IsOnCooldown("Hammer of Wrath") && target.HealthPct < 20)
-				{
-					me.CastSpell("Hammer of Wrath");
-				}
-
-				if (!me.IsOnCooldown("Judgement of Light"))
-				{
-					me.CastSpell("Judgement of Light");
-				}
-				else
-				{
-					bool isHSUp = me.HasAura(me.Player, "Holy Shield", me.Player);
-					if (isHSUp)
-					{
-						// pass
-					}
-					else
-					{
-						me.CastSpell("Holy Shield");
-					}
-				}
-			}
-		}
-
-		private static string PaladinBuffsForClass(UnitClass unitClass)
-		{
-			return unitClass switch
-			{
-				UnitClass.Paladin => "Blessing of Sanctuary",
-				_ => "Blessing of Wisdom"
-			};
-		}
 		private static void BuffUp(Client self, ProdMbox mbox, string[] partyBuffs, string[] selfBuffs,
 			Func<UnitClass, string> classBuffFilter = null)
 		{
@@ -525,16 +509,6 @@ namespace SpellFire.Primer.Solutions.Mbox
 					self.CastSpell(selfBuff);
 					return;
 				}
-			}
-		}
-
-		public override void Dispose()
-		{
-			me.LuaEventListener.Dispose();
-
-			foreach (var task in slavesTasks)
-			{
-				task.Wait();
 			}
 		}
 
@@ -615,9 +589,9 @@ namespace SpellFire.Primer.Solutions.Mbox
 
 				GameObject gameObj = c.ObjectManager.FirstOrDefault(obj => obj.GUID == targetGuid);
 				if (gameObj != null
-				    && gameObj.Health > 0
-				    && c.ControlInterface.remoteControl
-					    .CGUnit_C__UnitReaction(c.Player.GetAddress(), gameObj.GetAddress()) <= UnitReaction.Neutral)
+					&& gameObj.Health > 0
+					&& c.ControlInterface.remoteControl
+						.CGUnit_C__UnitReaction(c.Player.GetAddress(), gameObj.GetAddress()) <= UnitReaction.Neutral)
 				{
 					return gameObj;
 				}
@@ -642,425 +616,5 @@ namespace SpellFire.Primer.Solutions.Mbox
 			c.ControlInterface.remoteControl.CGPlayer_C__ClickToMove(
 				c.Player.GetAddress(), ClickToMoveType.Face, ref targetGuid, ref targetCoords, angle);
 		}
-
-		private static readonly RaidTarget[] AttackPriorities =
-		{
-			RaidTarget.Skull,
-			RaidTarget.Cross,
-			RaidTarget.Square,
-		};
-
-		private static readonly RaidTarget[] CrowdControlTarget =
-		{
-			RaidTarget.Diamond,
-		};
-
-		public override void RenderRadar(RadarCanvas radarCanvas, Bitmap radarBackBuffer)
-		{
-			// nothing
-		}
-
-		private const float RangedAttackRange = 35f;
-		private const float MeleeAttackRange = 5f;
-
-		#region Slave
-
-		private class Priest : Solution
-		{
-			private ProdMbox mbox;
-			private static readonly string[] PartyBuffs =
-			{
-				//"Power Word: Fortitude",
-				"Divine Spirit",
-				//"Shadow Protection"
-			};
-			private static readonly string[] SelfBuffs =
-			{
-				"Inner Fire", "Vampiric Embrace", "Shadowform"
-			};
-
-			public Priest(Client client, ProdMbox mbox) : base(client)
-			{
-				this.mbox = mbox;
-			}
-
-			public override void Tick()
-			{
-				Thread.Sleep(200);
-				me.RefreshLastHardwareEvent();
-
-				if (!mbox.slavesAI)
-				{
-					return;
-				}
-
-				if (!me.GetObjectMgrAndPlayer())
-				{
-					return;
-				}
-
-				LootAround(me);
-
-				if (me.IsOnCooldown("Smite")) /* global cooldown check */
-				{
-					return;
-				}
-
-				if (!me.Player.IsInCombat())
-				{
-					BuffUp(me, mbox, PartyBuffs, SelfBuffs);
-				}
-
-				Int64[] targetGuids = GetRaidTargetGuids(me);
-				GameObject target = SelectRaidTargetByPriority(targetGuids, AttackPriorities, me);
-				if (target == null)
-				{
-					return;
-				}
-
-				if (me.Player.GetDistance(target) > RangedAttackRange)
-				{
-					return;
-				}
-
-				if (me.GetTargetGUID() != target.GUID)
-				{
-					me.ControlInterface.remoteControl.SelectUnit(target.GUID);
-				}
-
-				FaceTowards(me, target);
-				if (!me.Player.IsCastingOrChanneling())
-				{
-					bool isDPUp = me.HasAura(target, "Vampiric Touch", me.Player);
-					if (isDPUp)
-					{
-						bool isSWPUp = me.HasAura(target, "Shadow Word: Pain", me.Player);
-						if (isSWPUp)
-						{
-							me.CastSpell(!me.IsOnCooldown("Mind Blast") ? "Mind Blast" : "Mind Flay");
-						}
-						else
-						{
-							me.CastSpell("Shadow Word: Pain");
-						}
-					}
-					else
-					{
-						me.CastSpell("Vampiric Touch");
-					}
-
-				}
-			}
-
-			public override void Dispose()
-			{
-				me.LuaEventListener.Dispose();
-			}
-
-			private void HealUp()
-			{
-				foreach (Client client in mbox.clients)
-				{
-					if (client.Player.HealthPct < 50
-					    && (!me.HasAura(client.Player, "Renew", null)))
-					{
-						me.CastSpellOnGuid("Renew", client.Player.GUID);
-						return;
-					}
-				}
-			}
-		}
-
-		private class Druid : Solution
-		{
-			private ProdMbox mbox;
-			private static readonly string[] PartyBuffs =
-			{
-				"Mark of the Wild",
-				//"Thorns",
-			};
-			private static readonly string[] SelfBuffs =
-			{
-				"Moonkin Form"
-			};
-
-			public Druid(Client client, ProdMbox mbox) : base(client)
-			{
-				this.mbox = mbox;
-			}
-
-			public override void Tick()
-			{
-				Thread.Sleep(200);
-				me.RefreshLastHardwareEvent();
-
-				if (!mbox.slavesAI)
-				{
-					return;
-				}
-
-				if (!me.GetObjectMgrAndPlayer())
-				{
-					return;
-				}
-
-				LootAround(me);
-
-				if (me.IsOnCooldown("Wrath")) /* global cooldown check */
-				{
-					return;
-				}
-
-				if (!me.Player.IsInCombat())
-				{
-					BuffUp(me, mbox, PartyBuffs, SelfBuffs);
-				}
-
-				Int64[] targetGuids = GetRaidTargetGuids(me);
-				GameObject target = SelectRaidTargetByPriority(targetGuids, AttackPriorities, me);
-				if (target == null)
-				{
-					return;
-				}
-
-				if (me.Player.GetDistance(target) > RangedAttackRange)
-				{
-					return;
-				}
-
-
-				if (me.GetTargetGUID() != target.GUID)
-				{
-					me.ControlInterface.remoteControl.SelectUnit(target.GUID);
-				}
-				FaceTowards(me, target);
-
-				if (!me.Player.IsCastingOrChanneling())
-				{
-					if (!me.HasAura(me.Player, "Moonkin Form", me.Player))
-					{
-						me.CastSpell("Moonkin Form");
-					}
-
-					bool isISUp = me.HasAura(target, "Insect Swarm", me.Player);
-					if (isISUp)
-					{
-						me.CastSpell("Wrath");
-					}
-					else
-					{
-						me.CastSpell("Insect Swarm");
-					}
-				}
-			}
-
-			public override void Dispose()
-			{
-				me.LuaEventListener.Dispose();
-			}
-		}
-
-		private class Shaman : Solution
-		{
-			private ProdMbox mbox;
-			private static readonly string[] PartyBuffs =
-			{
-			};
-			private static readonly string[] SelfBuffs =
-			{
-				"Water Shield",
-			};
-
-			public Shaman(Client client, ProdMbox mbox) : base(client)
-			{
-				this.mbox = mbox;
-			}
-
-			public override void Tick()
-			{
-				Thread.Sleep(200);
-				me.RefreshLastHardwareEvent();
-
-				if (!mbox.slavesAI)
-				{
-					return;
-				}
-
-				if (!me.GetObjectMgrAndPlayer())
-				{
-					return;
-				}
-
-				LootAround(me);
-
-				if (me.IsOnCooldown("Lightning Bolt")) /* global cooldown check */
-				{
-					return;
-				}
-				if (!me.Player.IsInCombat())
-				{
-					BuffUp(me, mbox, PartyBuffs, SelfBuffs);
-				}
-				CheckShamanEnchant();
-
-				Int64[] targetGuids = GetRaidTargetGuids(me);
-				GameObject target = SelectRaidTargetByPriority(targetGuids, AttackPriorities, me);
-				if (target == null)
-				{
-					return;
-				}
-
-				if (me.Player.GetDistance(target) > RangedAttackRange)
-				{
-					return;
-				}
-
-				if (me.GetTargetGUID() != target.GUID)
-				{
-					me.ControlInterface.remoteControl.SelectUnit(target.GUID);
-				}
-
-				FaceTowards(me, target);
-
-				if (!me.Player.IsCastingOrChanneling())
-				{
-					bool isFSUp = me.HasAura(target, "Flame Shock", me.Player);
-					if (isFSUp)
-					{
-						if (!me.IsOnCooldown("Chain Lightning"))
-						{
-							me.CastSpell("Chain Lightning");
-						}
-						else
-						{
-							me.CastSpell("Lightning Bolt");
-						}
-					}
-					else
-					{
-						if (!me.IsOnCooldown("Flame Shock"))
-						{
-							me.CastSpell("Flame Shock");
-						}
-					}
-				}
-			}
-
-			public override void Dispose()
-			{
-				me.LuaEventListener.Dispose();
-			}
-
-			private void CheckShamanEnchant()
-			{
-				var enchCheck = "hasMainHandEnchant, mainHandExpiration, mainHandCharges, hasOffHandEnchant, offHandExpiration, offHandCharges = GetWeaponEnchantInfo()";
-				var res = me.ExecLuaAndGetResult(enchCheck, "hasMainHandEnchant");
-				if (String.IsNullOrEmpty(res))
-				{
-					me.CastSpell("Flametongue Weapon");
-				}
-			}
-		}
-
-		private class Mage : Solution
-		{
-			private ProdMbox mbox;
-			private static readonly string[] PartyBuffs =
-			{
-				"Arcane Intellect",
-			};
-			private static readonly string[] SelfBuffs =
-			{
-				"Mage Armor",
-			};
-
-			private string stockScript;
-
-			public Mage(Client client, ProdMbox mbox) : base(client)
-			{
-				this.mbox = mbox;
-				stockScript = File.ReadAllText("Scripts/Stock.lua");
-
-				me.LuaEventListener.Bind("TRADE_SHOW", args =>
-				{
-					me.ExecLua(stockScript);
-				});
-
-				me.LuaEventListener.Bind("TRADE_PLAYER_ITEM_CHANGED", args =>
-				{
-					Thread.Sleep(300); /*  it looks that some servers need delay */
-					me.ExecLua("AcceptTrade()");
-				});
-			}
-
-			public override void Tick()
-			{
-				Thread.Sleep(200);
-				me.RefreshLastHardwareEvent();
-
-				if (!mbox.slavesAI)
-				{
-					return;
-				}
-
-				if (!me.GetObjectMgrAndPlayer())
-				{
-					return;
-				}
-
-				LootAround(me);
-
-				if (me.IsOnCooldown("Fireball")) /* global cooldown check */
-				{
-					return;
-				}
-				if (!me.Player.IsInCombat())
-				{
-					BuffUp(me, mbox, PartyBuffs, SelfBuffs);
-				}
-
-				Int64[] targetGuids = GetRaidTargetGuids(me);
-				GameObject ccTarget = SelectRaidTargetByPriority(targetGuids,
-					CrowdControlTarget,
-					me);
-				if (ccTarget != null)
-				{
-					if (!me.HasAura(ccTarget, "Polymorph", me.Player))
-					{
-						me.CastSpellOnGuid("Polymorph", ccTarget.GUID);
-						return;
-					}
-				}
-
-				GameObject target = SelectRaidTargetByPriority(targetGuids, AttackPriorities, me);
-				if (target == null)
-				{
-					return;
-				}
-
-				if (me.Player.GetDistance(target) > RangedAttackRange)
-				{
-					return;
-				}
-
-				if (me.GetTargetGUID() != target.GUID)
-				{
-					me.ControlInterface.remoteControl.SelectUnit(target.GUID);
-				}
-
-				FaceTowards(me, target);
-				if (!me.Player.IsCastingOrChanneling())
-				{
-					me.CastSpell(!me.IsOnCooldown("Fire Blast") ? "Fire Blast" : "Fireball");
-				}
-			}
-
-			public override void Dispose()
-			{
-				me.LuaEventListener.Dispose();
-			}
-		}
-
-		#endregion
 	}
 }

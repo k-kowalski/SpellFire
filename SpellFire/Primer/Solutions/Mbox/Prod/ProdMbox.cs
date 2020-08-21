@@ -196,24 +196,28 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 						masterAI = !masterAI;
 						string state = masterAI ? "ON" : "OFF";
 						Console.WriteLine($"MASTER AI is now {state}.");
+						me.ExecLua($"SetMasterStatus('{state}')");
 					}
 					else if (switchArg.Equals("sl"))
 					{
 						slavesAI = !slavesAI;
 						string state = slavesAI ? "ON" : "OFF";
 						Console.WriteLine($"SLAVES AI is now {state}.");
+						me.ExecLua($"SetSlavesStatus('{state}')");
 					}
 					else if (switchArg.Equals("bu"))
 					{
 						buffingAI = !buffingAI;
 						string state = buffingAI ? "ON" : "OFF";
 						Console.WriteLine($"BUFFING AI is now {state}.");
+						me.ExecLua($"SetBuffingStatus('{state}')");
 					}
 					else if (switchArg.Equals("ra"))
 					{
 						radarOn = !radarOn;
 						string state = radarOn ? "ON" : "OFF";
 						Console.WriteLine($"RADAR is now {state}.");
+						me.ExecLua($"SetRadarStatus('{state}')");
 					}
 				})),
 				/* command slaves to interact with Master mouseover target */

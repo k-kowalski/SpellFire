@@ -132,54 +132,11 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				{
 					base.RenderRadar(radarCanvas, radarBackBuffer);
 				}
-
-				using Graphics g = Graphics.FromImage(radarBackBuffer);
-
-				Brush statusBrush;
-				int currentOffsetY = 15;
-				if (mbox.masterAI)
-				{
-					statusBrush = RadarCanvas.FriendlyUnitBrush;
-				}
 				else
 				{
-					statusBrush = RadarCanvas.UnfriendlyUnitBrush;
+					Thread.Sleep(ProdMbox.ClientSolutionSleep);
 				}
 
-				g.DrawString(
-					"MasterAI",
-					RadarCanvas.StatusFont,
-					statusBrush, radarCanvas.Width - StatusLabelOffsetX, currentOffsetY);
-
-				if (mbox.slavesAI)
-				{
-					statusBrush = RadarCanvas.FriendlyUnitBrush;
-				}
-				else
-				{
-					statusBrush = RadarCanvas.UnfriendlyUnitBrush;
-				}
-
-				g.DrawString(
-					"SlavesAI",
-					RadarCanvas.StatusFont,
-					statusBrush, radarCanvas.Width - StatusLabelOffsetX, currentOffsetY + StatusLabelOffsetY);
-
-				if (mbox.buffingAI)
-				{
-					statusBrush = RadarCanvas.FriendlyUnitBrush;
-				}
-				else
-				{
-					statusBrush = RadarCanvas.UnfriendlyUnitBrush;
-				}
-
-				g.DrawString(
-					"BuffingAI",
-					RadarCanvas.StatusFont,
-					statusBrush, radarCanvas.Width - StatusLabelOffsetX, currentOffsetY + (StatusLabelOffsetY * 2));
-
-				Thread.Sleep(ProdMbox.ClientSolutionSleep);
 			}
 
 			public override void Dispose()

@@ -30,7 +30,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 
 			public override void Tick()
 			{
-				Thread.Sleep(200);
+				Thread.Sleep(ProdMbox.ClientSolutionSleep);
 				me.RefreshLastHardwareEvent();
 
 				if (!mbox.slavesAI)
@@ -50,7 +50,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					return;
 				}
 
-				if (!me.Player.IsInCombat())
+				if (mbox.buffingAI && !me.Player.IsInCombat())
 				{
 					BuffUp(me, mbox, PartyBuffs, SelfBuffs);
 				}
@@ -76,21 +76,21 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 
 				if (!me.Player.IsCastingOrChanneling())
 				{
-					if (me.HasAura(target, "Moonfire", me.Player))
-					{
-						if (me.HasAura(target, "Insect Swarm", me.Player))
-						{
+//					if (me.HasAura(target, "Moonfire", me.Player))
+//					{
+//						if (me.HasAura(target, "Insect Swarm", me.Player))
+//						{
 							me.CastSpell("Wrath");
-						}
-						else
-						{
-							me.CastSpell("Insect Swarm");
-						}
-					}
-					else
-					{
-						me.CastSpell("Moonfire");
-					}
+//						}
+//						else
+//						{
+//							me.CastSpell("Insect Swarm");
+//						}
+//					}
+//					else
+//					{
+//						me.CastSpell("Moonfire");
+//					}
 				}
 			}
 

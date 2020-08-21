@@ -29,6 +29,7 @@ namespace SpellFire.Primer.Gui
 
 		public static Font UnitFont = new Font("Arial", 10, FontStyle.Regular);
 		public static Font PlayerNameFont = new Font("Arial Black", 11, FontStyle.Bold | FontStyle.Underline);
+		public static Font StatusFont = new Font("Arial", 18, FontStyle.Bold);
 
 		public RadarCanvas()
 		{

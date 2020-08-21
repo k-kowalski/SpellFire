@@ -44,7 +44,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 
 			public override void Tick()
 			{
-				Thread.Sleep(200);
+				Thread.Sleep(ProdMbox.ClientSolutionSleep);
 				me.RefreshLastHardwareEvent();
 
 				if (!mbox.slavesAI)
@@ -63,7 +63,8 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				{
 					return;
 				}
-				if (!me.Player.IsInCombat())
+
+				if (mbox.buffingAI && !me.Player.IsInCombat())
 				{
 					BuffUp(me, mbox, PartyBuffs, SelfBuffs);
 				}
@@ -100,14 +101,14 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				FaceTowards(me, target);
 				if (!me.Player.IsCastingOrChanneling())
 				{
-					if (me.HasAura(target, "Living Bomb", me.Player))
-					{
-						me.CastSpell(!me.IsOnCooldown("Fire Blast") ? "Fire Blast" : "Fireball");
-					}
-					else
-					{
-						me.CastSpell("Living Bomb");
-					}
+//					if (me.HasAura(target, "Living Bomb", me.Player))
+//					{
+						me.CastSpell("Fireball");
+//					}
+//					else
+//					{
+//						me.CastSpell("Living Bomb");
+//					}
 				}
 			}
 

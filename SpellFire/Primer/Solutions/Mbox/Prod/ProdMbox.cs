@@ -21,8 +21,6 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 	public partial class ProdMbox : MultiboxSolution
 	{
 		private readonly InputMultiplexer inputMultiplexer;
-		private bool slavesAI;
-		private bool masterAI;
 		private IList<Task> slavesTasks = new List<Task>();
 		private IList<Solution> slavesSolutions = new List<Solution>();
 		private Solution masterSolution;
@@ -41,6 +39,15 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 
 		private const float RangedAttackRange = 35f;
 		private const float MeleeAttackRange = 6f;
+		private const int MaxSlaveFPS = 40;
+		private const int ClientSolutionSleep = 30;
+
+		private bool slavesAI;
+		private bool masterAI;
+		private bool buffingAI;
+		private bool radarOn;
+
+		private static long fixateTargetGuid;
 
 		private Action<IList<string>> GetCommand(string cmd)
 		{
@@ -58,7 +65,14 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 						if (switchArg.Equals("st"))
 						{
 							// break follow
-							slave.ExecLua($"ToggleAutoRun();ToggleAutoRun()");
+							if (slave.GetObjectMgrAndPlayer())
+							{
+								var targetGuid = slave.Player.GUID;
+								var targetCoords = slave.Player.Coordinates;
+
+								slave.ControlInterface.remoteControl.CGPlayer_C__ClickToMove(
+									slave.Player.GetAddress(), ClickToMoveType.Move, ref targetGuid, ref targetCoords, 1f);
+							}
 						}
 						else if (switchArg.Equals("fw"))
 						{
@@ -189,11 +203,23 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 						string state = slavesAI ? "ON" : "OFF";
 						Console.WriteLine($"SLAVES AI is now {state}.");
 					}
+					else if (switchArg.Equals("bu"))
+					{
+						buffingAI = !buffingAI;
+						string state = buffingAI ? "ON" : "OFF";
+						Console.WriteLine($"BUFFING AI is now {state}.");
+					}
+					else if (switchArg.Equals("ra"))
+					{
+						radarOn = !radarOn;
+						string state = radarOn ? "ON" : "OFF";
+						Console.WriteLine($"RADAR is now {state}.");
+					}
 				})),
-				/* command slaves to interact with Master target */
+				/* command slaves to interact with Master mouseover target */
 				"it" => new Action<IList<string>>(((args) =>
 				{
-					Int64 masterTargetGuid = me.GetTargetGUID();
+					Int64 masterTargetGuid = me.Memory.ReadInt64(IntPtr.Zero + Offset.MouseoverGUID);
 					if (masterTargetGuid == 0)
 					{
 						return;
@@ -201,12 +227,8 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 
 					foreach (Client slave in Slaves)
 					{
-						GameObject targetObj = slave.ObjectManager.FirstOrDefault(gameObj => gameObj.GUID == masterTargetGuid);
-
-						slave
-							.ControlInterface
-							.remoteControl
-							.InteractUnit(targetObj.GetAddress());
+						slave.Memory.Write(IntPtr.Zero + Offset.MouseoverGUID, BitConverter.GetBytes(masterTargetGuid));
+						slave.ExecLua("InteractUnit('mouseover')");
 					}
 				})),
 				/* exit all slaves */
@@ -216,6 +238,27 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					{
 						slave.ExecLua($"Quit()");
 					}
+				})),
+				/* click static popup 1st button */
+				"s1" => new Action<IList<string>>(((args) =>
+				{
+					foreach (Client slave in Slaves)
+					{
+						slave.ExecLua($"StaticPopup1Button1:Click()");
+					}
+				})),
+				/* click static popup 1st button */
+				"fix" => new Action<IList<string>>(((args) =>
+				{
+					var targetGuid = me.GetTargetGUID();
+					if (targetGuid == 0)
+					{
+						return;
+					}
+
+					fixateTargetGuid = targetGuid;
+
+					Console.WriteLine($"Fixated on {fixateTargetGuid}");
 				})),
 
 				_ => new Action<IList<string>>(((args) =>
@@ -236,9 +279,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 			inputMultiplexer.BroadcastKeys.AddRange(new[]
 			{
 				Keys.Space, // jump
-				Keys.L, // quest log
-				Keys.B, // backpack
-				Keys.Oemplus, // bind '+'
+				Keys.Oem3, // tilde
 			});
 
 			if (!me.GetObjectMgrAndPlayer())
@@ -282,15 +323,34 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				});
 				slave.LuaEventListener.Bind("CHAT_MSG_WHISPER", args =>
 				{
-					Console.WriteLine($"[{slave.ControlInterface.remoteControl.GetUnitName(slave.Player.GetAddress())}] Whisper to slave!");
+					if (slave.GetObjectMgrAndPlayer())
+					{
+						SFUtil.PlayNotificationSound();
+						Console.WriteLine($"[{slave.ControlInterface.remoteControl.GetUnitName(slave.Player.GetAddress())}] Whisper to slave!");
+					}
 				});
 				slave.LuaEventListener.Bind("LOOT_OPENED", args =>
 				{
 					slave.ExecLua("for i = 1, GetNumLootItems() do LootSlot(i) ConfirmLootSlot(i) end");
 				});
+				slave.LuaEventListener.Bind("START_LOOT_ROLL", args =>
+				{
+					var rollId = args.Args[0];
+					var rollType = 2; /* slaves roll 'Greed' */
+					slave.ExecLua($"RollOnLoot({rollId}, {rollType})");
+				});
+				slave.LuaEventListener.Bind("CONFIRM_LOOT_ROLL", args =>
+				{
+					var rollId = args.Args[0];
+					slave.ExecLua($"ConfirmLootRoll({rollId})");
+				});
 				slave.LuaEventListener.Bind("PLAYER_REGEN_ENABLED", args =>
 				{
-					slave.ExecLua("FollowUnit('party1')");
+					/* follow master */
+					if (me.GetObjectMgrAndPlayer())
+					{
+						slave.ExecLua($"FollowUnit('{me.ControlInterface.remoteControl.GetUnitName(me.Player.GetAddress())}')");
+					}
 				});
 				slave.LuaEventListener.Bind("RESURRECT_REQUEST", args =>
 				{
@@ -318,15 +378,18 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				});
 				slave.LuaEventListener.Bind("QUEST_ACCEPT_CONFIRM", args =>
 				{
-					slave.ExecLua("ConfirmAcceptQuest()");
+					slave.ExecLua("StaticPopup1Button1:Click()");
 				});
 				slave.LuaEventListener.Bind("GOSSIP_SHOW", args =>
 				{
-					slave.ExecLua(@"
+					if (slavesAI)
+					{
+						slave.ExecLua(@"
 						activeQuests = GetNumGossipActiveQuests()
 						for questIndex = 0, activeQuests do
 							SelectGossipActiveQuest(questIndex)
 						end");
+					}
 				});
 				slave.LuaEventListener.Bind("QUEST_PROGRESS", args =>
 				{
@@ -345,7 +408,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				me.ExecLua($"InviteUnit('{slavePlayerName}')");
 
 				/* fps throttle */
-				slave.ExecLua($"SetCVar('maxfps', 30)");
+				slave.ExecLua($"SetCVar('maxfps', {MaxSlaveFPS})");
 			}
 
 			me.LuaEventListener.Bind("RESURRECT_REQUEST", args =>
@@ -386,12 +449,12 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 
 		public override void Tick()
 		{
-			masterSolution.Tick(); /* act as master's Tick()' */
+			masterSolution?.Tick(); /* act as master's Tick()' */
 		}
 
 		public override void RenderRadar(RadarCanvas radarCanvas, Bitmap radarBackBuffer)
 		{
-			masterSolution.RenderRadar(radarCanvas, radarBackBuffer); /* act as master's RenderRadar()' */
+			masterSolution?.RenderRadar(radarCanvas, radarBackBuffer); /* act as master's RenderRadar()' */
 		}
 
 		public override void Dispose()
@@ -593,6 +656,22 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					&& c.ControlInterface.remoteControl
 						.CGUnit_C__UnitReaction(c.Player.GetAddress(), gameObj.GetAddress()) <= UnitReaction.Neutral)
 				{
+					if (fixateTargetGuid != 0)
+					{
+						Console.WriteLine("Clearing fixate target. Valid mark detected");
+					}
+					return gameObj;
+				}
+			}
+
+			if (fixateTargetGuid != 0)
+			{
+				GameObject gameObj = c.ObjectManager.FirstOrDefault(obj => obj.GUID == fixateTargetGuid);
+				if (gameObj != null
+				    && gameObj.Health > 0
+				    && c.ControlInterface.remoteControl
+					    .CGUnit_C__UnitReaction(c.Player.GetAddress(), gameObj.GetAddress()) <= UnitReaction.Neutral)
+				{
 					return gameObj;
 				}
 			}
@@ -604,15 +683,13 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 		{
 			if (c.Player.IsMoving())
 			{
-				c.ExecLua($"ToggleAutoRun();ToggleAutoRun()");
 				return;
 			}
+			var targetGuid = targetObj.GUID;
+			var targetCoords = targetObj.Coordinates;
 
-			Int64 targetGuid = targetObj.GUID;
-			Vector3 targetCoords = targetObj.Coordinates;
 
 			float angle = c.Player.Coordinates.AngleBetween(targetCoords);
-
 			c.ControlInterface.remoteControl.CGPlayer_C__ClickToMove(
 				c.Player.GetAddress(), ClickToMoveType.Face, ref targetGuid, ref targetCoords, angle);
 		}

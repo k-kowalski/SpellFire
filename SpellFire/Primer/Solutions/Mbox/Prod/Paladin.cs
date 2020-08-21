@@ -37,7 +37,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 
 			public override void Tick()
 			{
-				Thread.Sleep(200);
+				Thread.Sleep(ProdMbox.ClientSolutionSleep);
 				me.RefreshLastHardwareEvent();
 
 				if (!mbox.masterAI)
@@ -57,7 +57,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					return;
 				}
 
-				if (!me.Player.IsInCombat())
+				if (mbox.buffingAI)
 				{
 					BuffUp(me, mbox, PartyBuffs, SelfBuffs, PaladinBuffsForClass);
 				}
@@ -123,9 +123,63 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				}
 			}
 
+			private const int StatusLabelOffsetX = 125;
+			private const int StatusLabelOffsetY = 45;
+
 			public override void RenderRadar(RadarCanvas radarCanvas, Bitmap radarBackBuffer)
 			{
-				/* nothing */ Thread.Sleep(5000);
+				if (mbox.masterAI && mbox.radarOn)
+				{
+					base.RenderRadar(radarCanvas, radarBackBuffer);
+				}
+
+				using Graphics g = Graphics.FromImage(radarBackBuffer);
+
+				Brush statusBrush;
+				int currentOffsetY = 15;
+				if (mbox.masterAI)
+				{
+					statusBrush = RadarCanvas.FriendlyUnitBrush;
+				}
+				else
+				{
+					statusBrush = RadarCanvas.UnfriendlyUnitBrush;
+				}
+
+				g.DrawString(
+					"MasterAI",
+					RadarCanvas.StatusFont,
+					statusBrush, radarCanvas.Width - StatusLabelOffsetX, currentOffsetY);
+
+				if (mbox.slavesAI)
+				{
+					statusBrush = RadarCanvas.FriendlyUnitBrush;
+				}
+				else
+				{
+					statusBrush = RadarCanvas.UnfriendlyUnitBrush;
+				}
+
+				g.DrawString(
+					"SlavesAI",
+					RadarCanvas.StatusFont,
+					statusBrush, radarCanvas.Width - StatusLabelOffsetX, currentOffsetY + StatusLabelOffsetY);
+
+				if (mbox.buffingAI)
+				{
+					statusBrush = RadarCanvas.FriendlyUnitBrush;
+				}
+				else
+				{
+					statusBrush = RadarCanvas.UnfriendlyUnitBrush;
+				}
+
+				g.DrawString(
+					"BuffingAI",
+					RadarCanvas.StatusFont,
+					statusBrush, radarCanvas.Width - StatusLabelOffsetX, currentOffsetY + (StatusLabelOffsetY * 2));
+
+				Thread.Sleep(ProdMbox.ClientSolutionSleep);
 			}
 
 			public override void Dispose()

@@ -73,5 +73,11 @@ namespace SpellFire.Well.Util
 		{
 			File.WriteAllBytes(fileName, memory.Read(address, (int)size));
 		}
+
+		public static void PlayNotificationSound()
+		{
+			Console.Beep(600, 500);
+			Console.Beep(500, 500);
+		}
 	}
 }

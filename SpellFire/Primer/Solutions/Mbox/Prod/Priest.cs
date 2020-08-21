@@ -31,7 +31,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 
 			public override void Tick()
 			{
-				Thread.Sleep(200);
+				Thread.Sleep(ProdMbox.ClientSolutionSleep);
 				me.RefreshLastHardwareEvent();
 
 				if (!mbox.slavesAI)
@@ -51,7 +51,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					return;
 				}
 
-				if (!me.Player.IsInCombat())
+				if (mbox.buffingAI && !me.Player.IsInCombat())
 				{
 					BuffUp(me, mbox, PartyBuffs, SelfBuffs);
 				}
@@ -76,23 +76,23 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				FaceTowards(me, target);
 				if (!me.Player.IsCastingOrChanneling())
 				{
-					bool isDPUp = me.HasAura(target, "Vampiric Touch", me.Player);
-					if (isDPUp)
-					{
-						bool isSWPUp = me.HasAura(target, "Shadow Word: Pain", me.Player);
-						if (isSWPUp)
-						{
+//					bool isDPUp = me.HasAura(target, "Vampiric Touch", me.Player);
+//					if (isDPUp)
+//					{
+//						bool isSWPUp = me.HasAura(target, "Shadow Word: Pain", me.Player);
+//						if (isSWPUp)
+//						{
 							me.CastSpell(!me.IsOnCooldown("Mind Blast") ? "Mind Blast" : "Mind Flay");
-						}
-						else
-						{
-							me.CastSpell("Shadow Word: Pain");
-						}
-					}
-					else
-					{
-						me.CastSpell("Vampiric Touch");
-					}
+//						}
+//						else
+//						{
+//							me.CastSpell("Shadow Word: Pain");
+//						}
+//					}
+//					else
+//					{
+//						me.CastSpell("Vampiric Touch");
+//					}
 
 				}
 			}

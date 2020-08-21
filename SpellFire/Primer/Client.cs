@@ -112,6 +112,12 @@ namespace SpellFire.Primer
 		public bool HasAura(GameObject gameObject, string auraName, GameObject ownedBy = null)
 		{
 			var auras = gameObject.Auras;
+
+			string auraLink = ExecLuaAndGetResult(
+				$"link = GetSpellLink(\"{auraName}\")",
+				"link");
+			int auraID = Int32.Parse(auraLink.Split('|')[2].Split(':')[1]);
+
 			foreach (var aura in auras)
 			{
 				if (aura.auraID <= 0)
@@ -119,9 +125,7 @@ namespace SpellFire.Primer
 					continue;
 				}
 
-				if (auraName == ExecLuaAndGetResult(
-					    $"name = GetSpellInfo({aura.auraID})",
-					    "name"))
+				if (aura.auraID == auraID)
 				{
 					if (ownedBy != null)
 					{

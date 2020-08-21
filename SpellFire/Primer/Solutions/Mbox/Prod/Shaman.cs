@@ -47,11 +47,11 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				{
 					return;
 				}
-				if (!me.Player.IsInCombat())
+				if (mbox.buffingAI)
 				{
 					BuffUp(me, mbox, PartyBuffs, SelfBuffs);
+					CheckShamanEnchant();
 				}
-				CheckShamanEnchant();
 
 				Int64[] targetGuids = GetRaidTargetGuids(me);
 				GameObject target = SelectRaidTargetByPriority(targetGuids, AttackPriorities, me);

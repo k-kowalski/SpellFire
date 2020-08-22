@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using SpellFire.Well.Controller;
@@ -20,6 +21,8 @@ namespace SpellFire.Primer
 		public GameObjectManager ObjectManager { get; private set; }
 		public GameObject Player { get; private set; }
 		public ClientLaunchSettings LaunchSettings { get; }
+
+		private Queue<SpellCast> prioritySpellcastsQueue = new Queue<SpellCast>();
 
 		public Client(Process process, ClientLaunchSettings launchSettings)
 		{
@@ -182,6 +185,39 @@ namespace SpellFire.Primer
 		public void RefreshLastHardwareEvent()
 		{
 			Memory.Write(IntPtr.Zero + Offset.LastHardwareEvent, BitConverter.GetBytes(Environment.TickCount));
+		}
+
+		public void EnqueuePrioritySpellCast(SpellCast spellCast)
+		{
+			prioritySpellcastsQueue.Enqueue(spellCast);
+		}
+
+		public bool CastPrioritySpell()
+		{
+			if (prioritySpellcastsQueue.Any())
+			{
+				SpellCast pendingSpellCast = prioritySpellcastsQueue.Dequeue();
+
+				if (!IsOnCooldown(pendingSpellCast.SpellName))
+				{
+					ExecLua("SpellStopCasting()");
+					if (pendingSpellCast.Coordinates != null)
+					{
+						/* terrain targeted spell */
+						var terrainClick = new TerrainClick { Coordinates = pendingSpellCast.Coordinates.Value };
+						CastSpell(pendingSpellCast.SpellName);
+						ControlInterface.remoteControl.Spell_C__HandleTerrainClick(ref terrainClick);
+						return true;
+					}
+					else
+					{
+						CastSpellOnGuid(pendingSpellCast.SpellName, pendingSpellCast.TargetGUID);
+						return true;
+					}
+				}
+			}
+
+			return false;
 		}
 	}
 }

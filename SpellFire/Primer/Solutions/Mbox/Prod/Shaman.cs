@@ -31,6 +31,11 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				Thread.Sleep(200);
 				me.RefreshLastHardwareEvent();
 
+				if (me.CastPrioritySpell())
+				{
+					return;
+				}
+
 				if (!mbox.slavesAI)
 				{
 					return;

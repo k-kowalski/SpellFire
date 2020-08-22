@@ -109,11 +109,14 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 
 					if (caster != null)
 					{
-						if (!caster.IsOnCooldown(spellName))
-						{
-							caster.ExecLua("SpellStopCasting()");
-							caster.CastSpellOnGuid(spellName, targetGuid);
-						}
+						caster.EnqueuePrioritySpellCast(
+							new SpellCast
+							{
+								Coordinates = null,
+								SpellName = spellName,
+								TargetGUID = targetGuid
+							}
+						);
 					}
 					else
 					{
@@ -167,14 +170,13 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 						GameObject targetObject = caster.ObjectManager.FirstOrDefault(obj => obj.GUID == targetGuid);
 						if (targetObject != null)
 						{
-							var targetCoords = targetObject.Coordinates - Vector3.Random();
-							var terrainClick = new TerrainClick { Coordinates = targetCoords };
-							if (!caster.IsOnCooldown(spellName))
-							{
-								caster.ExecLua("SpellStopCasting()");
-								caster.CastSpell(spellName);
-								caster.ControlInterface.remoteControl.Spell_C__HandleTerrainClick(ref terrainClick);
-							}
+							caster.EnqueuePrioritySpellCast(
+								new SpellCast {
+									Coordinates = targetObject.Coordinates - Vector3.Random(), /* randomize location a little */
+									SpellName = spellName,
+									TargetGUID = targetGuid
+								}
+							);
 						}
 						else
 						{

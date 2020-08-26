@@ -1,5 +1,7 @@
-Quality = {
-	Uncommon = 2,
+QualitiesToDisenchant = {
+	2, --Uncommon,
+	3, --Rare,
+	--4, --Epic,
 }
 
 function Main()
@@ -27,9 +29,11 @@ end
 function DisenchantItem(itemID)
 	local name, link, quality, iLevel, reqLevel, class, subclass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(itemID)
 	if class == "Weapon" or class == "Armor" then
-		if quality == Quality["Uncommon"] then
-			CastSpellByName('Disenchant')
-			SpellTargetItem(itemID)
+		for _, qtd in pairs(QualitiesToDisenchant) do
+			if qtd == quality then
+				CastSpellByName('Disenchant')
+				SpellTargetItem(itemID)
+			end
 		end
 	end
 	

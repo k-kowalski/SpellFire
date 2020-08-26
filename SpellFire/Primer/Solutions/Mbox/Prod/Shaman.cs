@@ -52,6 +52,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				{
 					return;
 				}
+
 				if (mbox.buffingAI)
 				{
 					BuffUp(me, mbox, PartyBuffs, SelfBuffs);
@@ -74,21 +75,31 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				{
 					me.ControlInterface.remoteControl.SelectUnit(target.GUID);
 				}
-
-				FaceTowards(me, target);
+				else
+				{
+					FaceTowards(me, target);
+				}
 
 				if (!me.Player.IsCastingOrChanneling())
 				{
+					/* no simple/complex rotation separation */
 					bool isFSUp = me.HasAura(target, "Flame Shock", me.Player);
 					if (isFSUp)
 					{
-						if (!me.IsOnCooldown("Chain Lightning"))
+						if (!me.IsOnCooldown("Lava Burst"))
 						{
-							me.CastSpell("Chain Lightning");
+							me.CastSpell("Lava Burst");
 						}
 						else
 						{
-							me.CastSpell("Lightning Bolt");
+							if (!me.IsOnCooldown("Chain Lightning"))
+							{
+								me.CastSpell("Chain Lightning");
+							}
+							else
+							{
+								me.CastSpell("Lightning Bolt");
+							}
 						}
 					}
 					else
@@ -96,6 +107,10 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 						if (!me.IsOnCooldown("Flame Shock"))
 						{
 							me.CastSpell("Flame Shock");
+						}
+						else
+						{
+							me.CastSpell("Lightning Bolt");
 						}
 					}
 				}

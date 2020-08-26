@@ -13,6 +13,9 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 	{
 		private class Mage : Solution
 		{
+			private const Int32 HotStreak = 48108;
+			private const Int32 FocusMagic = 54648;
+
 			private ProdMbox mbox;
 			private static readonly string[] PartyBuffs =
 			{
@@ -20,7 +23,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 			};
 			private static readonly string[] SelfBuffs =
 			{
-				"Mage Armor",
+				"Molten Armor",
 			};
 
 			private string stockScript;
@@ -69,24 +72,13 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					return;
 				}
 
-				if (mbox.buffingAI && !me.Player.IsInCombat())
+				if (mbox.buffingAI)
 				{
 					BuffUp(me, mbox, PartyBuffs, SelfBuffs);
+					CastFocusMagic();
 				}
 
 				Int64[] targetGuids = GetRaidTargetGuids(me);
-				GameObject ccTarget = SelectRaidTargetByPriority(targetGuids,
-					CrowdControlTarget,
-					me);
-				if (ccTarget != null)
-				{
-					if (!me.HasAura(ccTarget, "Polymorph", me.Player))
-					{
-						me.CastSpellOnGuid("Polymorph", ccTarget.GUID);
-						return;
-					}
-				}
-
 				GameObject target = SelectRaidTargetByPriority(targetGuids, AttackPriorities, me);
 				if (target == null)
 				{
@@ -102,24 +94,60 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				{
 					me.ControlInterface.remoteControl.SelectUnit(target.GUID);
 				}
+				else
+				{
+					FaceTowards(me, target);
+				}
 
 				FaceTowards(me, target);
 				if (!me.Player.IsCastingOrChanneling())
 				{
-//					if (me.HasAura(target, "Living Bomb", me.Player))
-//					{
+					if (mbox.complexRotation)
+					{
+						if (me.HasAura(me.Player, HotStreak, me.Player))
+						{
+							me.CastSpell("Pyroblast");
+						}
+
+						if (me.HasAura(target, "Living Bomb", me.Player))
+						{
+							me.CastSpell("Fireball");
+						}
+						else
+						{
+							me.CastSpell("Living Bomb");
+						}
+					}
+					else
+					{
 						me.CastSpell("Fireball");
-//					}
-//					else
-//					{
-//						me.CastSpell("Living Bomb");
-//					}
+					}
 				}
 			}
 
 			public override void Dispose()
 			{
 				me.LuaEventListener.Dispose();
+			}
+
+			private void CastFocusMagic()
+			{
+				foreach (var client in mbox.clients)
+				{
+					if (client.GetObjectMgrAndPlayer())
+					{
+						if (ShouldFM(client) &&
+						    !me.HasAura(client.Player, "Focus Magic", me.Player))
+						{
+							me.CastSpellOnGuid("Focus Magic", client.Player.GUID);
+						}
+					}
+				}
+			}
+
+			private bool ShouldFM(Client client)
+			{
+				return client.Player.UnitClass == UnitClass.Priest;
 			}
 		}
 	}

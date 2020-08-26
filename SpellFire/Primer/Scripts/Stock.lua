@@ -1,9 +1,4 @@
-targetItemID = 8077 --mineral
-
-targetCount = 12
-currentCount = 0
-
-function InitStock()
+function UseBagItem(filter)
 	bagCount = 4
 	for bagIndex = 0, bagCount do
 		local bagName = GetBagName(bagIndex)
@@ -11,21 +6,21 @@ function InitStock()
 			slotCount = GetContainerNumSlots(bagIndex)
 			for slotIndex = 0, slotCount do
 				local itemID = GetContainerItemID(bagIndex, slotIndex)
-				if itemID == targetItemID then
-					texture, count, locked, quality, readable, lootable, link = GetContainerItemInfo(bagIndex, slotIndex)
-					currentCount = currentCount + count
+				if itemID then
+					local itemName = GetItemInfo(itemID)
+					if filter(itemName) then
+						UseContainerItem(bagIndex, slotIndex)
+						return
+					end
 				end
 			end
 		end
 	end
+end
 
-	-- after processing conclude
-	if currentCount >= targetCount then
-		return 1
-	else
-		CastSpellByName('Conjure Water(Rank 3)')
-		return 0
-	end
+function UseItemByName(providedItemName)
+	myBagFilter = function(itemName) itemName == providedItemName end
+	UseBagItem(myBagFilter)
 end
 
 function TradeStock()

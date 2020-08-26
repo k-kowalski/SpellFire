@@ -45,12 +45,12 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					return;
 				}
 
-				if (!mbox.masterAI)
+				if (!me.GetObjectMgrAndPlayer())
 				{
 					return;
 				}
 
-				if (!me.GetObjectMgrAndPlayer())
+				if (!mbox.masterAI)
 				{
 					return;
 				}
@@ -67,17 +67,9 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					BuffUp(me, mbox, PartyBuffs, SelfBuffs, PaladinBuffsForClass);
 				}
 
-				Int64 targetGUID = me.GetTargetGUID();
-				if (targetGUID == 0)
-				{
-					return;
-				}
-
-				GameObject target = me.ObjectManager.FirstOrDefault(gameObj => gameObj.GUID == targetGUID);
-
-				if (target == null || target.Health == 0 ||
-					me.ControlInterface.remoteControl.CGUnit_C__UnitReaction(me.Player.GetAddress(), target.GetAddress()) >
-					UnitReaction.Neutral)
+				Int64[] targetGuids = GetRaidTargetGuids(me);
+				GameObject target = SelectRaidTargetByPriority(targetGuids, AttackPriorities, me);
+				if (target == null)
 				{
 					return;
 				}
@@ -86,8 +78,11 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				{
 					return;
 				}
+				else
+				{
+					FaceTowards(me, target);
+				}
 
-				FaceTowards(me, target);
 				if (!me.Player.IsCastingOrChanneling())
 				{
 					if (!me.Player.IsAutoAttacking())
@@ -95,34 +90,44 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 						me.ExecLua("AttackTarget()");
 					}
 
-					if (!me.IsOnCooldown("Hammer of Wrath") && target.HealthPct < 20)
+					if (mbox.complexRotation)
 					{
-						me.CastSpell("Hammer of Wrath");
-					}
-
-					if (!me.IsOnCooldown("Judgement of Light"))
-					{
-						me.CastSpell("Judgement of Light");
-					}
-
-					if (!me.IsOnCooldown("Hammer of the Righteous"))
-					{
-						me.CastSpell("Hammer of the Righteous");
-					}
-
-					else
-					{
-						bool isHSUp = me.HasAura(me.Player, "Holy Shield", me.Player);
-						if (isHSUp)
+						if (!me.IsOnCooldown("Hammer of Wrath") && target.HealthPct < 20)
 						{
-							if (!me.IsOnCooldown("Hammer of the Righteous"))
-							{
-								me.CastSpell("Hammer of the Righteous");
-							}
+							me.CastSpell("Hammer of Wrath");
 						}
+
+						if (!me.IsOnCooldown("Judgement of Light"))
+						{
+							me.CastSpell("Judgement of Light");
+						}
+
+						if (!me.IsOnCooldown("Hammer of the Righteous"))
+						{
+							me.CastSpell("Hammer of the Righteous");
+						}
+
 						else
 						{
-							me.CastSpell("Holy Shield");
+							bool isHSUp = me.HasAura(me.Player, "Holy Shield", me.Player);
+							if (isHSUp)
+							{
+								if (!me.IsOnCooldown("Hammer of the Righteous"))
+								{
+									me.CastSpell("Hammer of the Righteous");
+								}
+							}
+							else
+							{
+								me.CastSpell("Holy Shield");
+							}
+						}
+					}
+					else
+					{
+						if (!me.IsOnCooldown("Hammer of the Righteous"))
+						{
+							me.CastSpell("Hammer of the Righteous");
 						}
 					}
 				}

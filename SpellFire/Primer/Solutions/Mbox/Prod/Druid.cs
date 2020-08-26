@@ -12,11 +12,13 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 	{
 		private class Druid : Solution
 		{
+			private const Int32 EclipseLunar = 48518;
+
 			private ProdMbox mbox;
 			private static readonly string[] PartyBuffs =
 			{
 				"Mark of the Wild",
-				//"Thorns",
+				"Thorns",
 			};
 			private static readonly string[] SelfBuffs =
 			{
@@ -55,7 +57,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					return;
 				}
 
-				if (mbox.buffingAI && !me.Player.IsInCombat())
+				if (mbox.buffingAI)
 				{
 					BuffUp(me, mbox, PartyBuffs, SelfBuffs);
 				}
@@ -77,25 +79,42 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				{
 					me.ControlInterface.remoteControl.SelectUnit(target.GUID);
 				}
-				FaceTowards(me, target);
+				else
+				{
+					FaceTowards(me, target);
+				}
 
 				if (!me.Player.IsCastingOrChanneling())
 				{
-//					if (me.HasAura(target, "Moonfire", me.Player))
-//					{
-//						if (me.HasAura(target, "Insect Swarm", me.Player))
-//						{
-							me.CastSpell("Wrath");
-//						}
-//						else
-//						{
-//							me.CastSpell("Insect Swarm");
-//						}
-//					}
-//					else
-//					{
-//						me.CastSpell("Moonfire");
-//					}
+					if (mbox.complexRotation)
+					{
+						if (me.HasAura(target, "Moonfire", me.Player))
+						{
+							if (me.HasAura(target, "Insect Swarm", me.Player))
+							{
+								if (me.HasAura(me.Player, EclipseLunar, me.Player))
+								{
+									me.CastSpell("Starfire");
+								}
+								else
+								{
+									me.CastSpell("Wrath");
+								}
+							}
+							else
+							{
+								me.CastSpell("Insect Swarm");
+							}
+						}
+						else
+						{
+							me.CastSpell("Moonfire");
+						}
+					}
+					else
+					{
+						me.CastSpell("Wrath");
+					}
 				}
 			}
 

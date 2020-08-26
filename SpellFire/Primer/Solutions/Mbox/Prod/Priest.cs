@@ -15,9 +15,9 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 			private ProdMbox mbox;
 			private static readonly string[] PartyBuffs =
 			{
-				//"Power Word: Fortitude",
-				"Divine Spirit",
-				//"Shadow Protection"
+				"Prayer of Fortitude",
+				"Prayer of Spirit",
+				"Prayer of Shadow Protection"
 			};
 			private static readonly string[] SelfBuffs =
 			{
@@ -56,7 +56,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					return;
 				}
 
-				if (mbox.buffingAI && !me.Player.IsInCombat())
+				if (mbox.buffingAI)
 				{
 					BuffUp(me, mbox, PartyBuffs, SelfBuffs);
 				}
@@ -77,27 +77,38 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				{
 					me.ControlInterface.remoteControl.SelectUnit(target.GUID);
 				}
+				else
+				{
+					FaceTowards(me, target);
+				}
 
-				FaceTowards(me, target);
 				if (!me.Player.IsCastingOrChanneling())
 				{
-//					bool isDPUp = me.HasAura(target, "Vampiric Touch", me.Player);
-//					if (isDPUp)
-//					{
-//						bool isSWPUp = me.HasAura(target, "Shadow Word: Pain", me.Player);
-//						if (isSWPUp)
-//						{
-							me.CastSpell(!me.IsOnCooldown("Mind Blast") ? "Mind Blast" : "Mind Flay");
-//						}
-//						else
-//						{
-//							me.CastSpell("Shadow Word: Pain");
-//						}
-//					}
-//					else
-//					{
-//						me.CastSpell("Vampiric Touch");
-//					}
+					if (mbox.complexRotation)
+					{
+						bool isDPUp = me.HasAura(target, "Vampiric Touch", me.Player);
+						if (isDPUp)
+						{
+							bool isSWPUp = me.HasAura(target, "Shadow Word: Pain", me.Player);
+							if (isSWPUp)
+							{
+								me.CastSpell(!me.IsOnCooldown("Mind Blast") ? "Mind Blast" : "Mind Flay");
+							}
+							else
+							{
+								me.CastSpell("Shadow Word: Pain");
+							}
+						}
+						else
+						{
+							me.CastSpell("Vampiric Touch");
+						}
+					}
+					else
+					{
+						
+						me.CastSpell(!me.IsOnCooldown("Mind Blast") ? "Mind Blast" : "Mind Flay");
+					}
 
 				}
 			}

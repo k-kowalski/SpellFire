@@ -46,6 +46,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 		private bool masterAI;
 		private bool buffingAI;
 		private bool radarOn;
+		private bool complexRotation;
 
 		private static long fixateTargetGuid;
 
@@ -56,6 +57,11 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				/* command all Slaves to follow Master */
 				"fw" => new Action<IList<string>>(((args) =>
 				{
+					if (!me.GetObjectMgrAndPlayer())
+					{
+						return;
+					}
+
 					string masterName = me.ControlInterface.remoteControl.GetUnitName(me.Player.GetAddress());
 
 					string switchArg = args[0];
@@ -99,11 +105,6 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 						targetGuid = me.GetTargetGUID();
 					}
 
-					if (targetGuid == 0)
-					{
-						return;
-					}
-
 					Client caster = Slaves.FirstOrDefault(c =>
 						c.ControlInterface.remoteControl.GetUnitName(c.Player.GetAddress()) == casterName);
 
@@ -134,7 +135,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 
 					if (caster != null)
 					{
-						caster.ExecLua($"UseInventoryItem(GetInventorySlotInfo('{itemName}'))");
+						caster.ExecLua($"UseInventoryItem(GetInventorySlotInfo(\"{itemName}\"))");
 					}
 					else
 					{
@@ -266,6 +267,41 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 
 					Console.WriteLine($"Fixated on {fixateTargetGuid}");
 				})),
+				/* toggles simple rotation */
+				"rot" => new Action<IList<string>>(((args) =>
+				{
+					complexRotation = !complexRotation;
+					string state = complexRotation ? "ON" : "OFF";
+					Console.WriteLine($"Complex Rotation is now {state}.");
+					me.ExecLua($"SetRotationStatus('{state}')");
+				})),
+				"frm" => new Action<IList<string>>(((args) =>
+				{
+					const float magnitude = 5f;
+					var formation = new[] {
+						new Vector3(magnitude, 0f, 0f),
+						new Vector3(0f, magnitude, 0f),
+						new Vector3(-magnitude, 0f, 0f),
+						new Vector3(0f, -magnitude, 0f),
+					};
+
+					var formationIndex = 0;
+					foreach (var slave in Slaves)
+					{
+						if (slave.GetObjectMgrAndPlayer())
+						{
+							Int64 _dummyGuid = 0;
+							Vector3 destination = slave.Player.Coordinates - formation[formationIndex];
+							slave
+								.ControlInterface
+								.remoteControl
+								.CGPlayer_C__ClickToMove(
+									slave.Player.GetAddress(), ClickToMoveType.Move, ref _dummyGuid, ref destination, 1f);
+
+							formationIndex++;
+						}
+					}
+				})),
 
 				_ => new Action<IList<string>>(((args) =>
 				{
@@ -284,8 +320,10 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 
 			inputMultiplexer.BroadcastKeys.AddRange(new[]
 			{
-				Keys.Space, // jump
+				Keys.Oem5, // fwd slash
+				Keys.Space,
 				Keys.Oem3, // tilde
+				Keys.Oemcomma,
 			});
 
 			if (!me.GetObjectMgrAndPlayer())
@@ -348,7 +386,8 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				slave.LuaEventListener.Bind("CONFIRM_LOOT_ROLL", args =>
 				{
 					var rollId = args.Args[0];
-					slave.ExecLua($"ConfirmLootRoll({rollId})");
+					var rollType = 2; /* slaves roll 'Greed' */
+					slave.ExecLua($"ConfirmLootRoll({rollId}, {rollType})");
 				});
 				slave.LuaEventListener.Bind("PLAYER_REGEN_ENABLED", args =>
 				{
@@ -665,6 +704,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					if (fixateTargetGuid != 0)
 					{
 						Console.WriteLine("Clearing fixate target. Valid mark detected");
+						fixateTargetGuid = 0;
 					}
 					return gameObj;
 				}
@@ -691,6 +731,12 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 			{
 				return;
 			}
+
+			if (targetObj.GetAddress() == IntPtr.Zero)
+			{
+				return;
+			}
+
 			var targetGuid = targetObj.GUID;
 			var targetCoords = targetObj.Coordinates;
 

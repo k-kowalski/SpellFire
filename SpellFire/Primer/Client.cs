@@ -80,55 +80,52 @@ namespace SpellFire.Primer
 
 		public bool IsOnCooldown(string spellName)
 		{
-			string result = ExecLuaAndGetResult($"start = GetSpellCooldown('{spellName}')", "start");
+			string result = ExecLuaAndGetResult($"start = GetSpellCooldown(\"{spellName}\")", "start");
 			return result != null && result[0] != '0';
 		}
 
-		public bool HasAura(GameObject gameObject, int spellId, GameObject ownedBy = null)
+		/* remaining cooldown in seconds */
+		public float GetRemainingCooldown(string spellName)
 		{
-			var auras = gameObject.Auras;
-			foreach (var aura in auras)
+			string result = ExecLuaAndGetResult(
+				$"start, duration = GetSpellCooldown(\"{spellName}\"); res = (start + duration) - GetTime()",
+				"res");
+			if (String.IsNullOrEmpty(result))
 			{
-				if (aura.auraID <= 0)
-				{
-					continue;
-				}
-
-				if (spellId == aura.auraID)
-				{
-					if (ownedBy != null)
-					{
-						if (aura.creatorGuid == ownedBy.GUID)
-						{
-							return true;
-						}
-					}
-					else
-					{
-						return true;
-					}
-				}
+				return 0f;
 			}
-			return false;
+			else
+			{
+				float resSingle = Single.Parse(result);
+				return Math.Max(resSingle, 0f);
+			}
 		}
 
 		public bool HasAura(GameObject gameObject, string auraName, GameObject ownedBy = null)
 		{
-			var auras = gameObject.Auras;
-
 			string auraLink = ExecLuaAndGetResult(
 				$"link = GetSpellLink(\"{auraName}\")",
 				"link");
+			if (String.IsNullOrEmpty(auraLink))
+			{
+				Console.WriteLine("No such spell found. Consider using overload which takes spell ID.");
+				return false;
+			}
 			int auraID = Int32.Parse(auraLink.Split('|')[2].Split(':')[1]);
 
-			foreach (var aura in auras)
+			return HasAura(gameObject, auraID, ownedBy);
+		}
+
+		public bool HasAura(GameObject gameObject, Int32 spellId, GameObject ownedBy = null)
+		{
+			foreach (var aura in gameObject.Auras)
 			{
 				if (aura.auraID <= 0)
 				{
 					continue;
 				}
 
-				if (aura.auraID == auraID)
+				if (aura.auraID == spellId)
 				{
 					if (ownedBy != null)
 					{
@@ -161,6 +158,10 @@ namespace SpellFire.Primer
 			string spellLink = ExecLuaAndGetResult(
 				$"link = GetSpellLink(\"{spellName}\")",
 				"link");
+			if (String.IsNullOrEmpty(spellLink))
+			{
+				return;
+			}
 			string spellID = spellLink.Split('|')[2].Split(':')[1];
 			ControlInterface.remoteControl.Spell_C__CastSpell(Int32.Parse(spellID), IntPtr.Zero,
 				targetGuid, false);
@@ -189,30 +190,53 @@ namespace SpellFire.Primer
 
 		public void EnqueuePrioritySpellCast(SpellCast spellCast)
 		{
-			prioritySpellcastsQueue.Enqueue(spellCast);
+			lock (this)
+			{
+				prioritySpellcastsQueue.Enqueue(spellCast);
+			}
 		}
 
 		public bool CastPrioritySpell()
 		{
-			if (prioritySpellcastsQueue.Any())
+			lock (this)
 			{
-				SpellCast pendingSpellCast = prioritySpellcastsQueue.Dequeue();
-
-				if (!IsOnCooldown(pendingSpellCast.SpellName))
+				if (prioritySpellcastsQueue.Any())
 				{
-					ExecLua("SpellStopCasting()");
-					if (pendingSpellCast.Coordinates != null)
+					SpellCast pendingSpellCast = prioritySpellcastsQueue.Peek();
+
+					float remainingCdSecs = GetRemainingCooldown(pendingSpellCast.SpellName);
+
+					const float PrioritySpellCooldownThreshold = 2.5f;
+
+					if (remainingCdSecs < PrioritySpellCooldownThreshold)
 					{
-						/* terrain targeted spell */
-						var terrainClick = new TerrainClick { Coordinates = pendingSpellCast.Coordinates.Value };
-						CastSpell(pendingSpellCast.SpellName);
-						ControlInterface.remoteControl.Spell_C__HandleTerrainClick(ref terrainClick);
-						return true;
+						ExecLua("SpellStopCasting()");
+						if (!IsOnCooldown(pendingSpellCast.SpellName))
+						{
+							if (pendingSpellCast.Coordinates != null)
+							{
+								/* terrain targeted spell */
+								var terrainClick = new TerrainClick { Coordinates = pendingSpellCast.Coordinates.Value };
+								CastSpell(pendingSpellCast.SpellName);
+								ControlInterface.remoteControl.Spell_C__HandleTerrainClick(ref terrainClick);
+							}
+							else
+							{
+								CastSpellOnGuid(pendingSpellCast.SpellName, pendingSpellCast.TargetGUID);
+							}
+
+							prioritySpellcastsQueue.Dequeue();
+							return true;
+						}
+						else
+						{
+							return true;
+						}
 					}
 					else
 					{
-						CastSpellOnGuid(pendingSpellCast.SpellName, pendingSpellCast.TargetGUID);
-						return true;
+						Console.WriteLine($"Spell [{pendingSpellCast.SpellName}] beyond cooldown threshold(left {remainingCdSecs}s). Not prioritizing.");
+						prioritySpellcastsQueue.Dequeue();
 					}
 				}
 			}

@@ -250,10 +250,10 @@ namespace SpellFire.Well.Warden
 
 		public void Dispose()
 		{
-			invalidPtrCheckPatch.Dispose();
-			virtualProtectPatch.Dispose();
-			wardenScanPatch.Dispose();
-			wardenPageCheckPatch.Dispose();
+			invalidPtrCheckPatch?.Dispose();
+			virtualProtectPatch?.Dispose();
+			wardenScanPatch?.Dispose();
+			wardenPageCheckPatch?.Dispose();
 			LocalHook.Release();
 		}
 	}

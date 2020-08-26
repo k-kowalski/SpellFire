@@ -68,11 +68,11 @@ namespace SpellFire.Well.Controller
 			{ }
 			finally
 			{
-				commandHandler.Dispose();
+				commandHandler?.Dispose();
 
-				endScenePatch.Dispose();
+				endScenePatch?.Dispose();
 
-				wardenBuster.Dispose();
+				wardenBuster?.Dispose();
 			}
 		}
 

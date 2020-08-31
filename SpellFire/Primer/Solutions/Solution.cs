@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using SpellFire.Primer.Gui;
 using SpellFire.Well.Controller;
@@ -32,6 +33,11 @@ namespace SpellFire.Primer.Solutions
 				RadarCanvas.BasicRadar(radarCanvas, radarBackBuffer,
 					me.Player, me.ObjectManager, me.GetTargetGUID(), me.ControlInterface);
 			}
+		}
+
+		public virtual Action<IList<string>> GetCommand(string cmd)
+		{
+			return null;
 		}
 	}
 }

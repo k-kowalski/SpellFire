@@ -2,6 +2,7 @@
 using SpellFire.Well.Util;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using SpellFire.Well.Lua;
 using SpellFire.Well.Net;

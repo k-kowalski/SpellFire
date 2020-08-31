@@ -32,7 +32,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 
 			public override void Tick()
 			{
-				Thread.Sleep(ProdMbox.ClientSolutionSleep);
+				Thread.Sleep(ProdMbox.ClientSolutionSleepMs);
 				me.RefreshLastHardwareEvent();
 
 				if (me.CastPrioritySpell())
@@ -40,12 +40,12 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					return;
 				}
 
-				if (!mbox.slavesAI)
+				if (!me.GetObjectMgrAndPlayer())
 				{
 					return;
 				}
 
-				if (!me.GetObjectMgrAndPlayer())
+				if (!mbox.slavesAI)
 				{
 					return;
 				}
@@ -69,15 +69,14 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					return;
 				}
 
-				if (me.Player.GetDistance(target) > RangedAttackRange)
-				{
-					return;
-				}
-
-
 				if (me.GetTargetGUID() != target.GUID)
 				{
 					me.ControlInterface.remoteControl.SelectUnit(target.GUID);
+				}
+
+				if (me.Player.GetDistance(target) > RangedAttackRange)
+				{
+					return;
 				}
 				else
 				{
@@ -86,7 +85,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 
 				if (!me.Player.IsCastingOrChanneling())
 				{
-					if (mbox.complexRotation)
+					if (target.Health > ProdMbox.BigHealthThreshold)
 					{
 						if (me.HasAura(target, "Moonfire", me.Player))
 						{

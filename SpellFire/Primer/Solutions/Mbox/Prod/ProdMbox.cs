@@ -37,10 +37,13 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 			RaidTarget.Diamond,
 		};
 
-		private const float RangedAttackRange = 35f;
+		private const float HealRange = 40f;
+		private const float RangedAttackRange = 35f; /* may vary from spec to spec */
 		private const float MeleeAttackRange = 6f;
-		private const int MaxSlaveFPS = 40;
-		private const int ClientSolutionSleep = 30;
+
+		private const int MaxSlaveFPS = 20;
+		private const int ClientSolutionSleepMs = 90;
+		private const int BigHealthThreshold = 80_000;
 
 		private bool slavesAI;
 		private bool masterAI;
@@ -50,8 +53,21 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 
 		private static long fixateTargetGuid;
 
+		private readonly string UtilScript = File.ReadAllText("Scripts/Util.lua");
+
 		private Action<IList<string>> GetCommand(string cmd)
 		{
+			var command = masterSolution.GetCommand(cmd);
+			if (command != null)
+				return command;
+
+			foreach (var slaveSolution in slavesSolutions)
+			{
+				command = slaveSolution.GetCommand(cmd);
+				if (command != null)
+					return command;
+			}
+
 			return cmd switch
 			{
 				/* command all Slaves to follow Master */
@@ -82,10 +98,21 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 						}
 						else if (switchArg.Equals("fw"))
 						{
-							slave
-								.ControlInterface
-								.remoteControl
-								.FrameScript__Execute($"FollowUnit('{masterName}')", 0, 0);
+							if (slave.GetObjectMgrAndPlayer())
+							{
+								if (slave.Player.IsInCombat())
+								{
+									var targetGuid = slave.Player.GUID;
+									var targetCoords = me.Player.Coordinates;
+
+									slave.ControlInterface.remoteControl.CGPlayer_C__ClickToMove(
+										slave.Player.GetAddress(), ClickToMoveType.Move, ref targetGuid, ref targetCoords, 1f);
+								}
+								else
+								{
+									slave.ExecLua($"FollowUnit('{masterName}')");
+								}
+							}
 						}
 					}
 				})),
@@ -105,7 +132,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 						targetGuid = me.GetTargetGUID();
 					}
 
-					Client caster = Slaves.FirstOrDefault(c =>
+					Client caster = clients.FirstOrDefault(c =>
 						c.ControlInterface.remoteControl.GetUnitName(c.Player.GetAddress()) == casterName);
 
 					if (caster != null)
@@ -127,19 +154,43 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				/* use item */
 				"ui" => new Action<IList<string>>(((args) =>
 				{
-					string casterName = args[0];
-					string itemName = args[1];
+					string location = args[0];
+					string userName = args[1];
+					string itemName = args[2];
 
-					Client caster = Slaves.FirstOrDefault(c =>
-						c.ControlInterface.remoteControl.GetUnitName(c.Player.GetAddress()) == casterName);
-
-					if (caster != null)
+					IEnumerable<Client> users = null;
+					if (userName == "*")
 					{
-						caster.ExecLua($"UseInventoryItem(GetInventorySlotInfo(\"{itemName}\"))");
+						users = clients;
 					}
 					else
 					{
-						Console.WriteLine($"Couldn't find slave: {casterName}.");
+						users = clients.Where(c =>
+							c.ControlInterface.remoteControl.GetUnitName(c.Player.GetAddress()) == userName);
+					}
+
+					foreach (var user in users)
+					{
+						if (user != null)
+						{
+							user.ExecLua(UtilScript);
+							if (location == "inv")
+							{
+								user.ExecLua(
+									$"filter = function(itemName) return itemName == \"{itemName}\" end;" +
+									$"sfUseInventoryItem(filter)");
+							}
+							else if (location == "bag")
+							{
+								user.ExecLua(
+									$"filter = function(itemName) return itemName == \"{itemName}\" end;" +
+									$"sfUseBagItem(filter)");
+							}
+						}
+						else
+						{
+							Console.WriteLine($"Couldn't find slave: {userName}.");
+						}
 					}
 				})),
 				/* cast terrain-targetable spell */
@@ -222,6 +273,13 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 						Console.WriteLine($"RADAR is now {state}.");
 						me.ExecLua($"SetRadarStatus('{state}')");
 					}
+					else if (switchArg.Equals("in"))
+					{
+						inputMultiplexer.ConditionalBroadcastOn = !inputMultiplexer.ConditionalBroadcastOn;
+						string state = inputMultiplexer.ConditionalBroadcastOn ? "ON" : "OFF";
+						Console.WriteLine($"EXTRA INPUT BROADCAST is now {state}.");
+						me.ExecLua($"SetExInputBroadcastStatus('{state}')");
+					}
 				})),
 				/* command slaves to interact with Master mouseover target */
 				"it" => new Action<IList<string>>(((args) =>
@@ -246,15 +304,16 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 						slave.ExecLua($"Quit()");
 					}
 				})),
-				/* click static popup 1st button */
-				"s1" => new Action<IList<string>>(((args) =>
+				/* click static popup */
+				"stat" => new Action<IList<string>>(((args) =>
 				{
-					foreach (Client slave in Slaves)
+					foreach (Client client in Slaves)
 					{
-						slave.ExecLua($"StaticPopup1Button1:Click()");
+						// arg is button number
+						client.ExecLua($"StaticPopup1Button{args[0]}:Click()");
 					}
 				})),
-				/* click static popup 1st button */
+				/* fixate on target */
 				"fix" => new Action<IList<string>>(((args) =>
 				{
 					var targetGuid = me.GetTargetGUID();
@@ -279,10 +338,10 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				{
 					const float magnitude = 5f;
 					var formation = new[] {
-						new Vector3(magnitude, 0f, 0f),
-						new Vector3(0f, magnitude, 0f),
-						new Vector3(-magnitude, 0f, 0f),
-						new Vector3(0f, -magnitude, 0f),
+						new Vector3(-magnitude, -magnitude, 0f),
+						new Vector3(magnitude, magnitude, 0f),
+						new Vector3(-magnitude, magnitude, 0f),
+						new Vector3(magnitude, -magnitude, 0f),
 					};
 
 					var formationIndex = 0;
@@ -321,9 +380,19 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 			inputMultiplexer.BroadcastKeys.AddRange(new[]
 			{
 				Keys.Oem5, // fwd slash
-				Keys.Space,
 				Keys.Oem3, // tilde
 				Keys.Oemcomma,
+			});
+
+			inputMultiplexer.ConditionalBroadcastKeys.AddRange(new[]
+			{
+				Keys.Space,
+				Keys.S,
+				Keys.D1,
+				Keys.D2,
+				Keys.D3,
+				Keys.D4,
+				Keys.D5,
 			});
 
 			if (!me.GetObjectMgrAndPlayer())
@@ -394,7 +463,22 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					/* follow master */
 					if (me.GetObjectMgrAndPlayer())
 					{
-						slave.ExecLua($"FollowUnit('{me.ControlInterface.remoteControl.GetUnitName(me.Player.GetAddress())}')");
+						if (slave.GetObjectMgrAndPlayer())
+						{
+							if (slave.Player.IsInCombat())
+							{
+								var targetGuid = slave.Player.GUID;
+								var targetCoords = me.Player.Coordinates;
+
+								slave.ControlInterface.remoteControl.CGPlayer_C__ClickToMove(
+									slave.Player.GetAddress(), ClickToMoveType.Move, ref targetGuid, ref targetCoords, 1f);
+							}
+							else
+							{
+								var masterName = me.ControlInterface.remoteControl.GetUnitName(me.Player.GetAddress());
+								slave.ExecLua($"FollowUnit('{masterName}')");
+							}
+						}
 					}
 				});
 				slave.LuaEventListener.Bind("RESURRECT_REQUEST", args =>
@@ -484,12 +568,12 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 			});
 			#endregion
 
-			/* turn on follow initially */
-			GetCommand("fw").Invoke(new List<string>(new[] { "fw" }));
 
 			this.Active = true;
-
 			AssignRoutines();
+
+			/* turn on follow initially */
+			GetCommand("fw").Invoke(new List<string>(new[] { "fw" }));
 		}
 
 		public override void Tick()
@@ -558,11 +642,19 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 						slavesTasks.Add(
 							Task.Run(() =>
 							{
-								while (this.Active)
+								try
 								{
-									solution.Tick();
+									while (this.Active)
+									{
+										solution.Tick();
+									}
+								}
+								catch (Exception e)
+								{
+									Console.WriteLine(e);
 								}
 								solution.Dispose();
+								Console.WriteLine($"Solution ended: {slave.LaunchSettings.Solution}.");
 							})
 						);
 
@@ -653,7 +745,6 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				{
 					//Console.WriteLine($"[{DateTime.Now}] interacting");
 
-					c.ControlInterface.remoteControl.CGPlayer_C__ClickToMoveStop(c.Player.GetAddress());
 					c.ControlInterface.remoteControl.InteractUnit(closestLootableUnit.GetAddress());
 
 					/*
@@ -697,9 +788,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 
 				GameObject gameObj = c.ObjectManager.FirstOrDefault(obj => obj.GUID == targetGuid);
 				if (gameObj != null
-					&& gameObj.Health > 0
-					&& c.ControlInterface.remoteControl
-						.CGUnit_C__UnitReaction(c.Player.GetAddress(), gameObj.GetAddress()) <= UnitReaction.Neutral)
+					&& gameObj.Health > 0)
 				{
 					if (fixateTargetGuid != 0)
 					{
@@ -727,23 +816,19 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 
 		private static void FaceTowards(Client c, GameObject targetObj)
 		{
+			c.ControlInterface.remoteControl.CGPlayer_C__ClickToMoveStop(c.Player.GetAddress());
 			if (c.Player.IsMoving())
 			{
 				return;
 			}
 
-			if (targetObj.GetAddress() == IntPtr.Zero)
-			{
-				return;
-			}
-
-			var targetGuid = targetObj.GUID;
-			var targetCoords = targetObj.Coordinates;
+			long _Guid = 0;
+			Vector3 _Coords = Vector3.Zero;
 
 
-			float angle = c.Player.Coordinates.AngleBetween(targetCoords);
+			float angle = c.Player.Coordinates.AngleBetween(targetObj.Coordinates);
 			c.ControlInterface.remoteControl.CGPlayer_C__ClickToMove(
-				c.Player.GetAddress(), ClickToMoveType.Face, ref targetGuid, ref targetCoords, angle);
+				c.Player.GetAddress(), ClickToMoveType.Face, ref _Guid, ref _Coords, angle);
 		}
 	}
 }

@@ -1,12 +1,14 @@
 ﻿using SpellFire.Well.Model;
 using SpellFire.Well.Util;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Windows.Forms;
 using SpellFire.Well.Lua;
 using SpellFire.Well.Net;
 
@@ -116,6 +118,11 @@ namespace SpellFire.Well.Controller
 
 		private bool wardenScan = false;
 
+		public BlockingCollection<LuaEventArgs> LuaEventQueue { get; } =
+			new BlockingCollection<LuaEventArgs>(new ConcurrentQueue<LuaEventArgs>());
+		public BlockingCollection<SystemWin32.WindowMessage> WindowMessageQueue { get; } =
+			new BlockingCollection<SystemWin32.WindowMessage>(new ConcurrentQueue<SystemWin32.WindowMessage>());
+
 		public CommandHandler(ControlInterface ctrlInterface, GlobalConfig config)
 		{
 			this.commandQueue = new CommandQueue(ctrlInterface);
@@ -146,7 +153,13 @@ namespace SpellFire.Well.Controller
 		{
 			if(msg == SystemWin32.WM_KEYDOWN || msg == SystemWin32.WM_KEYUP)
 			{
-				ctrlInterface.hostControl.DispatchWindowMessage(hWnd, msg, wParam, lParam);
+				WindowMessageQueue.Add(new SystemWin32.WindowMessage
+				{
+					hWnd = hWnd,
+					msg = msg,
+					wParam = wParam,
+					lParam = lParam
+				});
 			}
 
 			return originalWndProc(hWnd, msg, wParam, lParam);
@@ -315,14 +328,7 @@ namespace SpellFire.Well.Controller
 				luaEventArgs.Add(LuaToString(luaState, i + 1, 0));
 			}
 
-			try
-			{
-				ctrlInterface.hostControl.LuaEventTrigger(new LuaEventArgs(luaEventArgs));
-			}
-			catch (Exception)
-			{
-				/* host connection broken, ignore exception and die */
-			}
+			LuaEventQueue.Add(new LuaEventArgs(luaEventArgs));
 
 			return 0;
 		}

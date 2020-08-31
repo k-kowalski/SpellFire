@@ -87,7 +87,15 @@ namespace SpellFire.Well.Util
 		/// <summary>
 		/// info
 		/// </summary>
-		public const Int32 RunicPower = 0x7C;
+		public const Int32 Power1 = 0x19 * 4;
+		/// <summary>
+		/// info
+		/// </summary>
+		public const Int32 MaxPower1 = 0x21 * 4;
+		/// <summary>
+		/// info
+		/// </summary>
+		public const Int32 Power7 = 0x1F * 4;
 		/// <summary>
 		/// info
 		/// </summary>

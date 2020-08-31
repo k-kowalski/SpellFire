@@ -24,11 +24,31 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 			public Shaman(Client client, ProdMbox mbox) : base(client)
 			{
 				this.mbox = mbox;
+
+				me.LuaEventListener.Bind("SPELL_AURA_REMOVED", args =>
+				{
+					if (mbox.slavesAI)
+					{
+						long destGuid = Convert.ToInt64(args.Args[5], 16);
+						if (destGuid == me.Player.GUID)
+						{
+							var auraName = args.Args[9];
+							if (auraName == "Bloodlust" || auraName == "Power Infusion")
+							{
+								if (me.GetObjectMgrAndPlayer() && me.Player.IsInCombat())
+								{
+									/* continue burst after boost expired */
+									me.CastSpell("Elemental Mastery");
+								}
+							}
+						}
+					}
+				});
 			}
 
 			public override void Tick()
 			{
-				Thread.Sleep(200);
+				Thread.Sleep(ProdMbox.ClientSolutionSleepMs);
 				me.RefreshLastHardwareEvent();
 
 				if (me.CastPrioritySpell())
@@ -36,12 +56,12 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					return;
 				}
 
-				if (!mbox.slavesAI)
+				if (!me.GetObjectMgrAndPlayer())
 				{
 					return;
 				}
 
-				if (!me.GetObjectMgrAndPlayer())
+				if (!mbox.slavesAI)
 				{
 					return;
 				}
@@ -66,14 +86,15 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					return;
 				}
 
-				if (me.Player.GetDistance(target) > RangedAttackRange)
-				{
-					return;
-				}
-
 				if (me.GetTargetGUID() != target.GUID)
 				{
 					me.ControlInterface.remoteControl.SelectUnit(target.GUID);
+				}
+
+
+				if (me.Player.GetDistance(target) > RangedAttackRange)
+				{
+					return;
 				}
 				else
 				{

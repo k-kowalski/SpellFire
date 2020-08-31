@@ -16,10 +16,13 @@ namespace SpellFire.Well.Mbox
 		private readonly ControlInterface.HostControl source;
 		public ICollection<IntPtr> Sinks { get; }
 		public List<Keys> BroadcastKeys { get; }
+		public List<Keys> ConditionalBroadcastKeys { get; }
+		public bool ConditionalBroadcastOn { get; set; }
 
-		public InputMultiplexer(ControlInterface.HostControl source, ICollection<IntPtr> sinks)
+	public InputMultiplexer(ControlInterface.HostControl source, ICollection<IntPtr> sinks)
 		{
 			BroadcastKeys = new List<Keys>();
+			ConditionalBroadcastKeys = new List<Keys>();
 
 			this.source = source;
 			this.Sinks = sinks;
@@ -39,6 +42,17 @@ namespace SpellFire.Well.Mbox
 				foreach (IntPtr sink in Sinks)
 				{
 					SystemWin32.PostMessage(sink, msg, wParam, lParam);
+				}
+			}
+
+			if (ConditionalBroadcastOn)
+			{
+				if (ConditionalBroadcastKeys.Contains((Keys)wParam))
+				{
+					foreach (IntPtr sink in Sinks)
+					{
+						SystemWin32.PostMessage(sink, msg, wParam, lParam);
+					}
 				}
 			}
 		}

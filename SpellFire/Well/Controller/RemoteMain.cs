@@ -3,11 +3,14 @@ using SpellFire.Well.Util;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Ipc;
 using System.Runtime.Serialization.Formatters;
 using System.Threading;
+using System.Threading.Tasks;
+using SpellFire.Well.Lua;
 using SpellFire.Well.Net;
 using SpellFire.Well.Warden;
 
@@ -58,14 +61,39 @@ namespace SpellFire.Well.Controller
 
 			try
 			{
-				while (true)
+				var luaEventProcessingTask = Task.Run((() =>
 				{
-					Thread.Sleep(500);
-					ctrlInterface.hostControl.Ping();
-				}
+					while (true)
+					{
+						if (commandHandler.LuaEventQueue.TryTake(out var luaEvent, 100))
+						{
+							ctrlInterface.hostControl.LuaEventTrigger(luaEvent);
+						}
+					}
+				}));
+				var windowMsgProcessingTask = Task.Run((() =>
+				{
+					while (true)
+					{
+						if (commandHandler.WindowMessageQueue.TryTake(out var windowMessage, 100))
+						{
+							ctrlInterface.hostControl.DispatchWindowMessage(
+								windowMessage.hWnd,
+								windowMessage.msg,
+								windowMessage.wParam,
+								windowMessage.lParam
+								);
+						}
+					}
+				}));
+
+				luaEventProcessingTask.Wait();
+				windowMsgProcessingTask.Wait();
 			}
-			catch
-			{ }
+			catch (Exception e)
+			{
+				Console.WriteLine(e);
+			}
 			finally
 			{
 				commandHandler?.Dispose();

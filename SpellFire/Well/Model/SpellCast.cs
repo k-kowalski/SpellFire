@@ -12,5 +12,15 @@ namespace SpellFire.Well.Model
 		public string SpellName;
 		public Int64 TargetGUID;
 		public Vector3? Coordinates;
+
+		/*  
+			for some spells, in game we may have different target than real target of spell ie. CastSpellOnGuid
+			hence it is displayed as non castable - override it
+		*/
+		public static readonly string[] AlwaysCastableSpells =
+		{
+			"Power Word: Shield",
+			"Ressurection"
+		};
 	}
 }

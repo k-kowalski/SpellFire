@@ -28,16 +28,20 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 			private static readonly string[] PartyBuffs = { };
 			private static readonly string[] SelfBuffs =
 			{
-				"Seal of Light", "Righteous Fury"
+				//"Seal of Light",
+				"Righteous Fury"
 			};
 			public Paladin(Client client, ProdMbox mbox) : base(client)
 			{
 				this.mbox = mbox;
+
+				const int viewDistanceMax = 1250;
+				me.ExecLua($"SetCVar('farclip', {viewDistanceMax})");
 			}
 
 			public override void Tick()
 			{
-				Thread.Sleep(ProdMbox.ClientSolutionSleep);
+				Thread.Sleep(ProdMbox.ClientSolutionSleepMs);
 				me.RefreshLastHardwareEvent();
 
 				if (me.CastPrioritySpell())
@@ -67,14 +71,22 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					BuffUp(me, mbox, PartyBuffs, SelfBuffs, PaladinBuffsForClass);
 				}
 
-				Int64[] targetGuids = GetRaidTargetGuids(me);
-				GameObject target = SelectRaidTargetByPriority(targetGuids, AttackPriorities, me);
-				if (target == null)
+				long targetGuid = me.GetTargetGUID();
+				if (targetGuid == 0)
+				{
+					return;
+				}
+				GameObject target = me.ObjectManager.FirstOrDefault(obj => obj.GUID == targetGuid);
+				bool validTarget = target != null
+				             && target.Health > 0
+				             && me.ControlInterface.remoteControl
+					             .CGUnit_C__UnitReaction(me.Player.GetAddress(), target.GetAddress()) <= UnitReaction.Neutral;
+				if (!validTarget)
 				{
 					return;
 				}
 
-				if (me.Player.GetDistance(target) > MeleeAttackRange)
+				if (me.Player.GetDistance(target) > MeleeAttackRange || me.Player.IsMounted())
 				{
 					return;
 				}
@@ -107,20 +119,15 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 							me.CastSpell("Hammer of the Righteous");
 						}
 
-						else
+						if (!me.IsOnCooldown("Shield of Righteousness"))
 						{
-							bool isHSUp = me.HasAura(me.Player, "Holy Shield", me.Player);
-							if (isHSUp)
-							{
-								if (!me.IsOnCooldown("Hammer of the Righteous"))
-								{
-									me.CastSpell("Hammer of the Righteous");
-								}
-							}
-							else
-							{
-								me.CastSpell("Holy Shield");
-							}
+							me.CastSpell("Shield of Righteousness");
+						}
+
+						bool isHSUp = me.HasAura(me.Player, "Holy Shield", null);
+						if (!isHSUp)
+						{
+							me.CastSpell("Holy Shield");
 						}
 					}
 					else
@@ -129,12 +136,14 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 						{
 							me.CastSpell("Hammer of the Righteous");
 						}
+
+						if (!me.IsOnCooldown("Shield of Righteousness"))
+						{
+							me.CastSpell("Shield of Righteousness");
+						}
 					}
 				}
 			}
-
-			private const int StatusLabelOffsetX = 125;
-			private const int StatusLabelOffsetY = 45;
 
 			public override void RenderRadar(RadarCanvas radarCanvas, Bitmap radarBackBuffer)
 			{
@@ -144,7 +153,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				}
 				else
 				{
-					Thread.Sleep(ProdMbox.ClientSolutionSleep);
+					Thread.Sleep(ProdMbox.ClientSolutionSleepMs);
 				}
 
 			}

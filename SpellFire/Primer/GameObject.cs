@@ -97,12 +97,24 @@ namespace SpellFire.Primer
 			}
 		}
 
+		public Int32 ManaPct
+		{
+			get
+			{
+				IntPtr unitInfo = memory.ReadPointer32(address + Offset.Info);
+				int currentMana = memory.ReadInt32(unitInfo + Offset.Power1);
+				int maxMana = memory.ReadInt32(unitInfo + Offset.MaxPower1);
+
+				return (currentMana * 100) / maxMana;
+			}
+		}
+
 		public Int32 RunicPower
 		{
 			get
 			{
 				IntPtr unitInfo = memory.ReadPointer32(address + Offset.Info);
-				return memory.ReadInt32(unitInfo + Offset.RunicPower) / 10;
+				return memory.ReadInt32(unitInfo + Offset.Power7) / 10;
 			}
 		}
 

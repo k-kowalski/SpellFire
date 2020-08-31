@@ -183,9 +183,9 @@ namespace SpellFire.Primer
 			}
 			else
 			{
-				client.RefreshLastHardwareEvent();
 				while (!client.IsInWorld())
 				{
+				client.RefreshLastHardwareEvent();
 					client.ControlInterface.remoteControl.FrameScript__Execute(loginScriptFmt, 0, 0);
 					System.Threading.Thread.Sleep(1000);
 				}
@@ -200,31 +200,38 @@ namespace SpellFire.Primer
 				solutionType = solutionType.DeclaringType;
 			}
 
-			mainSolution = Activator.CreateInstance(solutionType, solutionArg) as Solution;
-
-			mainForm.PostInfo($"Running solution {solutionType.Name}", Color.Green);
-			mainForm.SetToggleButtonText("Stop");
-
-			solutionTask = Task.Run((() =>
+			try
 			{
-				while (mainSolution.Active)
+				mainSolution = Activator.CreateInstance(solutionType, solutionArg) as Solution;
+
+				mainForm.PostInfo($"Running solution {solutionType.Name}", Color.Green);
+				mainForm.SetToggleButtonText("Stop");
+
+				solutionTask = Task.Run((() =>
 				{
-					mainSolution.Tick();
-				}
-				mainSolution.Dispose();
+					while (mainSolution.Active)
+					{
+						mainSolution.Tick();
+					}
+					mainSolution.Dispose();
 
-				mainForm.PostInfo($"Solution {mainSolution.GetType().Name} stopped.", Color.DarkRed);
-				mainForm.SetToggleButtonText("Start");
-			}));
+					mainForm.PostInfo($"Solution {mainSolution.GetType().Name} stopped.", Color.DarkRed);
+					mainForm.SetToggleButtonText("Start");
+				}));
 
-			radarTask = Task.Run((() =>
+				radarTask = Task.Run((() =>
+				{
+					while (mainSolution.Active)
+					{
+						mainSolution.RenderRadar(mainForm.GetRadarCanvas(), mainForm.GetRadarBackBuffer());
+						mainForm.RadarSwapBuffers();
+					}
+				}));
+			}
+			catch (Exception e)
 			{
-				while (mainSolution.Active)
-				{
-					mainSolution.RenderRadar(mainForm.GetRadarCanvas(), mainForm.GetRadarBackBuffer());
-					mainForm.RadarSwapBuffers();
-				}
-			}));
+				Console.WriteLine(e);
+			}
 		}
 
 		private void TerminateRunningSolution()

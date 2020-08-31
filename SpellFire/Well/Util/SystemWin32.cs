@@ -8,6 +8,8 @@ namespace SpellFire.Well.Util
 		public const UInt32 WM_KEYDOWN = 0x100;
 		public const UInt32 WM_KEYUP = 0x101;
 		public const UInt32 WM_SETTEXT = 0xC;
+		public const UInt32 WM_PAINT = 0xF;
+		public const UInt32 WM_GETTEXT = 0xD;
 
 		public const Int32 GWL_WNDPROC = -0x4;
 
@@ -85,6 +87,14 @@ namespace SpellFire.Well.Util
 		public enum MemoryState : Int32
 		{
 			MEM_FREE = 0x10000
+		}
+
+		public struct WindowMessage
+		{
+			public IntPtr hWnd;
+			public UInt32 msg;
+			public IntPtr wParam;
+			public IntPtr lParam;
 		}
 	}
 }

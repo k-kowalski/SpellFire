@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Windows.Forms;
 using SpellFire.Well.Controller;
 using SpellFire.Well.Lua;
 using SpellFire.Well.Model;
@@ -54,14 +55,14 @@ namespace SpellFire.Primer
 			{
 				if (!LuaEventListener.Active)
 				{
-					/* enable LEL when entering world */
+					/* when entering world */
 					LuaEventListener.Active = true;
 				}
-
 				IntPtr clientConnection = Memory.ReadPointer32(IntPtr.Zero + Offset.ClientConnection);
 				IntPtr objectManagerAddress = Memory.ReadPointer32(clientConnection + Offset.GameObjectManager);
 				ObjectManager = new GameObjectManager(Memory, objectManagerAddress);
 				Player = new GameObject(Memory, ControlInterface.remoteControl.ClntObjMgrGetActivePlayerObj());
+
 			}
 			else
 			{
@@ -81,7 +82,36 @@ namespace SpellFire.Primer
 		public bool IsOnCooldown(string spellName)
 		{
 			string result = ExecLuaAndGetResult($"start = GetSpellCooldown(\"{spellName}\")", "start");
-			return result != null && result[0] != '0';
+			if (String.IsNullOrEmpty(result))
+			{
+				return false;
+			}
+			else
+			{
+				return result[0] != '0';
+			}
+		}
+
+		public bool CanBeCasted(string spellName)
+		{
+			bool alwaysCastable =
+				SpellCast.AlwaysCastableSpells.Any(name => name == spellName);
+			if (alwaysCastable)
+				return true;
+
+			else
+			{
+				string result = ExecLuaAndGetResult($"isUsable, notEnoughMana = IsUsableSpell(\"{spellName}\")",
+					"isUsable");
+				if (String.IsNullOrEmpty(result))
+				{
+					return false;
+				}
+				else
+				{
+					return result[0] == '1';
+				}
+			}
 		}
 
 		/* remaining cooldown in seconds */
@@ -103,17 +133,13 @@ namespace SpellFire.Primer
 
 		public bool HasAura(GameObject gameObject, string auraName, GameObject ownedBy = null)
 		{
-			string auraLink = ExecLuaAndGetResult(
-				$"link = GetSpellLink(\"{auraName}\")",
-				"link");
-			if (String.IsNullOrEmpty(auraLink))
+			int spellId = GetSpellId(auraName);
+			if (spellId == 0)
 			{
-				Console.WriteLine("No such spell found. Consider using overload which takes spell ID.");
-				return false;
+				return HasAuraFallback(gameObject, auraName, ownedBy);
 			}
-			int auraID = Int32.Parse(auraLink.Split('|')[2].Split(':')[1]);
 
-			return HasAura(gameObject, auraID, ownedBy);
+			return HasAura(gameObject, spellId, ownedBy);
 		}
 
 		public bool HasAura(GameObject gameObject, Int32 spellId, GameObject ownedBy = null)
@@ -143,6 +169,34 @@ namespace SpellFire.Primer
 			return false;
 		}
 
+		private bool HasAuraFallback(GameObject gameObject, string auraName, GameObject ownedBy = null)
+		{
+			foreach (var aura in gameObject.Auras)
+			{
+				if (aura.auraID <= 0)
+				{
+					continue;
+				}
+
+				if (auraName == ExecLuaAndGetResult(
+				$"name = GetSpellInfo({aura.auraID})", "name"))
+				{
+					if (ownedBy != null)
+					{
+						if (aura.creatorGuid == ownedBy.GUID)
+						{
+							return true;
+						}
+					}
+					else
+					{
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+
 		public Int64 GetTargetGUID()
 		{
 			return Memory.ReadInt64(IntPtr.Zero + Offset.TargetGUID);
@@ -155,15 +209,14 @@ namespace SpellFire.Primer
 
 		public void CastSpellOnGuid(string spellName, Int64 targetGuid)
 		{
-			string spellLink = ExecLuaAndGetResult(
-				$"link = GetSpellLink(\"{spellName}\")",
-				"link");
-			if (String.IsNullOrEmpty(spellLink))
-			{
-				return;
-			}
-			string spellID = spellLink.Split('|')[2].Split(':')[1];
-			ControlInterface.remoteControl.Spell_C__CastSpell(Int32.Parse(spellID), IntPtr.Zero,
+			int spellId = GetSpellId(spellName);
+			ControlInterface.remoteControl.Spell_C__CastSpell(spellId, IntPtr.Zero,
+				targetGuid, false);
+		}
+
+		public void CastSpellOnGuid(int spellId, Int64 targetGuid)
+		{
+			ControlInterface.remoteControl.Spell_C__CastSpell(spellId, IntPtr.Zero,
 				targetGuid, false);
 		}
 
@@ -208,8 +261,16 @@ namespace SpellFire.Primer
 
 					const float PrioritySpellCooldownThreshold = 2.5f;
 
-					if (remainingCdSecs < PrioritySpellCooldownThreshold)
+					if (remainingCdSecs < PrioritySpellCooldownThreshold && CanBeCasted(pendingSpellCast.SpellName))
 					{
+						int spellId = GetSpellId(pendingSpellCast.SpellName);
+						if (Player.CastingSpellId == spellId || Player.ChannelSpellId == spellId)
+						{
+							/* do not interrupt spell wanted to be casted */
+							prioritySpellcastsQueue.Dequeue();
+							return false;
+						}
+
 						ExecLua("SpellStopCasting()");
 						if (!IsOnCooldown(pendingSpellCast.SpellName))
 						{
@@ -222,7 +283,7 @@ namespace SpellFire.Primer
 							}
 							else
 							{
-								CastSpellOnGuid(pendingSpellCast.SpellName, pendingSpellCast.TargetGUID);
+								CastSpellOnGuid(spellId, pendingSpellCast.TargetGUID);
 							}
 
 							prioritySpellcastsQueue.Dequeue();
@@ -230,18 +291,33 @@ namespace SpellFire.Primer
 						}
 						else
 						{
+							/* try again ASAP */
 							return true;
 						}
 					}
 					else
 					{
-						Console.WriteLine($"Spell [{pendingSpellCast.SpellName}] beyond cooldown threshold(left {remainingCdSecs}s). Not prioritizing.");
+						Console.WriteLine($"Spell [{pendingSpellCast.SpellName}] beyond cooldown threshold(left {remainingCdSecs}s) or not usable. Not prioritizing.");
 						prioritySpellcastsQueue.Dequeue();
 					}
 				}
 			}
 
 			return false;
+		}
+
+		private Int32 GetSpellId(string spellName)
+		{
+			string spellLink = ExecLuaAndGetResult(
+				$"link = GetSpellLink(\"{spellName}\")",
+				"link");
+			if (String.IsNullOrEmpty(spellLink))
+			{
+				return 0;
+			}
+			string spellID = spellLink.Split('|')[2].Split(':')[1];
+
+			return Int32.Parse(spellID);
 		}
 	}
 }

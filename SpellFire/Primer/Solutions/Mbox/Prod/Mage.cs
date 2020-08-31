@@ -1,6 +1,7 @@
 ﻿using SpellFire.Well.Model;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -26,28 +27,46 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				"Molten Armor",
 			};
 
-			private string stockScript;
-
 			public Mage(Client client, ProdMbox mbox) : base(client)
 			{
 				this.mbox = mbox;
-				stockScript = File.ReadAllText("Scripts/Stock.lua");
 
 				me.LuaEventListener.Bind("TRADE_SHOW", args =>
 				{
-					me.ExecLua(stockScript);
+					if (mbox.slavesAI)
+					{
+						/* trade conjured water */
+						me.ExecLua(mbox.UtilScript);
+						me.ExecLua(
+							$"filter = function(itemName) return itemName:find('Conjured') and itemName:find('Water') end;" +
+							$"sfUseBagItem(filter)");
+					}
 				});
 
-				me.LuaEventListener.Bind("TRADE_PLAYER_ITEM_CHANGED", args =>
+				me.LuaEventListener.Bind("SPELL_AURA_REMOVED", args =>
 				{
-					Thread.Sleep(300); /*  it looks that some servers need delay */
-					me.ExecLua("AcceptTrade()");
+					if (mbox.slavesAI)
+					{
+						long destGuid = Convert.ToInt64(args.Args[5], 16);
+						if (destGuid == me.Player.GUID)
+						{
+							var auraName = args.Args[9];
+							if (auraName == "Bloodlust" || auraName == "Power Infusion")
+							{
+								if (me.GetObjectMgrAndPlayer() && me.Player.IsInCombat())
+								{
+									/* continue burst after boost expired */
+									me.CastSpell("Icy Veins");
+								}
+							}
+						}
+					}
 				});
 			}
 
 			public override void Tick()
 			{
-				Thread.Sleep(ProdMbox.ClientSolutionSleep);
+				Thread.Sleep(ProdMbox.ClientSolutionSleepMs);
 				me.RefreshLastHardwareEvent();
 
 				if (me.CastPrioritySpell())
@@ -55,12 +74,12 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					return;
 				}
 
-				if (!mbox.slavesAI)
+				if (!me.GetObjectMgrAndPlayer())
 				{
 					return;
 				}
 
-				if (!me.GetObjectMgrAndPlayer())
+				if (!mbox.slavesAI)
 				{
 					return;
 				}
@@ -85,24 +104,24 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					return;
 				}
 
-				if (me.Player.GetDistance(target) > RangedAttackRange)
-				{
-					return;
-				}
-
 				if (me.GetTargetGUID() != target.GUID)
 				{
 					me.ControlInterface.remoteControl.SelectUnit(target.GUID);
+				}
+
+
+				if (me.Player.GetDistance(target) > RangedAttackRange)
+				{
+					return;
 				}
 				else
 				{
 					FaceTowards(me, target);
 				}
 
-				FaceTowards(me, target);
 				if (!me.Player.IsCastingOrChanneling())
 				{
-					if (mbox.complexRotation)
+					if (target.Health > ProdMbox.BigHealthThreshold)
 					{
 						if (me.HasAura(me.Player, HotStreak, me.Player))
 						{
@@ -111,7 +130,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 
 						if (me.HasAura(target, "Living Bomb", me.Player))
 						{
-							me.CastSpell("Fireball");
+							me.CastSpell("Frostfire Bolt");
 						}
 						else
 						{
@@ -120,7 +139,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					}
 					else
 					{
-						me.CastSpell("Fireball");
+						me.CastSpell("Frostfire Bolt");
 					}
 				}
 			}
@@ -147,7 +166,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 
 			private bool ShouldFM(Client client)
 			{
-				return client.Player.UnitClass == UnitClass.Priest;
+				return client.Player.UnitClass == UnitClass.Shaman;
 			}
 		}
 	}

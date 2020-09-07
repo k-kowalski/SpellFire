@@ -81,6 +81,34 @@ namespace SpellFire.Primer
 			return result != null && result[0] != '0';
 		}
 
+		public bool HasAura(GameObject gameObject, int spellId, GameObject ownedBy = null)
+		{
+			var auras = gameObject.Auras;
+			foreach (var aura in auras)
+			{
+				if (aura.auraID <= 0)
+				{
+					continue;
+				}
+
+				if (spellId == aura.auraID)
+				{
+					if (ownedBy != null)
+					{
+						if (aura.creatorGuid == ownedBy.GUID)
+						{
+							return true;
+						}
+					}
+					else
+					{
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+
 		public bool HasAura(GameObject gameObject, string auraName, GameObject ownedBy = null)
 		{
 			var auras = gameObject.Auras;
@@ -140,6 +168,11 @@ namespace SpellFire.Primer
 		public bool IsInWorld()
 		{
 			return Memory.ReadInt32(IntPtr.Zero + Offset.WorldLoaded) == 1;
+		}
+
+		public void RefreshLastHardwareEvent()
+		{
+			Memory.Write(IntPtr.Zero + Offset.LastHardwareEvent, BitConverter.GetBytes(Environment.TickCount));
 		}
 	}
 }

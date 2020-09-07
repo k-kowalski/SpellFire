@@ -23,6 +23,7 @@ Things you can build and achieve with SpellFire include, but are not limited to:
 - **Pathfinding**
 - **Game objects tracking**
 - **General game automation**
+- **Machine learning agents**
 
 Find example solutions in **SpellFire/Primer/Solutions** folder.
 

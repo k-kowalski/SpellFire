@@ -57,6 +57,10 @@ namespace SpellFire.Well.Controller
 			public event Action DestroyLuaEventFrameEvent;
 			public void DestroyLuaEventFrame() =>
 				DestroyLuaEventFrameEvent?.Invoke();
+
+			public event Action<IntPtr> YieldWindowFocusEvent;
+			public void YieldWindowFocus(IntPtr target) =>
+				YieldWindowFocusEvent?.Invoke(target);
 			#endregion
 
 			#region WoW Engine API
@@ -108,7 +112,6 @@ namespace SpellFire.Well.Controller
 			public bool Spell_C__HandleTerrainClick(ref TerrainClick tc) =>
 				Spell_C__HandleTerrainClickEvent?.Invoke(ref tc) ?? false;
 			#endregion
-
 		}
 	}
 }

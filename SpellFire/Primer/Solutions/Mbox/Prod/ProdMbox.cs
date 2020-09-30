@@ -55,23 +55,23 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 
 		private readonly string UtilScript = File.ReadAllText("Scripts/Util.lua");
 
-		private Action<IList<string>> GetCommand(string cmd)
+		private Action<Client, IList<string>> GetCommand(string cmd)
 		{
 			var command = masterSolution.GetCommand(cmd);
 			if (command != null)
-				return command;
+				return (self, args) => command.Invoke(args);
 
 			foreach (var slaveSolution in slavesSolutions)
 			{
 				command = slaveSolution.GetCommand(cmd);
 				if (command != null)
-					return command;
+					return (self, args) => command.Invoke(args);
 			}
 
 			return cmd switch
 			{
 				/* command all Slaves to follow Master */
-				"fw" => new Action<IList<string>>(((args) =>
+				"fw" => new Action<Client, IList<string>>((self, args) =>
 				{
 					if (!me.GetObjectMgrAndPlayer())
 					{
@@ -115,9 +115,9 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 							}
 						}
 					}
-				})),
+				}),
 				/* command selected Slave to cast spell on current Master target */
-				"cs" => new Action<IList<string>>(((args) =>
+				"cs" => new Action<Client, IList<string>>(((self, args) =>
 				{
 					string casterName = args[0];
 					string spellName = args[1];
@@ -152,7 +152,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					}
 				})),
 				/* use item */
-				"ui" => new Action<IList<string>>(((args) =>
+				"ui" => new Action<Client, IList<string>>(((self, args) =>
 				{
 					string location = args[0];
 					string userName = args[1];
@@ -194,7 +194,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					}
 				})),
 				/* cast terrain-targetable spell */
-				"ctts" => new Action<IList<string>>(((args) =>
+				"ctts" => new Action<Client, IList<string>>(((self, args) =>
 				{
 					string casterName = args[0];
 					string spellName = args[1];
@@ -241,7 +241,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					}
 				})),
 				/* toggles AI(individual behaviour loops) */
-				"ta" => new Action<IList<string>>(((args) =>
+				"ta" => new Action<Client, IList<string>>(((self, args) =>
 				{
 					string switchArg = args[0];
 
@@ -282,7 +282,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					}
 				})),
 				/* command slaves to interact with Master mouseover target */
-				"it" => new Action<IList<string>>(((args) =>
+				"it" => new Action<Client, IList<string>>(((self, args) =>
 				{
 					Int64 masterTargetGuid = me.Memory.ReadInt64(IntPtr.Zero + Offset.MouseoverGUID);
 					if (masterTargetGuid == 0)
@@ -297,7 +297,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					}
 				})),
 				/* exit all slaves */
-				"ex" => new Action<IList<string>>(((args) =>
+				"ex" => new Action<Client, IList<string>>(((self, args) =>
 				{
 					foreach (Client slave in Slaves)
 					{
@@ -305,7 +305,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					}
 				})),
 				/* click static popup */
-				"stat" => new Action<IList<string>>(((args) =>
+				"stat" => new Action<Client, IList<string>>(((self, args) =>
 				{
 					foreach (Client client in Slaves)
 					{
@@ -314,7 +314,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					}
 				})),
 				/* fixate on target */
-				"fix" => new Action<IList<string>>(((args) =>
+				"fix" => new Action<Client, IList<string>>(((self, args) =>
 				{
 					var targetGuid = me.GetTargetGUID();
 					if (targetGuid == 0)
@@ -327,14 +327,14 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					Console.WriteLine($"Fixated on {fixateTargetGuid}");
 				})),
 				/* toggles simple rotation */
-				"rot" => new Action<IList<string>>(((args) =>
+				"rot" => new Action<Client, IList<string>>(((self, args) =>
 				{
 					complexRotation = !complexRotation;
 					string state = complexRotation ? "ON" : "OFF";
 					Console.WriteLine($"Complex Rotation is now {state}.");
 					me.ExecLua($"SetRotationStatus('{state}')");
 				})),
-				"frm" => new Action<IList<string>>(((args) =>
+				"frm" => new Action<Client, IList<string>>(((self, args) =>
 				{
 					const float magnitude = 5f;
 					var formation = new[] {
@@ -361,8 +361,34 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 						}
 					}
 				})),
+				/* bring to foreground selected client game window */
+				"fg" => new Action<Client, IList<string>>(((self, args) =>
+				{
+					Int64 targetGuid = 0;
+					if (args.Count > 0 && args[0] == "mo") // optional mouseover
+					{
+						targetGuid = self.Memory.ReadInt64(IntPtr.Zero + Offset.MouseoverGUID);
+					}
+					else
+					{
+						targetGuid = self.GetTargetGUID();
+					}
 
-				_ => new Action<IList<string>>(((args) =>
+					Client client = clients.FirstOrDefault(c => c.Player.GUID == targetGuid);
+
+					if (client != null)
+					{
+						self.ControlInterface.remoteControl.YieldWindowFocus(client.Process.MainWindowHandle);
+					}
+					else
+					{
+						Console.WriteLine($"Couldn't find client with player guid {targetGuid}.");
+					}
+
+
+				})),
+
+				_ => new Action<Client, IList<string>>(((self, args) =>
 				{
 					Console.WriteLine($"Unrecognized command: {cmd}.");
 				})),
@@ -497,7 +523,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				/* command executor in game */
 				slave.LuaEventListener.Bind("do", args =>
 				{
-					GetCommand(args.Args[0]).Invoke(new List<string>(args.Args.Skip(1)));
+					GetCommand(args.Args[0]).Invoke(slave, new List<string>(args.Args.Skip(1)));
 				});
 
 				#region SlaveQuestEvents
@@ -557,7 +583,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 			/* command executor in game */
 			me.LuaEventListener.Bind("do", args =>
 			{
-				GetCommand(args.Args[0]).Invoke(new List<string>(args.Args.Skip(1)));
+				GetCommand(args.Args[0]).Invoke(me, new List<string>(args.Args.Skip(1)));
 			});
 
 			#region MasterQuestEvents
@@ -573,7 +599,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 			AssignRoutines();
 
 			/* turn on follow initially */
-			GetCommand("fw").Invoke(new List<string>(new[] { "fw" }));
+			GetCommand("fw").Invoke(me, new List<string>(new[] { "fw" }));
 		}
 
 		public override void Tick()

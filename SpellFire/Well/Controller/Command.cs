@@ -133,8 +133,15 @@ namespace SpellFire.Well.Controller
 			luaEventCallbackPtr = Marshal.GetFunctionPointerForDelegate(eventCallback);
 			frameName = SFUtil.GetRandomAsciiString(5);
 
+			ctrlInterface.remoteControl.YieldWindowFocusEvent += YieldWindowFocusHandler;
+
 			ResolveEndSceneAddress();
 			RegisterFunctions();
+		}
+
+		public void YieldWindowFocusHandler(IntPtr target)
+		{
+			SystemWin32.SwitchToThisWindow(target, true);
 		}
 
 		public void DetourWndProc()

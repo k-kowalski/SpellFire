@@ -22,6 +22,9 @@ namespace SpellFire.Well.Util
 			PAGE_NOACCESS = 0x1
 		}
 
+		[DllImport("user32.dll")]
+		public static extern void SwitchToThisWindow(IntPtr hWnd, bool fUnknown);
+
 		[DllImport("kernel32.dll")]
 		public static extern IntPtr LoadLibrary(string lpFileName);
 

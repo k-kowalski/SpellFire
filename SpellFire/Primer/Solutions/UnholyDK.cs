@@ -102,8 +102,8 @@ namespace SpellFire.Primer.Solutions
 					ref targetCoords, angle);
 			}
 
-			bool isTargetBloodPlagueUp = me.HasAura(target, "Blood Plague", me.Player);
-			bool isTargetFrostFeverUp = me.HasAura(target, "Frost Fever", me.Player);
+			bool isTargetBloodPlagueUp = me.HasAuraEx(target, "Blood Plague", me.Player);
+			bool isTargetFrostFeverUp = me.HasAuraEx(target, "Frost Fever", me.Player);
 
 			Console.WriteLine($"bp: {isTargetBloodPlagueUp}");
 			Console.WriteLine($"ff: {isTargetFrostFeverUp}");
@@ -139,8 +139,8 @@ namespace SpellFire.Primer.Solutions
 					&& me.Player.GetDistance(gameObj) < DeathKnightConstants.PestilenceRange /* unit in range */
 					&& ci.remoteControl.CGUnit_C__UnitReaction(me.Player.GetAddress(), gameObj.GetAddress()) <=
 					UnitReaction.Neutral /* unit attackable */
-					&& !me.HasAura(gameObj, "Blood Plague", me.Player) /* unit doesn't have diseases */
-					&& !me.HasAura(gameObj, "Frost Fever", me.Player));
+					&& !me.HasAuraEx(gameObj, "Blood Plague", me.Player) /* unit doesn't have diseases */
+					&& !me.HasAuraEx(gameObj, "Frost Fever", me.Player));
 
 				if (pestilenceEnemies.Any())
 				{

@@ -62,6 +62,7 @@
     <Compile Include="Mbox\InputMultiplexer.cs" />
     <Compile Include="Model\Aura.cs" />
     <Compile Include="Model\ClickToMoveType.cs" />
+    <Compile Include="Model\RollType.cs" />
     <Compile Include="Model\SpellCast.cs" />
     <Compile Include="Model\TerrainClick.cs" />
     <Compile Include="Model\UnitFlags.cs" />

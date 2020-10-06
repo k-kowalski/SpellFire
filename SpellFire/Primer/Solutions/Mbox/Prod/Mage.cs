@@ -20,7 +20,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 			private ProdMbox mbox;
 			private static readonly string[] PartyBuffs =
 			{
-				"Arcane Intellect",
+				"Arcane Brilliance",
 			};
 			private static readonly string[] SelfBuffs =
 			{

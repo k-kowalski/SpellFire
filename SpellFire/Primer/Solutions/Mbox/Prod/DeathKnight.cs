@@ -68,6 +68,11 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					return;
 				}
 
+				if (me.GetTargetGUID() != target.GUID)
+				{
+					me.ControlInterface.remoteControl.SelectUnit(target.GUID);
+				}
+
 				if (me.Player.GetDistance(target) > MeleeAttackRange)
 				{
 					return;
@@ -85,10 +90,10 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					}
 
 					DeathKnightRunesState runesState = GetAvailableRunes();
-					bool isTargetBloodPlagueUp = me.HasAura(target, "Blood Plague", me.Player);
-					bool isTargetFrostFeverUp = me.HasAura(target, "Frost Fever", me.Player);
+					bool isTargetBloodPlagueUp = me.HasAuraEx(target, "Blood Plague", me.Player);
+					bool isTargetFrostFeverUp = me.HasAuraEx(target, "Frost Fever", me.Player);
 
-					if (mbox.complexRotation)
+					if (target.Health > ProdMbox.BigHealthThreshold)
 					{
 						if (!isTargetBloodPlagueUp && runesState.unholyReady > 0)
 						{
@@ -113,8 +118,8 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 								&& me.Player.GetDistance(gameObj) < DeathKnightConstants.PestilenceRange /* unit in range */
 								&& me.ControlInterface.remoteControl.CGUnit_C__UnitReaction(me.Player.GetAddress(), gameObj.GetAddress()) <=
 								UnitReaction.Neutral /* unit attackable */
-								&& !me.HasAura(gameObj, "Blood Plague", me.Player) /* unit doesn't have diseases */
-								&& !me.HasAura(gameObj, "Frost Fever", me.Player));
+								&& !me.HasAuraEx(gameObj, "Blood Plague", me.Player) /* unit doesn't have diseases */
+								&& !me.HasAuraEx(gameObj, "Frost Fever", me.Player));
 
 							if (pestilenceEnemies.Any())
 							{
@@ -195,19 +200,6 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 						}
 					}
 				}
-			}
-
-			public override void RenderRadar(RadarCanvas radarCanvas, Bitmap radarBackBuffer)
-			{
-				if (mbox.masterAI && mbox.radarOn)
-				{
-					base.RenderRadar(radarCanvas, radarBackBuffer);
-				}
-				else
-				{
-					Thread.Sleep(ProdMbox.ClientSolutionSleepMs);
-				}
-
 			}
 
 			public override void Dispose()

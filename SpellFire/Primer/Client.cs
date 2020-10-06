@@ -136,7 +136,7 @@ namespace SpellFire.Primer
 			int spellId = GetSpellId(auraName);
 			if (spellId == 0)
 			{
-				return HasAuraFallback(gameObject, auraName, ownedBy);
+				return HasAuraEx(gameObject, auraName, ownedBy);
 			}
 
 			return HasAura(gameObject, spellId, ownedBy);
@@ -169,7 +169,7 @@ namespace SpellFire.Primer
 			return false;
 		}
 
-		private bool HasAuraFallback(GameObject gameObject, string auraName, GameObject ownedBy = null)
+		public bool HasAuraEx(GameObject gameObject, string auraName, GameObject ownedBy = null)
 		{
 			foreach (var aura in gameObject.Auras)
 			{

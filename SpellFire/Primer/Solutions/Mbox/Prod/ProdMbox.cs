@@ -70,6 +70,14 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 
 			return cmd switch
 			{
+				/* command all to exit vehicle */
+				"ev" => new Action<Client, IList<string>>((self, args) =>
+				{
+					foreach (Client client in clients)
+					{
+						client.ExecLua("VehicleExit()");
+					}
+				}),
 				/* command all Slaves to follow Master */
 				"fw" => new Action<Client, IList<string>>((self, args) =>
 				{
@@ -475,14 +483,18 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				slave.LuaEventListener.Bind("START_LOOT_ROLL", args =>
 				{
 					var rollId = args.Args[0];
-					var rollType = 2; /* slaves roll 'Greed' */
-					slave.ExecLua($"RollOnLoot({rollId}, {rollType})");
+
+					/* Disenchant if available, fallback to Greed */
+					slave.ExecLua($"RollOnLoot({rollId}, {(int)RollType.Disenchant})");
+					slave.ExecLua($"RollOnLoot({rollId}, {(int)RollType.Greed})");
 				});
 				slave.LuaEventListener.Bind("CONFIRM_LOOT_ROLL", args =>
 				{
 					var rollId = args.Args[0];
-					var rollType = 2; /* slaves roll 'Greed' */
-					slave.ExecLua($"ConfirmLootRoll({rollId}, {rollType})");
+
+					/* Disenchant if available, fallback to Greed */
+					slave.ExecLua($"ConfirmLootRoll({rollId}, {(int)RollType.Disenchant})");
+					slave.ExecLua($"ConfirmLootRoll({rollId}, {(int)RollType.Greed})");
 				});
 				slave.LuaEventListener.Bind("PLAYER_REGEN_ENABLED", args =>
 				{
@@ -704,7 +716,10 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				{
 					foreach (var partyBuff in partyBuffs)
 					{
-						if (client.GetObjectMgrAndPlayer() && client.Player.Health > 0 && !self.HasAura(client.Player, partyBuff, null))
+						if (client.GetObjectMgrAndPlayer() &&
+							client.Player.Health > 0 &&
+						    !self.HasAura(client.Player, partyBuff, null) &&
+							!client.IsOnCooldown(partyBuff))
 						{
 							if (client.Player.GetDistance(self.Player) < RangedAttackRange/* use RAR for buff range */)
 							{
@@ -717,7 +732,10 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				else
 				{
 					var partyBuff = classBuffFilter(client.Player.UnitClass);
-					if (client.GetObjectMgrAndPlayer() && client.Player.Health > 0 && !self.HasAura(client.Player, partyBuff, null))
+					if (client.GetObjectMgrAndPlayer() &&
+						client.Player.Health > 0 &&
+					    !self.HasAura(client.Player, partyBuff, null) &&
+						!client.IsOnCooldown(partyBuff))
 					{
 						if (client.Player.GetDistance(self.Player) < RangedAttackRange/* use RAR for buff range */)
 						{

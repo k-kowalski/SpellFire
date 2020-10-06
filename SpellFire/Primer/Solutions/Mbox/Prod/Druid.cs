@@ -17,7 +17,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 			private ProdMbox mbox;
 			private static readonly string[] PartyBuffs =
 			{
-				"Mark of the Wild",
+				"Gift of the Wild",
 				"Thorns",
 			};
 			private static readonly string[] SelfBuffs =

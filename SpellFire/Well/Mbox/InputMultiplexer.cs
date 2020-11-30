@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.Remoting;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using SpellFire.Well.Controller;
@@ -39,21 +40,20 @@ namespace SpellFire.Well.Mbox
 		{
 			if (BroadcastKeys.Contains((Keys)wParam))
 			{
-				foreach (IntPtr sink in Sinks)
-				{
-					SystemWin32.PostMessage(sink, msg, wParam, lParam);
-				}
+				BroadcastMessage(hWnd, msg, wParam, lParam);
 			}
 
-			if (ConditionalBroadcastOn)
+			if (ConditionalBroadcastOn && ConditionalBroadcastKeys.Contains((Keys)wParam))
 			{
-				if (ConditionalBroadcastKeys.Contains((Keys)wParam))
-				{
-					foreach (IntPtr sink in Sinks)
-					{
-						SystemWin32.PostMessage(sink, msg, wParam, lParam);
-					}
-				}
+				BroadcastMessage(hWnd, msg, wParam, lParam);
+			}
+		}
+
+		private void BroadcastMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
+		{
+			foreach (IntPtr sink in Sinks)
+			{
+				SystemWin32.PostMessage(sink, msg, wParam, lParam);
 			}
 		}
 	}

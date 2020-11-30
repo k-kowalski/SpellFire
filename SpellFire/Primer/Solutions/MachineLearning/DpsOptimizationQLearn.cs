@@ -24,7 +24,7 @@ namespace SpellFire.Primer.Solutions.MachineLearning
 	///
 	/// Algorithm: Classic Q-Learning
 	/// </summary>
-	public class DpsOptimization : Solution
+	public class DpsOptimizationQLearn : Solution
 	{
 		private const string TrainingTargetName = "Grandmaster's Training Dummy";
 
@@ -47,7 +47,7 @@ namespace SpellFire.Primer.Solutions.MachineLearning
 
 		private int previousDps;
 
-		public DpsOptimization(Client client) : base(client)
+		public DpsOptimizationQLearn(Client client) : base(client)
 		{
 			ci = client.ControlInterface;
 

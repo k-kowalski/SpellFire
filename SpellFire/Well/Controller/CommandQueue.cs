@@ -70,12 +70,10 @@ namespace SpellFire.Well.Controller
 		{
 			lock (commandTasks)
 			{
-				foreach (var commandTask in commandTasks)
+				if (commandTasks.Count > 0)
 				{
-					commandTask.RunSynchronously();
+					commandTasks.Dequeue().RunSynchronously();
 				}
-
-				commandTasks.Clear();
 			}
 		}
 	}

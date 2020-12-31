@@ -70,6 +70,44 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 
 			return cmd switch
 			{
+				/* set client's cvar */
+				"cvar" => new Action<Client, IList<string>>(((self, args) =>
+				{
+					IEnumerable<Client> clients = null;
+					string charName = args[0];
+					string cvarName = args[1];
+					string cvarValue = args[2];
+
+					if (charName == "*")
+					{
+						clients = base.clients;
+					}
+					else if (charName == "<slaves>")
+					{
+						clients = Slaves;
+					}
+					else
+					{
+						Func<Client, bool> q = null;
+
+						var targetGuid = me.Memory.ReadInt64(IntPtr.Zero + Offset.MouseoverGUID);
+						if (targetGuid == 0)
+						{
+							q = c => c.ControlInterface.remoteControl.GetUnitName(c.Player.GetAddress()) == charName;
+						}
+						else
+						{
+							q = c => c.Player.GUID == targetGuid;
+						}
+
+						clients = base.clients.Where(q);
+					}
+
+					foreach (var client in clients)
+					{
+						client.ExecLua($"SetCVar('{cvarName}', {cvarValue})");
+					}
+				})),
 				/* command all to exit vehicle */
 				"ev" => new Action<Client, IList<string>>((self, args) =>
 				{
@@ -162,19 +200,34 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				/* use item */
 				"ui" => new Action<Client, IList<string>>(((self, args) =>
 				{
+					IEnumerable<Client> users = null;
 					string location = args[0];
 					string userName = args[1];
 					string itemName = args[2];
 
-					IEnumerable<Client> users = null;
 					if (userName == "*")
 					{
 						users = clients;
 					}
+					else if (userName == "<slaves>")
+					{
+						users = Slaves;
+					}
 					else
 					{
-						users = clients.Where(c =>
-							c.ControlInterface.remoteControl.GetUnitName(c.Player.GetAddress()) == userName);
+						Func<Client, bool> q = null;
+
+						var targetGuid = me.Memory.ReadInt64(IntPtr.Zero + Offset.MouseoverGUID);
+						if (targetGuid == 0)
+						{
+							q = c => c.ControlInterface.remoteControl.GetUnitName(c.Player.GetAddress()) == userName;
+						}
+						else
+						{
+							q = c => c.Player.GUID == targetGuid;
+						}
+
+						users = clients.Where(q);
 					}
 
 					foreach (var user in users)

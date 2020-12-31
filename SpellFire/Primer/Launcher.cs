@@ -75,37 +75,82 @@ namespace SpellFire.Primer
 			return injectedClient;
 		}
 
-		public void WarmupPreset(Preset preset)
+		internal void AttachPreset(Preset preset)
 		{
-			var launchTasks = new List<Task>();
-			var clientsToRun = new List<Client>();
-			if (preset.Clients.Length > 0)
-			{
-				/* take 2nd client preset */
-				File.Copy(preset.Clients[1].GameConfig, SFConfig.Global.WowDir + @"\WTF\Config.wtf", true);
-
-				foreach (ClientLaunchSettings settings in preset.Clients)
-				{
-					Process process = Process.Start(SFConfig.Global.WowDir + @"\Wow.exe");
-
-					launchTasks.Add(Task.Run((() =>
-					{
-						if (process.WaitForInputIdle())
-						{
-							Thread.Sleep(1500);
-							var client = AttachToProcess(process, settings);
-							clientsToRun.Add(client);
-
-							Launcher.LoginClient(client, settings.Login, settings.Password, settings.Character);
-						}
-					})));
-					Thread.Sleep(1000);
-				}
-			}
-			else
+			if ( ! preset.Clients.Any())
 			{
 				MessageBox.Show("No clients specified in preset.");
 				return;
+			}
+
+			var notInjectedWowProcessess =
+				ProcessEntry.GetRunningWoWProcessess()
+				.Where(procEntry => ! injectedClients.Any(injectedClient => injectedClient.Process == procEntry.GetProcess()))
+				.Select(procEntry => procEntry.GetProcess());
+
+			var clientsToRun = new List<Client>();
+			foreach (var process in notInjectedWowProcessess)
+			{
+				var client = AttachToProcess(process, null);
+
+				/* match process to preset config by character name */
+				if (client.IsInWorld() && client.GetObjectMgrAndPlayer())
+				{
+					string name = client.ControlInterface.remoteControl.GetUnitName(client.Player.GetAddress());
+
+					client.LaunchSettings = preset.Clients.FirstOrDefault(settings => settings.Character == name);
+
+
+					clientsToRun.Add(client);
+				}
+			}
+
+
+			Console.WriteLine($"Matched {clientsToRun.Count} clients.");
+			if ( ! clientsToRun.Any())
+			{
+				return;
+			}
+
+			var orderedClientsToRun = clientsToRun.OrderBy(client => Array.IndexOf(preset.Clients, client.LaunchSettings));
+
+			string solutionName = preset.Clients[0].Solution;
+			if (!String.IsNullOrEmpty(solutionName))
+			{
+				RunSolution(Type.GetType(solutionName),
+					orderedClientsToRun.Count() == 1 ? (object)orderedClientsToRun.First() : orderedClientsToRun);
+			}
+		}
+
+		public void WarmupPreset(Preset preset)
+		{
+			if ( ! preset.Clients.Any())
+			{
+				MessageBox.Show("No clients specified in preset.");
+				return;
+			}
+
+			var launchTasks = new List<Task>();
+			var clientsToRun = new List<Client>();
+			/* take 2nd client preset */
+			File.Copy(preset.Clients[1].GameConfig, SFConfig.Global.WowDir + @"\WTF\Config.wtf", true);
+
+			foreach (ClientLaunchSettings settings in preset.Clients)
+			{
+				Process process = Process.Start(SFConfig.Global.WowDir + @"\Wow.exe");
+
+				launchTasks.Add(Task.Run((() =>
+				{
+					if (process.WaitForInputIdle())
+					{
+						Thread.Sleep(1500);
+						var client = AttachToProcess(process, settings);
+						clientsToRun.Add(client);
+
+						Launcher.LoginClient(client, settings.Login, settings.Password, settings.Character);
+					}
+				})));
+				Thread.Sleep(1000);
 			}
 
 			foreach (var task in launchTasks)

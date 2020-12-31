@@ -70,7 +70,11 @@ namespace SpellFire.Primer.Gui
 
 			Task.Run(() =>
 			{
-				if (ModifierKeys == Keys.Control)
+				if (ModifierKeys == Keys.Alt)
+				{
+					launcher.AttachPreset(preset);
+				}
+				else if (ModifierKeys == Keys.Control)
 				{
 					launcher.WarmupPreset(preset);
 				}

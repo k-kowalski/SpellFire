@@ -21,7 +21,7 @@ namespace SpellFire.Primer
 		public LuaEventListener LuaEventListener { get; private set; }
 		public GameObjectManager ObjectManager { get; private set; }
 		public GameObject Player { get; private set; }
-		public ClientLaunchSettings LaunchSettings { get; }
+		public ClientLaunchSettings LaunchSettings { get; set; }
 
 		private Queue<SpellCast> prioritySpellcastsQueue = new Queue<SpellCast>();
 

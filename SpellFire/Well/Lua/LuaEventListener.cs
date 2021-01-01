@@ -46,6 +46,7 @@ namespace SpellFire.Well.Lua
 
 		public void Dispose()
 		{
+			eventHandlers.Clear();
 			Active = false;
 		}
 

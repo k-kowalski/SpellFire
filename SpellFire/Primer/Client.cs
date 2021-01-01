@@ -79,6 +79,21 @@ namespace SpellFire.Primer
 			return isInWorld;
 		}
 
+		public ThreatInfo GetUnitThreat(GameObject unit)
+		{
+			var info = new ThreatInfo();
+			var playerGuid = Player.GUID;
+
+			byte status = 0;
+			ControlInterface.remoteControl.CGUnit_C__CalculateThreat(
+				unit.GetAddress(),
+				ref playerGuid, ref status, ref info.ThreatPct, ref info.ThreatPctRaw, ref info.TotalThreatValue);
+
+			info.Status = (ThreatStatus)status;
+
+			return info;
+		}
+
 		public bool IsOnCooldown(string spellName)
 		{
 			string result = ExecLuaAndGetResult($"start = GetSpellCooldown(\"{spellName}\")", "start");

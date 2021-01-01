@@ -76,7 +76,16 @@ namespace SpellFire.Well.Controller
 		public delegate bool Spell_C__CastSpell(Int32 spellID, IntPtr item, Int64 targetGUID, bool isTrade);
 
 		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-		public delegate bool Spell_C__HandleTerrainClick(ref TerrainClick tc);
+		public delegate bool Spell_C__HandleTerrainClick([In] ref TerrainClick tc);
+		
+		[UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+		public delegate bool CGUnit_C__CalculateThreat(
+			IntPtr thisObject,
+			[In] ref Int64 otherUnitGUID,
+			[In, Out] ref byte threatStatus,
+			[In, Out] ref byte threatPct,
+			[In, Out] ref float rawThreatPct,
+			[In, Out] ref Int32 threatValue);
 	}
 
 	public class CommandHandler : TimelessMarshalByRefObject, IDisposable
@@ -106,6 +115,7 @@ namespace SpellFire.Well.Controller
 		private CommandCallback.CGUnit_C__UpdateDisplayInfo CGUnit_C__UpdateDisplayInfo;
 		private CommandCallback.Spell_C__CastSpell Spell_C__CastSpell;
 		private CommandCallback.Spell_C__HandleTerrainClick Spell_C__HandleTerrainClick;
+		private CommandCallback.CGUnit_C__CalculateThreat CGUnit_C__CalculateThreat;
 
 		private CommandCallback.LuaEventCallback eventCallback;
 		private IntPtr luaEventCallbackPtr;
@@ -132,8 +142,6 @@ namespace SpellFire.Well.Controller
 			eventCallback = LuaEventHandler;
 			luaEventCallbackPtr = Marshal.GetFunctionPointerForDelegate(eventCallback);
 			frameName = SFUtil.GetRandomAsciiString(5);
-
-			ctrlInterface.remoteControl.YieldWindowFocusEvent += YieldWindowFocusHandler;
 
 			ResolveEndSceneAddress();
 			RegisterFunctions();
@@ -430,6 +438,37 @@ namespace SpellFire.Well.Controller
 			TerrainClick _tc = tc;
 
 			return commandQueue.Submit<bool>((() => Spell_C__HandleTerrainClick(ref _tc)));
+		}
+
+		public bool CGUnit_C__CalculateThreatHandler(IntPtr thisObject,
+			[In] ref Int64 otherUnitGUID,
+			[In, Out] ref byte threatStatus,
+			[In, Out] ref byte threatPct,
+			[In, Out] ref float rawThreatPct,
+			[In, Out] ref Int32 threatValue)
+		{
+			Int64 _otherUnitGUID = otherUnitGUID;
+			byte _threatStatus = 0;
+			byte _threatPct = 0;
+			float _rawThreatPct = 0;
+			Int32 _threatValue = 0;
+
+			var res = commandQueue.Submit<bool>((() =>
+					CGUnit_C__CalculateThreat(
+						thisObject,
+						ref _otherUnitGUID,
+						ref _threatStatus,
+						ref _threatPct,
+						ref _rawThreatPct,
+						ref _threatValue
+			)));
+
+			threatStatus = _threatStatus;
+			threatPct = _threatPct;
+			rawThreatPct = _rawThreatPct;
+			threatValue = _threatValue;
+
+			return res;
 		}
 		#endregion
 

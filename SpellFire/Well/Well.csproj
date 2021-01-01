@@ -65,6 +65,7 @@
     <Compile Include="Model\RollType.cs" />
     <Compile Include="Model\SpellCast.cs" />
     <Compile Include="Model\TerrainClick.cs" />
+    <Compile Include="Model\ThreatInfo.cs" />
     <Compile Include="Model\UnitFlags.cs" />
     <Compile Include="Model\UnitClass.cs" />
     <Compile Include="Model\DeathKnightRune.cs" />

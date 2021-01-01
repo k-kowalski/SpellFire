@@ -109,8 +109,18 @@ namespace SpellFire.Well.Controller
 				Spell_C__CastSpellEvent?.Invoke(spellID, item, targetGUID, isTrade) ?? false;
 
 			public event CommandCallback.Spell_C__HandleTerrainClick Spell_C__HandleTerrainClickEvent;
-			public bool Spell_C__HandleTerrainClick(ref TerrainClick tc) =>
+			public bool Spell_C__HandleTerrainClick([In] ref TerrainClick tc) =>
 				Spell_C__HandleTerrainClickEvent?.Invoke(ref tc) ?? false;
+
+			public event CommandCallback.CGUnit_C__CalculateThreat CGUnit_C__CalculateThreatEvent;
+			public bool CGUnit_C__CalculateThreat(IntPtr thisObject,
+				[In] ref Int64 otherUnitGUID,
+				[In, Out] ref byte threatStatus,
+				[In, Out] ref byte threatPct,
+				[In, Out] ref float rawThreatPct,
+				[In, Out] ref Int32 threatValue) =>
+				CGUnit_C__CalculateThreatEvent?
+					.Invoke(thisObject, ref otherUnitGUID, ref threatStatus, ref threatPct, ref rawThreatPct, ref threatValue) ?? false;
 			#endregion
 		}
 	}

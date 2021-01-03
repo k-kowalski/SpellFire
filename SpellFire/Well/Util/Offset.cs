@@ -59,6 +59,7 @@ namespace SpellFire.Well.Util
 		public const Int32 WorldLoaded = 0xBD0792;
 		public const Int32 MapId = 0xAB63BC;
 		public const Int32 RaidTargets = 0xBEB528;
+		public const Int32 ComboPoints = 0xBD084D;
 
 		/// <summary>
 		/// client connection
@@ -92,11 +93,35 @@ namespace SpellFire.Well.Util
 		/// <summary>
 		/// info
 		/// </summary>
-		public const Int32 MaxPower1 = 0x21 * 4;
+		public const Int32 Power2 = 0x1A * 4;
+		/// <summary>
+		/// info
+		/// </summary>
+		public const Int32 Power3 = 0x1B * 4;
+		/// <summary>
+		/// info
+		/// </summary>
+		public const Int32 Power4 = 0x1C * 4;
 		/// <summary>
 		/// info
 		/// </summary>
 		public const Int32 Power7 = 0x1F * 4;
+		/// <summary>
+		/// info
+		/// </summary>
+		public const Int32 MaxPower1 = 0x21 * 4;
+		/// <summary>
+		/// info
+		/// </summary>
+		public const Int32 MaxPower2 = 0x22 * 4;
+		/// <summary>
+		/// info
+		/// </summary>
+		public const Int32 MaxPower3 = 0x23 * 4;
+		/// <summary>
+		/// info
+		/// </summary>
+		public const Int32 MaxPower4 = 0x24 * 4;
 		/// <summary>
 		/// info
 		/// </summary>

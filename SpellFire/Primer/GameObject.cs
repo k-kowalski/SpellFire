@@ -97,6 +97,42 @@ namespace SpellFire.Primer
 			}
 		}
 
+		public Int32 Rage
+		{
+			get
+			{
+				IntPtr unitInfo = memory.ReadPointer32(address + Offset.Info);
+				int current = memory.ReadInt32(unitInfo + Offset.Power2);
+				int max = memory.ReadInt32(unitInfo + Offset.MaxPower2);
+
+				return (current * 100) / max;
+			}
+		}
+
+		public Int32 Focus
+		{
+			get
+			{
+				IntPtr unitInfo = memory.ReadPointer32(address + Offset.Info);
+				int current = memory.ReadInt32(unitInfo + Offset.Power3);
+				int max = memory.ReadInt32(unitInfo + Offset.MaxPower3);
+
+				return (current * 100) / max;
+			}
+		}
+
+		public Int32 Energy
+		{
+			get
+			{
+				IntPtr unitInfo = memory.ReadPointer32(address + Offset.Info);
+				int current = memory.ReadInt32(unitInfo + Offset.Power4);
+				int max = memory.ReadInt32(unitInfo + Offset.MaxPower4);
+
+				return (current * 100) / max;
+			}
+		}
+
 		public Int32 ManaPct
 		{
 			get

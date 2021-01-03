@@ -101,6 +101,12 @@
     <Compile Include="MemoryMappedObject.cs" />
     <Compile Include="Primer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Solutions\Mbox\ProdV2\Hunter.cs" />
+    <Compile Include="Solutions\Mbox\ProdV2\PriestV2.cs" />
+    <Compile Include="Solutions\Mbox\ProdV2\ProdMboxV2.cs" />
+    <Compile Include="Solutions\Mbox\ProdV2\Rogue.cs" />
+    <Compile Include="Solutions\Mbox\ProdV2\Warlock.cs" />
+    <Compile Include="Solutions\Mbox\ProdV2\Warrior.cs" />
     <Compile Include="Solutions\Mbox\Prod\DeathKnight.cs" />
     <Compile Include="Solutions\Mbox\Prod\Druid.cs" />
     <Compile Include="Solutions\Mbox\Prod\Mage.cs" />

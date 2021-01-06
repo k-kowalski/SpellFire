@@ -133,7 +133,7 @@ namespace SpellFire.Primer
 		public float GetRemainingCooldown(string spellName)
 		{
 			string result = ExecLuaAndGetResult(
-				$"start, duration = GetSpellCooldown(\"{spellName}\"); res = (start + duration) - GetTime()",
+				$"start, duration = GetSpellCooldown(\"{spellName}\"); if start ~= nil then res = (start + duration) - GetTime() else res = 0 end",
 				"res");
 			if (String.IsNullOrEmpty(result))
 			{

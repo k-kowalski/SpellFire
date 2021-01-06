@@ -214,7 +214,7 @@ namespace SpellFire.Primer
 
 		public Int64 GetTargetGUID()
 		{
-			return Memory.ReadInt64(IntPtr.Zero + Offset.TargetGUID);
+			return Player.TargetGUID;
 		}
 
 		public void CastSpell(string spellName)

@@ -51,7 +51,6 @@ namespace SpellFire.Well.Util
 
 
 		public const Int32 LastHardwareEvent = 0xB499A4;
-		public const Int32 TargetGUID = 0xBD07B0;
 		public const Int32 MouseoverGUID = 0xBD07A0;
 		public const Int32 ClientConnection = 0xC79CE0;
 		public const Int32 RuneCount = 0xC24388;
@@ -78,6 +77,10 @@ namespace SpellFire.Well.Util
 		/// info
 		/// </summary>
 		public const Int32 DynamicFlags = 0x13C;
+		/// <summary>
+		/// info
+		/// </summary>
+		public const Int32 TargetGUID = 0x12 * 4;
 		/// <summary>
 		/// info
 		/// </summary>

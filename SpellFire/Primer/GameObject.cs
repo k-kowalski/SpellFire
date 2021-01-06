@@ -76,6 +76,15 @@ namespace SpellFire.Primer
 			}
 		}
 
+		public Int64 TargetGUID
+		{
+			get
+			{
+				IntPtr unitInfo = memory.ReadPointer32(address + Offset.Info);
+				return memory.ReadInt64(unitInfo + Offset.TargetGUID);
+			}
+		}
+
 		public Int32 Health
 		{
 			get

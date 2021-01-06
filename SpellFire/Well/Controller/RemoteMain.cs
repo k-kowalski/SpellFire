@@ -26,19 +26,26 @@ namespace SpellFire.Well.Controller
 
 		public RemoteMain(RemoteHooking.IContext context, string channelName, GlobalConfig config)
 		{
-			ctrlInterface = RemoteHooking.IpcConnectClient<ControlInterface>(channelName);
+			try
+			{
+				ctrlInterface = RemoteHooking.IpcConnectClient<ControlInterface>(channelName);
 
-			EstablishReverseRemotingConnection(channelName);
+				EstablishReverseRemotingConnection(channelName);
 
-			commandHandler = new CommandHandler(ctrlInterface, config);
+				commandHandler = new CommandHandler(ctrlInterface, config);
 
-			packetManager = new PacketManager(ctrlInterface, commandHandler);
+				packetManager = new PacketManager(ctrlInterface, commandHandler);
 
-			commandHandler.DetourWndProc();
+				commandHandler.DetourWndProc();
 
-			wardenBuster = new WardenBuster(ctrlInterface.hostControl, commandHandler);
+				wardenBuster = new WardenBuster(ctrlInterface.hostControl, commandHandler);
 
-			ctrlInterface.hostControl.PrintMessage($"Ready");
+				ctrlInterface.hostControl.PrintMessage($"Ready");
+			}
+			catch (Exception e)
+			{
+				ctrlInterface.hostControl.PrintMessage(e.ToString());
+			}
 		}
 
 		public void Run(RemoteHooking.IContext context, string channelName, GlobalConfig config)
@@ -67,7 +74,17 @@ namespace SpellFire.Well.Controller
 					{
 						if (commandHandler.LuaEventQueue.TryTake(out var luaEvent, 100))
 						{
-							ctrlInterface.hostControl.LuaEventTrigger(luaEvent);
+							lock (this)
+							{
+								ctrlInterface.hostControl.LuaEventTrigger(luaEvent);
+							}
+						}
+						else
+						{
+							lock (this)
+							{
+								ctrlInterface.hostControl.Ping();
+							}
 						}
 					}
 				}));
@@ -77,12 +94,22 @@ namespace SpellFire.Well.Controller
 					{
 						if (commandHandler.WindowMessageQueue.TryTake(out var windowMessage, 100))
 						{
-							ctrlInterface.hostControl.DispatchWindowMessage(
-								windowMessage.hWnd,
-								windowMessage.msg,
-								windowMessage.wParam,
-								windowMessage.lParam
+							lock (this)
+							{
+								ctrlInterface.hostControl.DispatchWindowMessage(
+									windowMessage.hWnd,
+									windowMessage.msg,
+									windowMessage.wParam,
+									windowMessage.lParam
 								);
+							}
+						}
+						else
+						{
+							lock (this)
+							{
+								ctrlInterface.hostControl.Ping();
+							}
 						}
 					}
 				}));
@@ -92,7 +119,7 @@ namespace SpellFire.Well.Controller
 			}
 			catch (Exception e)
 			{
-				Console.WriteLine(e);
+				ctrlInterface.hostControl.PrintMessage(e.ToString());
 			}
 			finally
 			{

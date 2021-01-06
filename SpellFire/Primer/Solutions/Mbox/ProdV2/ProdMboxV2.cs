@@ -41,8 +41,8 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 		};
 
 		private const float HealRange = 40f;
-		private const float RangedAttackRange = 35f; /* may vary from spec to spec */
-		private const float MeleeAttackRange = 6f;
+		private const float RangedAttackRange = 35f;
+		private const float MeleeAttackRange = 5f;
 
 		private const int MaxSlaveFPS = 20;
 		private const int ClientSolutionSleepMs = 200;
@@ -428,25 +428,34 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				/* bring to foreground selected client game window */
 				"fg" => new Action<Client, IList<string>>(((self, args) =>
 				{
-					Int64 targetGuid = 0;
+					Client client;
 					if (args.Count > 0 && args[0] == "mo") // optional mouseover
 					{
-						targetGuid = self.Memory.ReadInt64(IntPtr.Zero + Offset.MouseoverGUID);
+						// use tooltip text
+						// this enables range-unlimited switching
+						var getUnitNameFromMouseoverTooltipScript = "if GameTooltip:NumLines() > 0 then name = _G['GameTooltipTextLeft1']:GetText() else name = nil end";
+						var name = self.ExecLuaAndGetResult(getUnitNameFromMouseoverTooltipScript, "name");
+						client = clients.FirstOrDefault(c => c.ControlInterface.remoteControl.GetUnitName(c.Player.GetAddress()) == name);
+
+						if (client == null)
+						{
+							Console.WriteLine($"Couldn't find client with player name {name}.");
+						}
 					}
 					else
 					{
-						targetGuid = self.GetTargetGUID();
-					}
+						var targetGuid = self.GetTargetGUID();
+						client = clients.FirstOrDefault(c => c.Player.GUID == targetGuid);
 
-					Client client = clients.FirstOrDefault(c => c.Player.GUID == targetGuid);
+						if (client == null)
+						{
+							Console.WriteLine($"Couldn't find client with player guid {targetGuid}.");
+						}
+					}
 
 					if (client != null)
 					{
 						self.ControlInterface.remoteControl.YieldWindowFocus(client.Process.MainWindowHandle);
-					}
-					else
-					{
-						Console.WriteLine($"Couldn't find client with player guid {targetGuid}.");
 					}
 
 
@@ -675,9 +684,48 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 
 		private void ThreatControl()
 		{
+			var tank = me;
+			var protectedPlayersGuids = Slaves.Select(c => c.Player.GUID);
+
+			var interveningSpell = "Taunt";
+
 			while (Active)
 			{
+				if (masterAI)
+				{
+					var threateningUnits = tank.ObjectManager.Where(obj =>
+						obj.Type == GameObjectType.Unit
+						&& obj.IsInCombat()
+						&& protectedPlayersGuids.Contains(obj.TargetGUID)
+						&& tank.ControlInterface.remoteControl.CGUnit_C__UnitReaction(tank.Player.GetAddress(), obj.GetAddress()) <=
+	                    UnitReaction.Neutral /* unit attackable */
+					).ToList();
 
+					if (threateningUnits.Any())
+					{
+						/* taunt if possible */
+						if(!tank.IsOnCooldown(interveningSpell))
+						{
+							tank.EnqueuePrioritySpellCast(new SpellCast
+							{
+								Coordinates = null,
+								SpellName = interveningSpell,
+								TargetGUID = threateningUnits[0].GUID
+							});
+							Console.WriteLine($"Taunting {tank.ControlInterface.remoteControl.GetUnitName(threateningUnits[0].GetAddress())}");
+						}
+
+
+						var closestThreateningUnit = threateningUnits.Aggregate((unit1, unit2) => unit1.GetDistance(tank.Player) < unit2.GetDistance(tank.Player) ? unit1 : unit2);
+
+						Console.WriteLine($"Detected {tank.ControlInterface.remoteControl.GetUnitName(closestThreateningUnit.GetAddress())} out of {threateningUnits.Count}");
+						/* set unit as tank's target */
+						if (tank.GetTargetGUID() != closestThreateningUnit.GUID)
+						{
+							tank.ControlInterface.remoteControl.SelectUnit(closestThreateningUnit.GUID);
+						}
+					}
+				}
 
 				Thread.Sleep(ThreatControlCheckIntervalMs);
 			}
@@ -923,6 +971,51 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					    .CGUnit_C__UnitReaction(c.Player.GetAddress(), gameObj.GetAddress()) <= UnitReaction.Neutral)
 				{
 					return gameObj;
+				}
+			}
+
+			return null;
+		}
+
+		private static List<GameObject> SelectAllRaidTargetsByPriority(Int64[] raidTargetGuids, RaidTarget[] targetPriorities, Client c)
+		{
+			var targets = new List<GameObject>();
+			foreach (var marker in targetPriorities)
+			{
+				Int64 targetGuid = raidTargetGuids[(int)marker];
+				if (targetGuid == 0)
+				{
+					continue;
+				}
+
+				GameObject gameObj = c.ObjectManager.FirstOrDefault(obj => obj.GUID == targetGuid);
+				if (gameObj != null
+				    && gameObj.Health > 0)
+				{
+					if (fixateTargetGuid != 0)
+					{
+						Console.WriteLine("Clearing fixate target. Valid mark detected");
+						fixateTargetGuid = 0;
+					}
+					targets.Add(gameObj);
+				}
+			}
+
+			if (targets.Any())
+			{
+				return targets;
+			}
+
+			if (fixateTargetGuid != 0)
+			{
+				GameObject gameObj = c.ObjectManager.FirstOrDefault(obj => obj.GUID == fixateTargetGuid);
+				if (gameObj != null
+				    && gameObj.Health > 0
+				    && c.ControlInterface.remoteControl
+					    .CGUnit_C__UnitReaction(c.Player.GetAddress(), gameObj.GetAddress()) <= UnitReaction.Neutral)
+				{
+					targets.Add(gameObj);
+					return targets;
 				}
 			}
 

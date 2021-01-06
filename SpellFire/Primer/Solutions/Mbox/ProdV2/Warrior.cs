@@ -22,6 +22,9 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 			public Warrior(Client client, ProdMboxV2 mbox) : base(client)
 			{
 				this.mbox = mbox;
+
+				const int viewDistanceMax = 1250;
+				me.ExecLua($"SetCVar('farclip', {viewDistanceMax})");
 			}
 
 			public override void Tick()
@@ -51,20 +54,23 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					return;
 				}
 
-				Int64[] targetGuids = GetRaidTargetGuids(me);
-				GameObject target = SelectRaidTargetByPriority(targetGuids, AttackPriorities, me);
-				if (target == null)
+				long targetGuid = me.GetTargetGUID();
+				if (targetGuid == 0)
+				{
+					return;
+				}
+				GameObject target = me.ObjectManager.FirstOrDefault(obj => obj.GUID == targetGuid);
+				bool validTarget = target != null
+				                   && target.Health > 0
+				                   && me.ControlInterface.remoteControl
+					                   .CGUnit_C__UnitReaction(me.Player.GetAddress(), target.GetAddress()) <= UnitReaction.Neutral;
+				if (!validTarget)
 				{
 					return;
 				}
 
-				if (me.GetTargetGUID() != target.GUID)
-				{
-					me.ControlInterface.remoteControl.SelectUnit(target.GUID);
-				}
 
-
-				if (me.Player.GetDistance(target) > MeleeAttackRange)
+				if (me.Player.GetDistance(target) > MeleeAttackRange || me.Player.IsMounted())
 				{
 					return;
 				}

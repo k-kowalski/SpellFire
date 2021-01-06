@@ -48,11 +48,26 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				}
 
 				Int64[] targetGuids = GetRaidTargetGuids(me);
-				GameObject target = SelectRaidTargetByPriority(targetGuids, AttackPriorities, me);
-				if (target == null)
+				var targets = SelectAllRaidTargetsByPriority(targetGuids, AttackPriorities, me);
+				if (targets == null)
 				{
 					return;
 				}
+
+				// if target of higher priority is away, target closer one of lower priority
+				GameObject target = targets[0];
+				if (targets.Count > 1 && targets[0].GetDistance(me.Player) > MeleeAttackRange)
+				{
+					if (targets.Count > 2 && targets[1].GetDistance(me.Player) > MeleeAttackRange)
+					{
+						target = targets[2];
+					}
+					else
+					{
+						target = targets[1];
+					}
+				}
+
 
 				if (me.GetTargetGUID() != target.GUID)
 				{

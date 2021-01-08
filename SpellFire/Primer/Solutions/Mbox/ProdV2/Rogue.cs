@@ -54,48 +54,61 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 					return;
 				}
 
-				// if target of higher priority is away, target closer one of lower priority
-				GameObject target = targets[0];
-				if (targets.Count > 1 && targets[0].GetDistance(me.Player) > MeleeAttackRange)
+				/*
+				 * targeting scheme:
+				 * - if high prio target is near tank and near me -> attack high prio target
+				 * - if high prio target is near tank and away from me -> navigate to tank
+				 *
+				 * - if high prio target is away from tank and near me -> attack high prio target
+				 * - if high prio target is away from tank and away from me -> make lower prio target into high prio and start over
+				 *
+				 * do for all targets marked
+				 */
+				GameObject currentTarget = null;
+				foreach (var target in targets)
 				{
-					if (targets.Count > 2 && targets[1].GetDistance(me.Player) > MeleeAttackRange)
-					{
-						target = targets[2];
-					}
-					else
-					{
-						target = targets[1];
-					}
-				}
-
-
-				if (me.GetTargetGUID() != target.GUID)
-				{
-					me.ControlInterface.remoteControl.SelectUnit(target.GUID);
-				}
-
-
-				if (me.Player.GetDistance(target) > MeleeAttackRange)
-				{
-					// navigate to exactly tank's position if target is in tank's range
 					var tank = mbox.me.Player;
-					if (tank.GetDistance(target) > MeleeAttackRange)
+					var tankInRange = tank.GetDistance(target) <= MeleeAttackRange;
+					var meInRange = me.Player.GetDistance(target) <= MeleeAttackRange;
+					if (tankInRange)
 					{
-						return;
+						currentTarget = target;
+						if (!meInRange)
+						{
+							long _Guid = 0;
+							Vector3 targetCoords = tank.Coordinates;
+							me.ControlInterface.remoteControl.CGPlayer_C__ClickToMove(
+								me.Player.GetAddress(), ClickToMoveType.Move, ref _Guid, ref targetCoords, 0f);
+							return;
+						}
+						else
+						{
+							break;
+						}
 					}
 					else
 					{
-						long _Guid = 0;
-						Vector3 targetCoords = tank.Coordinates;
-						me.ControlInterface.remoteControl.CGPlayer_C__ClickToMove(
-							me.Player.GetAddress(), ClickToMoveType.Move, ref _Guid, ref targetCoords, 0f);
-
-						return;
+						if (meInRange)
+						{
+							currentTarget = target;
+							break;
+						}
 					}
+					
+				}
+
+				if (currentTarget != null)
+				{
+					if (me.GetTargetGUID() != currentTarget.GUID)
+					{
+						me.ControlInterface.remoteControl.SelectUnit(currentTarget.GUID);
+					}
+
+					FaceTowards(me, currentTarget);
 				}
 				else
 				{
-					FaceTowards(me, target);
+					return;
 				}
 
 				var energy = me.Player.Energy;
@@ -113,12 +126,9 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 						{
 							me.CastSpell("Eviscerate");
 						}
-						else
+						else if (energy > 45)
 						{
-							if (energy > 50)
-							{
-								me.CastSpell("Sinister Strike");
-							}
+							me.CastSpell("Sinister Strike");
 						}
 					}
 				}

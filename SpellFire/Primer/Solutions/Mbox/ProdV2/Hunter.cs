@@ -82,12 +82,23 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 						me.ExecLua("AttackTarget()");
 					}
 
+					var aimedShot = "Aimed Shot";
+					if (!me.IsOnCooldown(aimedShot))
+					{
+						me.CastSpell(aimedShot);
+					}
 
-//					bool isSerpentStingUp = me.HasAuraEx(target, "Serpent Sting", me.Player);
-//					if(!isSerpentStingUp)
-//					{
-//						me.CastSpell("Serpent Sting");
-//					}
+					var arcShot = "Arcane Shot";
+					if (!me.IsOnCooldown(arcShot))
+					{
+						me.CastSpell(arcShot);
+					}
+
+					//					bool isSerpentStingUp = me.HasAuraEx(target, "Serpent Sting", me.Player);
+					//					if(!isSerpentStingUp)
+					//					{
+					//						me.CastSpell("Serpent Sting");
+					//					}
 				}
 			}
 

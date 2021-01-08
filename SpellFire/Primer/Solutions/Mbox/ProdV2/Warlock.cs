@@ -20,7 +20,14 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 			{
 				this.mbox = mbox;
 
-				me.LuaEventListener.Bind("PET_BAR_UPDATE", args => currentPetType = GetCurrentPetType());
+				me.LuaEventListener.Bind("PET_BAR_UPDATE", args =>
+				{
+					if (me.GetObjectMgrAndPlayer())
+					{
+						currentPetType = GetCurrentPetType();
+						Console.WriteLine($"Current Warlock pet type: {currentPetType}");
+					}
+				});
 				currentPetType = GetCurrentPetType();
 			}
 
@@ -88,8 +95,15 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 
 				if (!me.Player.IsCastingOrChanneling())
 				{
-
-					me.CastSpell("Shadow Bolt");
+					bool isImmoUp = me.HasAuraEx(target, "Immolate", me.Player);
+					if(!isImmoUp)
+					{
+						me.CastSpell("Immolate");
+					}
+					else
+					{
+						me.CastSpell("Shadow Bolt");
+					}
 				}
 			}
 

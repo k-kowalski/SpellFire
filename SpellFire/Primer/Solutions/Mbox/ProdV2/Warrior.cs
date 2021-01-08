@@ -87,9 +87,17 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 						me.ExecLua("AttackTarget()");
 					}
 
-					if (rage > 30)
+					if (rage > 5)
 					{
-						me.CastSpell("Heroic Strike");
+						var revenge = "Revenge";
+						if (me.CanBeCasted(revenge) && !me.IsOnCooldown(revenge))
+						{
+							me.CastSpell(revenge);
+						}
+						else if (rage > 20)
+						{
+							me.CastSpell("Thunder Clap");
+						}
 					}
 				}
 			}

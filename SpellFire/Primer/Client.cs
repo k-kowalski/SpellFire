@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.Remoting;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -36,14 +38,40 @@ namespace SpellFire.Primer
 
 		private void InjectClient()
 		{
-			this.ControlInterface = new ControlInterface();
+			string channelName = $"sfRpc{Process.Id}";
 
-			string channelName = null;
-			EasyHook.RemoteHooking.IpcCreateServer(ref channelName, System.Runtime.Remoting.WellKnownObjectMode.Singleton, this.ControlInterface);
+			this.ControlInterface = SFUtil.GetRemoteClientObject<ControlInterface>(channelName);
 
-			string injectionLibraryPath = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), SFConfig.Global.DllName);
-			EasyHook.RemoteHooking.Inject(this.Process.Id, injectionLibraryPath, null,
-				channelName, SFConfig.Global);
+
+			try
+			{
+				ControlInterface.hostControl.Ping();
+				Console.WriteLine("Detected open remote server in the target.");
+			}
+			catch (RemotingException e)
+			{
+				Console.WriteLine("Cannot connect to the remote. Injecting...");
+				string injectionLibraryPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), SFConfig.Global.DllName);
+				EasyHook.RemoteHooking.Inject(Process.Id, injectionLibraryPath, null, SFConfig.Global);
+			}
+
+			while (true)
+			{
+				try
+				{
+					ControlInterface.hostControl.Ping();
+					break;
+				}
+				catch (RemotingException e)
+				{
+					Console.WriteLine("Cannot yet connect to the remote. Retrying...");
+					Thread.Sleep(300);
+				}
+			}
+
+			Console.WriteLine("Successfully connected to the remote.");
+
+
 
 			this.LuaEventListener = new LuaEventListener(this.ControlInterface);
 		}

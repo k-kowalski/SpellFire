@@ -12,15 +12,21 @@ using SpellFire.Well.Util;
 
 namespace SpellFire.Well.Mbox
 {
-	public class InputMultiplexer
+	public class InputMultiplexer : IDisposable
 	{
-		private readonly ControlInterface.HostControl source;
+		private const int inputPollingIntervalMs = 5;
+
+		private readonly ControlInterface.RemoteControl source;
 		public ICollection<IntPtr> Sinks { get; }
 		public List<Keys> BroadcastKeys { get; }
 		public List<Keys> ConditionalBroadcastKeys { get; }
 		public bool ConditionalBroadcastOn { get; set; }
 
-	public InputMultiplexer(ControlInterface.HostControl source, ICollection<IntPtr> sinks)
+
+		private bool isTaskOn;
+		private Task inputGrabDispatchTask;
+
+		public InputMultiplexer(ControlInterface.RemoteControl source, ICollection<IntPtr> sinks)
 		{
 			BroadcastKeys = new List<Keys>();
 			ConditionalBroadcastKeys = new List<Keys>();
@@ -28,32 +34,49 @@ namespace SpellFire.Well.Mbox
 			this.source = source;
 			this.Sinks = sinks;
 
-			source.WindowMessageDispatched += MessageDispatcher;
+			inputGrabDispatchTask = Task.Run(() => 
+			{
+				isTaskOn = true;
+				while (isTaskOn)
+				{
+					var msgs = source.GrabWindowMessages();
+					if (msgs != null)
+					{
+						foreach (var msg in msgs)
+						{
+							DispatchWindowMessage(msg);
+						}
+					}
+
+					Thread.Sleep(inputPollingIntervalMs);
+				}
+			});
 		}
 
-		~InputMultiplexer()
+		public void Dispose()
 		{
-			source.WindowMessageDispatched -= MessageDispatcher;
+			isTaskOn = false;
+			inputGrabDispatchTask.Wait();
 		}
 			
-		private void MessageDispatcher(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
+		private void DispatchWindowMessage(SystemWin32.WindowMessage wmsg)
 		{
-			if (BroadcastKeys.Contains((Keys)wParam))
+			if (BroadcastKeys.Contains((Keys)wmsg.wParam))
 			{
-				BroadcastMessage(hWnd, msg, wParam, lParam);
+				BroadcastMessage(wmsg);
 			}
 
-			if (ConditionalBroadcastOn && ConditionalBroadcastKeys.Contains((Keys)wParam))
+			if (ConditionalBroadcastOn && ConditionalBroadcastKeys.Contains((Keys)wmsg.wParam))
 			{
-				BroadcastMessage(hWnd, msg, wParam, lParam);
+				BroadcastMessage(wmsg);
 			}
 		}
 
-		private void BroadcastMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
+		private void BroadcastMessage(SystemWin32.WindowMessage wmsg)
 		{
 			foreach (IntPtr sink in Sinks)
 			{
-				SystemWin32.PostMessage(sink, msg, wParam, lParam);
+				SystemWin32.PostMessage(sink, wmsg.msg, wmsg.wParam, wmsg.lParam);
 			}
 		}
 	}

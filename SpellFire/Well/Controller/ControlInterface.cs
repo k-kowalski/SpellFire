@@ -46,6 +46,15 @@ namespace SpellFire.Well.Controller
 		public class RemoteControl : TimelessMarshalByRefObject
 		{
 			#region Control
+
+			public event Func<IList<SystemWin32.WindowMessage>> GrabWindowMessagesEvent;
+			public IList<SystemWin32.WindowMessage> GrabWindowMessages() =>
+				GrabWindowMessagesEvent?.Invoke();
+
+			public event Func<IList<LuaEventArgs>> GrabLuaEventsEvent;
+			public IList<LuaEventArgs> GrabLuaEvents() =>
+				GrabLuaEventsEvent?.Invoke();
+
 			public event Action<Packet> SendPacketEvent;
 			public void SendPacket(Packet packet) =>
 				SendPacketEvent?.Invoke(packet);

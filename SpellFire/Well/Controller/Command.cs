@@ -128,10 +128,11 @@ namespace SpellFire.Well.Controller
 
 		private bool wardenScan = false;
 
-		public BlockingCollection<LuaEventArgs> LuaEventQueue { get; } =
-			new BlockingCollection<LuaEventArgs>(new ConcurrentQueue<LuaEventArgs>());
-		public BlockingCollection<SystemWin32.WindowMessage> WindowMessageQueue { get; } =
-			new BlockingCollection<SystemWin32.WindowMessage>(new ConcurrentQueue<SystemWin32.WindowMessage>());
+		private const int MaxLuaEventCount = 60;
+		public IList<LuaEventArgs> LuaEventList = new List<LuaEventArgs>(MaxLuaEventCount);
+
+		private const int MaxWindowMessageCount = 60;
+		public IList<SystemWin32.WindowMessage> WindowMessageList = new List<SystemWin32.WindowMessage>(MaxWindowMessageCount);
 
 		public CommandHandler(ControlInterface ctrlInterface, GlobalConfig config)
 		{
@@ -145,6 +146,7 @@ namespace SpellFire.Well.Controller
 
 			ResolveEndSceneAddress();
 			RegisterFunctions();
+			BindHandlersToEvents();
 		}
 
 		public void YieldWindowFocusHandler(IntPtr target)
@@ -168,13 +170,20 @@ namespace SpellFire.Well.Controller
 		{
 			if(msg == SystemWin32.WM_KEYDOWN || msg == SystemWin32.WM_KEYUP)
 			{
-				WindowMessageQueue.Add(new SystemWin32.WindowMessage
+				lock (WindowMessageList)
 				{
-					hWnd = hWnd,
-					msg = msg,
-					wParam = wParam,
-					lParam = lParam
-				});
+					if (WindowMessageList.Count == MaxWindowMessageCount)
+					{
+						WindowMessageList.Clear();
+					}
+					WindowMessageList.Add(new SystemWin32.WindowMessage
+					{
+						hWnd = hWnd,
+						msg = msg,
+						wParam = wParam,
+						lParam = lParam
+					});
+				}
 			}
 
 			return originalWndProc(hWnd, msg, wParam, lParam);
@@ -217,7 +226,11 @@ namespace SpellFire.Well.Controller
 						Marshal.GetDelegateForFunctionPointer(IntPtr.Zero + (Int32)offsetField.GetValue(null), delegateFieldInfo.FieldType));
 				}
 			}
+		}
 
+		public void BindHandlersToEvents()
+		{
+			Type commandHandlerType = typeof(CommandHandler);
 
 			/* bind handlers to events */
 			MethodInfo[] chMethods =
@@ -235,10 +248,29 @@ namespace SpellFire.Well.Controller
 					ctrlInterface.hostControl.PrintMessage($"Binding {handlerInfo.Name} to {ciEventInfo.Name}");
 					Delegate handlerInstance = Delegate.CreateDelegate(ciEventInfo.EventHandlerType, this, handlerInfo);
 
-					ciEventInfo.AddEventHandler( ctrlInterface.remoteControl, handlerInstance);
+					ciEventInfo.AddEventHandler(ctrlInterface.remoteControl, handlerInstance);
 				}
 			}
+		}
 
+		public IList<SystemWin32.WindowMessage> GrabWindowMessagesHandler()
+		{
+			lock (WindowMessageList)
+			{
+				var list = new List<SystemWin32.WindowMessage>(WindowMessageList);
+				WindowMessageList.Clear();
+				return list;
+			}
+		}
+
+		public IList<LuaEventArgs> GrabLuaEventsHandler()
+		{
+			lock (LuaEventList)
+			{
+				var list = new List<LuaEventArgs>(LuaEventList);
+				LuaEventList.Clear();
+				return list;
+			}
 		}
 
 		public void InitializeLuaEventFrameHandler()
@@ -343,7 +375,14 @@ namespace SpellFire.Well.Controller
 				luaEventArgs.Add(LuaToString(luaState, i + 1, 0));
 			}
 
-			LuaEventQueue.Add(new LuaEventArgs(luaEventArgs));
+			lock (LuaEventList)
+			{
+				if (LuaEventList.Count == MaxLuaEventCount)
+				{
+					LuaEventList.Clear();
+				}
+				LuaEventList.Add(new LuaEventArgs(luaEventArgs));
+			}
 
 			return 0;
 		}

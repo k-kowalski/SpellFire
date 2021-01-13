@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.Remoting.Channels;
+using System.Runtime.Remoting.Channels.Ipc;
+using System.Runtime.Serialization.Formatters;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -78,6 +82,30 @@ namespace SpellFire.Well.Util
 		{
 			Console.Beep(600, 500);
 			Console.Beep(500, 500);
+		}
+
+		public static Ty GetRemoteClientObject<Ty>(string remoteChannelName) where Ty : MarshalByRefObject
+		{
+			return Activator.GetObject(typeof(Ty),
+				"ipc://" + remoteChannelName + "/" + remoteChannelName) as Ty;
+		}
+
+		public static void RegisterRemoteServer(string remoteChannelName, string remotePortName = null)
+		{
+			BinaryServerFormatterSinkProvider binaryProv = new BinaryServerFormatterSinkProvider
+			{
+				TypeFilterLevel = TypeFilterLevel.Full
+			};
+			IDictionary properties = new Hashtable();
+			properties["name"] = remoteChannelName;
+			properties["portName"] = remotePortName ?? remoteChannelName;
+
+			ChannelServices.RegisterChannel(new IpcServerChannel(properties, binaryProv), false);
+		}
+
+		public static void DumpString(string str, string fileName)
+		{
+			File.WriteAllText(str, fileName);
 		}
 	}
 }

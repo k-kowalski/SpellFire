@@ -92,6 +92,7 @@ namespace SpellFire.Well.Util
 			MEM_FREE = 0x10000
 		}
 
+		[Serializable]
 		public struct WindowMessage
 		{
 			public IntPtr hWnd;

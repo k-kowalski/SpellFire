@@ -472,7 +472,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 		public ProdMboxV2(IEnumerable<Client> clients) : base(clients)
 		{
 			inputMultiplexer = new InputMultiplexer(
-				me.ControlInterface.hostControl,
+				me.ControlInterface.remoteControl,
 				new List<IntPtr>(Slaves.Select(s => s.Process.MainWindowHandle))
 				);
 

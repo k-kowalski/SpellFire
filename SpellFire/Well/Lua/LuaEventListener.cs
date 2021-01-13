@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using SpellFire.Well.Controller;
 using LuaEventHandler = System.Action<SpellFire.Well.Lua.LuaEventArgs>;
@@ -8,8 +9,12 @@ namespace SpellFire.Well.Lua
 {
 	public class LuaEventListener : IDisposable
 	{
+		private const int eventPollingIntervalMs = 5;
 		private readonly IDictionary<string, LuaEventHandler> eventHandlers;
 		private readonly ControlInterface ci;
+
+		private bool isTaskOn;
+		private Task eventGrabDispatchTask;
 
 		private bool _active;
 		public bool Active
@@ -19,10 +24,35 @@ namespace SpellFire.Well.Lua
 			{
 				if (value)
 				{
+					eventGrabDispatchTask = Task.Run(() =>
+					{
+						isTaskOn = true;
+						while (isTaskOn)
+						{
+							var luaEvents = ci.remoteControl.GrabLuaEvents();
+							if (luaEvents != null)
+							{
+								foreach (var luaEvent in luaEvents)
+								{
+									DispatchLuaEvent(luaEvent);
+								}
+							}
+
+							Thread.Sleep(eventPollingIntervalMs);
+						}
+					});
+
+
+
 					ci.remoteControl.InitializeLuaEventFrame();
 				}
 				else
 				{
+					isTaskOn = false;
+					eventGrabDispatchTask.Wait();
+
+
+
 					ci.remoteControl.DestroyLuaEventFrame();
 				}
 
@@ -35,13 +65,6 @@ namespace SpellFire.Well.Lua
 			eventHandlers = new Dictionary<string, LuaEventHandler>();
 
 			this.ci = ci;
-
-			ci.hostControl.LuaEventFired += DispatchLuaEvent;
-		}
-
-		~LuaEventListener()
-		{
-			ci.hostControl.LuaEventFired -= DispatchLuaEvent;
 		}
 
 		public void Dispose()

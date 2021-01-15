@@ -1,12 +1,14 @@
 ﻿using SpellFire.Well.Model;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using SpellFire.Primer.Gui;
 
-namespace SpellFire.Primer.Solutions.Mbox.Prod
+namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 {
 	public partial class ProdMboxV2 : MultiboxSolution
 	{
@@ -102,6 +104,18 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				}
 			}
 
+			public override void RenderRadar(RadarCanvas radarCanvas, Bitmap radarBackBuffer)
+			{
+				if (mbox.masterAI && mbox.radarOn)
+				{
+					base.RenderRadar(radarCanvas, radarBackBuffer);
+				}
+				else
+				{
+					Thread.Sleep(ProdMboxV2.ClientSolutionSleepMs);
+				}
+
+			}
 
 			public override void Dispose()
 			{

@@ -30,4 +30,17 @@ namespace SpellFire.Well.Net
 			opcode = Opcode.CMSG_CAST_SPELL;
 		}
 	}
+
+	[Serializable]
+	[StructLayout(LayoutKind.Sequential, Pack = 1)]
+	public class UpdateRaidMarkPacket : Packet
+	{
+		public byte raidMark;
+		public Int64 targetGUID;
+
+		public UpdateRaidMarkPacket()
+		{
+			opcode = Opcode.MSG_RAID_TARGET_UPDATE;
+		}
+	}
 }

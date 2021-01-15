@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SpellFire.Primer.Solutions.Mbox.Prod
+namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 {
 	public partial class ProdMboxV2 : MultiboxSolution
 	{
@@ -48,7 +48,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				}
 
 				Int64[] targetGuids = GetRaidTargetGuids(me);
-				GameObject target = SelectRaidTargetByPriority(targetGuids, AttackPriorities, me);
+				GameObject target = mbox.SelectRaidTargetByPriority(targetGuids, AttackPriorities, me);
 				if (target == null)
 				{
 					return;
@@ -82,6 +82,11 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 						me.ExecLua("AttackTarget()");
 					}
 
+					if (target.HealthPct > 80 && !me.HasAuraEx(target, "Hunter's Mark", me.Player))
+					{
+						me.CastSpell("Hunter's Mark");
+					}
+
 					var aimedShot = "Aimed Shot";
 					if (!me.IsOnCooldown(aimedShot))
 					{
@@ -94,11 +99,10 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 						me.CastSpell(arcShot);
 					}
 
-					//					bool isSerpentStingUp = me.HasAuraEx(target, "Serpent Sting", me.Player);
-					//					if(!isSerpentStingUp)
-					//					{
-					//						me.CastSpell("Serpent Sting");
-					//					}
+					if(target.Health > (me.Player.Health * 1.5) && !me.HasAuraEx(target, "Serpent Sting", me.Player))
+					{
+						me.CastSpell("Serpent Sting");
+					}
 				}
 			}
 

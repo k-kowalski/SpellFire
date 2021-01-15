@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SpellFire.Primer.Solutions.Mbox.Prod
+namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 {
 	public partial class ProdMboxV2 : MultiboxSolution
 	{
@@ -145,7 +145,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				}
 
 				Int64[] targetGuids = GetRaidTargetGuids(me);
-				GameObject target = SelectRaidTargetByPriority(targetGuids, AttackPriorities, me);
+				GameObject target = mbox.SelectRaidTargetByPriority(targetGuids, AttackPriorities, me);
 				if (target == null)
 				{
 					return;

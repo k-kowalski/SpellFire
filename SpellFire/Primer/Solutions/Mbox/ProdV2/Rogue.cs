@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SpellFire.Primer.Solutions.Mbox.Prod
+namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 {
 	public partial class ProdMboxV2 : MultiboxSolution
 	{
@@ -48,7 +48,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				}
 
 				Int64[] targetGuids = GetRaidTargetGuids(me);
-				var targets = SelectAllRaidTargetsByPriority(targetGuids, AttackPriorities, me);
+				var targets = mbox.SelectAllRaidTargetsByPriority(targetGuids, AttackPriorities, me);
 				if (targets == null)
 				{
 					return;
@@ -120,11 +120,19 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 						me.ExecLua("AttackTarget()");
 					}
 
+
 					if (energy > 40)
 					{
 						if (comboPoints > 3)
 						{
-							me.CastSpell("Eviscerate");
+							if (!me.HasAura(me.Player, "Slice and Dice", me.Player))
+							{
+								me.CastSpell("Slice and Dice");
+							}
+							else
+							{
+								me.CastSpell("Eviscerate");
+							}
 						}
 						else if (energy > 45)
 						{

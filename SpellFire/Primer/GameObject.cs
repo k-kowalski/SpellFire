@@ -150,7 +150,7 @@ namespace SpellFire.Primer
 				int currentMana = memory.ReadInt32(unitInfo + Offset.Power1);
 				int maxMana = memory.ReadInt32(unitInfo + Offset.MaxPower1);
 
-				return (currentMana * 100) / maxMana;
+				return maxMana != 0 ? (currentMana * 100) / maxMana : -1;
 			}
 		}
 

@@ -12,7 +12,7 @@ namespace SpellFire.Primer.Solutions
 	{
 		public bool Active { get; set; }
 
-		protected readonly Client me;
+		public readonly Client me;
 
 		protected Solution(Client me)
 		{

@@ -16,7 +16,7 @@ using SpellFire.Well.Mbox;
 using SpellFire.Well.Model;
 using SpellFire.Well.Util;
 
-namespace SpellFire.Primer.Solutions.Mbox.Prod
+namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 {
 	public partial class ProdMboxV2 : MultiboxSolution
 	{
@@ -25,8 +25,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 		private IList<Solution> slavesSolutions = new List<Solution>();
 		private Solution masterSolution;
 
-		private Task threatControlTask;
-		private const int ThreatControlCheckIntervalMs = 800;
+		private GroupManager gm;
 
 		private static readonly RaidTarget[] AttackPriorities =
 		{
@@ -48,11 +47,11 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 		private const int ClientSolutionSleepMs = 200;
 		private const int BigHealthThreshold = 80_000;
 
-		private bool slavesAI;
-		private bool masterAI;
-		private bool buffingAI;
-		private bool radarOn;
-		private bool complexRotation;
+		internal bool slavesAI;
+		internal bool masterAI;
+		internal bool buffingAI;
+		internal bool radarOn;
+		internal bool complexRotation;
 
 		private static long fixateTargetGuid;
 
@@ -679,66 +678,21 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 			GetCommand("fw").Invoke(me, new List<string>(new[] { "fw" }));
 
 
-			threatControlTask = Task.Run(ThreatControl);
-		}
-
-		private void ThreatControl()
-		{
-			var tank = me;
-			var protectedPlayersGuids = Slaves.Select(c => c.Player.GUID);
-
-			var interveningSpell = "Taunt";
-
-			while (Active)
-			{
-				if (masterAI)
-				{
-					var threateningUnits = tank.ObjectManager.Where(obj =>
-						obj.Type == GameObjectType.Unit
-						&& obj.IsInCombat()
-						&& protectedPlayersGuids.Contains(obj.TargetGUID)
-						&& tank.ControlInterface.remoteControl.CGUnit_C__UnitReaction(tank.Player.GetAddress(), obj.GetAddress()) <=
-	                    UnitReaction.Neutral /* unit attackable */
-					).ToList();
-
-					if (threateningUnits.Any())
-					{
-						/* taunt if possible */
-						if(!tank.IsOnCooldown(interveningSpell))
-						{
-							tank.EnqueuePrioritySpellCast(new SpellCast
-							{
-								Coordinates = null,
-								SpellName = interveningSpell,
-								TargetGUID = threateningUnits[0].GUID
-							});
-							Console.WriteLine($"Taunting {tank.ControlInterface.remoteControl.GetUnitName(threateningUnits[0].GetAddress())}");
-						}
-
-
-						var closestThreateningUnit = threateningUnits.Aggregate((unit1, unit2) => unit1.GetDistance(tank.Player) < unit2.GetDistance(tank.Player) ? unit1 : unit2);
-
-						Console.WriteLine($"Detected {tank.ControlInterface.remoteControl.GetUnitName(closestThreateningUnit.GetAddress())} out of {threateningUnits.Count}");
-						/* set unit as tank's target */
-						if (tank.GetTargetGUID() != closestThreateningUnit.GUID)
-						{
-							tank.ControlInterface.remoteControl.SelectUnit(closestThreateningUnit.GUID);
-						}
-					}
-				}
-
-				Thread.Sleep(ThreatControlCheckIntervalMs);
-			}
+			gm = new GroupManager(this);
 		}
 
 		public override void Tick()
 		{
-			masterSolution?.Tick(); /* act as master's Tick()' */
+			masterSolution?.Tick();
+			if (masterAI)
+			{
+				gm.Tick();
+			}
 		}
 
 		public override void RenderRadar(RadarCanvas radarCanvas, Bitmap radarBackBuffer)
 		{
-			masterSolution?.RenderRadar(radarCanvas, radarBackBuffer); /* act as master's RenderRadar()' */
+			masterSolution?.RenderRadar(radarCanvas, radarBackBuffer);
 		}
 
 		public override void Dispose()
@@ -752,8 +706,6 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 			{
 				task.Wait();
 			}
-
-			threatControlTask.Wait();
 		}
 
 		private void AssignRoutines()
@@ -939,7 +891,7 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 			return targetGuids;
 		}
 
-		private static GameObject SelectRaidTargetByPriority(Int64[] raidTargetGuids, RaidTarget[] targetPriorities, Client c)
+		private GameObject SelectRaidTargetByPriority(Int64[] raidTargetGuids, RaidTarget[] targetPriorities, Client c)
 		{
 			foreach (var marker in targetPriorities)
 			{
@@ -974,10 +926,20 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				}
 			}
 
+			foreach (var targetGuid in gm.GroupTargetGuids)
+			{
+				GameObject gameObj = c.ObjectManager.FirstOrDefault(obj => obj.GUID == targetGuid);
+				if (gameObj != null
+				    && gameObj.Health > 0)
+				{
+					return gameObj;
+				}
+			}
+
 			return null;
 		}
 
-		private static List<GameObject> SelectAllRaidTargetsByPriority(Int64[] raidTargetGuids, RaidTarget[] targetPriorities, Client c)
+		private List<GameObject> SelectAllRaidTargetsByPriority(Int64[] raidTargetGuids, RaidTarget[] targetPriorities, Client c)
 		{
 			var targets = new List<GameObject>();
 			foreach (var marker in targetPriorities)
@@ -1019,7 +981,17 @@ namespace SpellFire.Primer.Solutions.Mbox.Prod
 				}
 			}
 
-			return null;
+			foreach (var targetGuid in gm.GroupTargetGuids)
+			{
+				GameObject gameObj = c.ObjectManager.FirstOrDefault(obj => obj.GUID == targetGuid);
+				if (gameObj != null
+				    && gameObj.Health > 0)
+				{
+					targets.Add(gameObj);
+				}
+			}
+
+			return targets;
 		}
 
 		private static void FaceTowards(Client c, GameObject targetObj)

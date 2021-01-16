@@ -13,6 +13,8 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 	{
 		private class PriestV2 : Solution
 		{
+			private const Int32 WeakenedSoul = 6788;
+
 			private ProdMboxV2 mbox;
 
 			private readonly List<GameObject> LowHealthPlayers;
@@ -41,6 +43,40 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 				LowHealthPlayers = new List<GameObject>(clientsCount);
 				MidHealthPlayers = new List<GameObject>(clientsCount);
 				SteadyHealthPlayers = new List<GameObject>(clientsCount);
+
+				me.LuaEventListener.Bind("SPELLS_CHANGED", args => RefreshSpellIds());
+
+			}
+
+			Dictionary<string, int> cachedSpellIds = new Dictionary<string, int>();
+
+			private void RefreshSpellIds()
+			{
+				lock (cachedSpellIds)
+				{
+					Console.WriteLine($"[{me.Player.UnitClass}] Refreshing spell ids");
+					foreach (var spellName in cachedSpellIds.Keys)
+					{
+						cachedSpellIds[spellName] = me.GetSpellId(spellName);
+					}
+				}
+			}
+
+			private int GetCachedSpellId(string spellName)
+			{
+				lock (cachedSpellIds)
+				{
+					int spellId;
+					if (cachedSpellIds.TryGetValue(spellName, out spellId))
+					{
+						return spellId;
+					}
+					else
+					{
+						cachedSpellIds[spellName] = spellId = me.GetSpellId(spellName);
+						return spellId;
+					}
+				}
 			}
 
 			public override void Tick()
@@ -180,21 +216,21 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 
 			private void HealMidTarget(GameObject target)
 			{
-				if (!me.HasAuraEx(target, "Renew", null))
+				if (!me.HasAura(target, GetCachedSpellId("Renew"), null))
 				{
-					me.CastSpellOnGuid("Renew", target.GUID);
+					me.CastSpellOnGuid(GetCachedSpellId("Renew"), target.GUID);
 				}
 			}
 
 			private void HealLowTarget(GameObject target)
 			{
-				if (!me.HasAuraEx(target, "Renew", null))
+				if (!me.HasAura(target, GetCachedSpellId("Renew"), null))
 				{
-					me.CastSpellOnGuid("Renew", target.GUID);
+					me.CastSpellOnGuid(GetCachedSpellId("Renew"), target.GUID);
 				}
 				else
 				{
-					me.CastSpellOnGuid("Lesser Heal", target.GUID);
+					me.CastSpellOnGuid(GetCachedSpellId("Flash Heal"), target.GUID);
 				}
 			}
 
@@ -202,11 +238,12 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 			{
 				foreach (var player in players)
 				{
-					if (!me.HasAura(player, "Power Word: Shield", null) && player.IsInCombat())
+					var pws = GetCachedSpellId("Power Word: Shield");
+					if (!me.HasAura(player, pws, null) && player.IsInCombat())
 					{
-						if (!me.HasAura(player, "Weakened Soul", null))
+						if (!me.HasAura(player, WeakenedSoul, null))
 						{
-							me.CastSpellOnGuid("Power Word: Shield", player.GUID);
+							me.CastSpellOnGuid(pws, player.GUID);
 							return true;
 						}
 					}

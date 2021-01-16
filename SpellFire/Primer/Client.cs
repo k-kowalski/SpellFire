@@ -26,6 +26,9 @@ namespace SpellFire.Primer
 		public ClientLaunchSettings LaunchSettings { get; set; }
 
 		private Queue<SpellCast> prioritySpellcastsQueue = new Queue<SpellCast>();
+		private Vector3 playerNavPreviousPosition = Vector3.Zero;
+		private DateTime playerNavStuckTimestamp = DateTime.MinValue;
+
 
 		public Client(Process process, ClientLaunchSettings launchSettings)
 		{
@@ -105,6 +108,46 @@ namespace SpellFire.Primer
 			}
 
 			return isInWorld;
+		}
+
+		public bool Navigate(Vector3 destination, int stuckToleranceLimitMs = 100)
+		{
+			Vector3 playerPosition = Player.Coordinates;
+			if (playerPosition.Distance(destination) < 1f)
+			{
+				playerNavPreviousPosition = Vector3.Zero;
+				playerNavStuckTimestamp = DateTime.MinValue;
+				return true;
+			}
+
+			Int64 ctmGuid = 0;
+			ControlInterface
+				.remoteControl
+				.CGPlayer_C__ClickToMove(
+					Player.GetAddress(), ClickToMoveType.Move, ref ctmGuid, ref destination, 1f);
+
+			if (playerPosition.Distance(playerNavPreviousPosition) < 0.01f)
+			{
+				if (playerNavStuckTimestamp == DateTime.MinValue)
+				{
+					playerNavStuckTimestamp = DateTime.Now;
+				}
+
+				if ((DateTime.Now - playerNavStuckTimestamp).Milliseconds >= stuckToleranceLimitMs)
+				{
+					ControlInterface
+						.remoteControl
+						.FrameScript__Execute("JumpOrAscendStart()", 0, 0);
+					playerNavStuckTimestamp = DateTime.MinValue;
+				}
+			}
+			else
+			{
+				playerNavStuckTimestamp = DateTime.MinValue;
+			}
+
+			playerNavPreviousPosition = playerPosition;
+			return false;
 		}
 
 		public ThreatInfo GetUnitThreat(GameObject unit)

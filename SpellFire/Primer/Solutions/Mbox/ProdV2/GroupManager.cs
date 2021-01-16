@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using SpellFire.Well.Model;
+using SpellFire.Well.Navigation;
 using SpellFire.Well.Net;
+using SpellFire.Well.Util;
 
 namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 {
@@ -24,6 +28,8 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 
 		public Int64[] GroupTargetGuids = new long[10];
 
+		public WaypointMap wpMap;
+
 
 		public GroupManager(ProdMboxV2 mbox)
 		{
@@ -32,6 +38,7 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 			protectedPlayersGuids = mbox.Slaves.Select(c => c.Player.GUID);
 
 			tauntAbility = GetTauntAbilityForTankClass(tank.Player.UnitClass);
+			navEngine = new NavigationEngine();
 		}
 
 		public void Tick()
@@ -60,7 +67,12 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 
 			if (threateners.Any())
 			{
+				canGroupNavigate = false;
 				SetGroupTargets(threateners);
+			}
+			else
+			{
+				canGroupNavigate = true;
 			}
 
 			unitsTargetingProtectedPlayers.Clear();
@@ -137,5 +149,114 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 			UnitClass.DeathKnight => "Dark Command",
 			_ => null,
 		};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		IEnumerable<Client> navigableClients;
+		NavigationEngine navEngine;
+		private bool canGroupNavigate;
+
+		private bool isTraversing;
+		private Task traversalTask;
+
+		public void HandleNavigationCommand(IList<string> args)
+		{
+			var subcmd = args[0];
+			switch (subcmd)
+			{
+				case "run":
+					var path = args[1];
+					wpMap = JsonConvert.DeserializeObject<WaypointMap>(File.ReadAllText(path));
+
+					// consider clients only on the same map
+					navigableClients =
+						mbox.clients.Where(c => c.Memory.ReadInt32(IntPtr.Zero + Offset.MapId) == wpMap.mapId).ToList();
+					if (!navigableClients.Contains(mbox.me))
+					{
+						Console.WriteLine($"Master is required to be on navigation map");
+						return;
+					}
+
+					Console.WriteLine($"Detected {navigableClients.Count()} clients");
+
+					if (!navEngine.SetCurrentMap(wpMap.mapId))
+					{
+						Console.WriteLine($"Couldn't load map for map id {wpMap.mapId}");
+						return;
+					}
+
+;
+					traversalTask = Task.Run((() =>
+					{
+						// gather at master's position
+						while (!navigableClients.All(c => c.Navigate(mbox.me.Player.Coordinates)))
+						{
+							Thread.Sleep(1000);
+						}
+
+						// follow waypoints
+						foreach (var nextWp in wpMap.waypoints)
+						{
+							isTraversing = true;
+							Console.WriteLine($"Next wp is {nextWp}");
+							while (true)
+							{
+								if (!isTraversing)
+								{
+									Console.WriteLine("Traversing has been interrupted.");
+									return;
+								}
+
+								if (canGroupNavigate)
+								{
+									var notYetArrivedClients =
+										navigableClients.Where(c => c.Player.Coordinates.Distance(nextWp) > 1f);
+									if (!notYetArrivedClients.Any())
+									{
+										break;
+									}
+
+									foreach (var notYetArrivedClient in notYetArrivedClients)
+									{
+										var start = notYetArrivedClient.Player.Coordinates;
+										var next = navEngine.GetNextPathNode(start, nextWp);
+										if (next != null)
+										{
+											notYetArrivedClient.Navigate(next.Value);
+										}
+									}
+								}
+
+								Thread.Sleep(1000);
+							}
+						}
+						Console.WriteLine("Successfully traversed path.");
+					}));
+
+					break;
+				case "stop":
+					Console.WriteLine("Stopping traversal.");
+					isTraversing = false;
+					traversalTask?.Wait();
+					break;
+				default:
+					break;
+			}
+		}
 	}
 }

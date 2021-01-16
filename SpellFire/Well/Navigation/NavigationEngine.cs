@@ -56,5 +56,23 @@ namespace SpellFire.Well.Navigation
 
 			return null;
 		}
+
+		public Vector3? GetNextPathNode(Vector3 start, Vector3 end)
+		{
+			var path = GetPath(start, end);
+			if (path != null)
+			{
+				if (start.Distance(path[0]) < 1f && path.Count > 1)
+				{
+					return path[1];
+				}
+				else
+				{
+					return path[0];
+				}
+			}
+
+			return null;
+		}
 	}
 }

@@ -121,6 +121,7 @@
     <Compile Include="Solutions\PacketManip.cs" />
     <Compile Include="Solutions\Mbox\TestMboxSln.cs" />
     <Compile Include="Solutions\UnholyDK.cs" />
+    <Compile Include="Solutions\WaypointMapper.cs" />
     <EmbeddedResource Include="Gui\MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>

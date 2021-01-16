@@ -72,6 +72,11 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 
 			return cmd switch
 			{
+				/* navigation commands */
+				"nav" => new Action<Client, IList<string>>((self, args) =>
+				{
+					gm?.HandleNavigationCommand(args);
+				}),
 				/* set client's cvar */
 				"cvar" => new Action<Client, IList<string>>(((self, args) =>
 				{

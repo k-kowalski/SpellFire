@@ -62,19 +62,10 @@ namespace SpellFire.Primer.Solutions
 				return;
 			}
 
-			var waypoints = navEngine.GetPath(me.Player.Coordinates, destination);
-			if (waypoints != null)
+			var waypoint = navEngine.GetNextPathNode(me.Player.Coordinates, destination);
+			if (waypoint != null)
 			{
-				Vector3 end;
-
-				if (me.Player.Coordinates.Distance(waypoints[0]) < 1f && waypoints.Count > 1)
-				{
-					end = waypoints[1];
-				}
-				else
-				{
-					end = waypoints[0];
-				}
+				Vector3 end = waypoint.Value;
 
 				Int64 ctmGuid = 0;
 				me.ControlInterface

@@ -75,6 +75,7 @@
     <Compile Include="Model\RaidTarget.cs" />
     <Compile Include="Model\UnitReaction.cs" />
     <Compile Include="Navigation\NavigationEngine.cs" />
+    <Compile Include="Navigation\WaypointMap.cs" />
     <Compile Include="Net\DataStore.cs" />
     <Compile Include="Net\Opcode.cs" />
     <Compile Include="Net\PacketManager.cs" />

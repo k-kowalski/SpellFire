@@ -82,27 +82,45 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 						me.ExecLua("AttackTarget()");
 					}
 
-					if (target.HealthPct > 80 && !me.HasAuraEx(target, "Hunter's Mark", me.Player))
+					if (target.HealthPct > 80 && !me.HasAura(target, "Hunter's Mark", me.Player))
 					{
 						me.CastSpell("Hunter's Mark");
 					}
-
-					var aimedShot = "Aimed Shot";
-					if (!me.IsOnCooldown(aimedShot))
+					else
 					{
-						me.CastSpell(aimedShot);
+						if (target.Health > (me.Player.Health * 1.5) && !me.HasAura(target, "Serpent Sting", me.Player))
+						{
+							me.CastSpell("Serpent Sting");
+						}
+						else
+						{
+							var chimShot = "Chimera Shot";
+							var aimedShot = "Aimed Shot";
+							var arcShot = "Arcane Shot";
+							if (!me.IsOnCooldown(chimShot))
+							{
+								me.CastSpell(chimShot);
+							}
+							else if (!me.IsOnCooldown(aimedShot))
+							{
+								me.CastSpell(aimedShot);
+							}
+							else if(!me.IsOnCooldown(arcShot))
+							{
+								me.CastSpell(arcShot);
+							}
+							else if (!me.IsOnCooldown("Kill Command"))
+							{
+								me.CastSpell("Kill Command");
+							}
+							else
+							{
+								me.CastSpell("Steady Shot");
+							}
+						}
 					}
 
-					var arcShot = "Arcane Shot";
-					if (!me.IsOnCooldown(arcShot))
-					{
-						me.CastSpell(arcShot);
-					}
-
-					if(target.Health > (me.Player.Health * 1.5) && !me.HasAuraEx(target, "Serpent Sting", me.Player))
-					{
-						me.CastSpell("Serpent Sting");
-					}
+					
 				}
 			}
 

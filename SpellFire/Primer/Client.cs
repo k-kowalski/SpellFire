@@ -392,7 +392,7 @@ namespace SpellFire.Primer
 			return false;
 		}
 
-		private Int32 GetSpellId(string spellName)
+		public Int32 GetSpellId(string spellName)
 		{
 			string spellLink = ExecLuaAndGetResult(
 				$"link = GetSpellLink(\"{spellName}\")",

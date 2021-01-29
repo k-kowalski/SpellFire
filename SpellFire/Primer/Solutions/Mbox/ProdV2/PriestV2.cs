@@ -224,9 +224,9 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 
 			private void HealLowTarget(GameObject target)
 			{
-				if (!me.HasAura(target, GetCachedSpellId("Renew"), null))
+				if (!me.IsOnCooldown("Penance"))
 				{
-					me.CastSpellOnGuid(GetCachedSpellId("Renew"), target.GUID);
+					me.CastSpellOnGuid(GetCachedSpellId("Penance"), target.GUID);
 				}
 				else
 				{

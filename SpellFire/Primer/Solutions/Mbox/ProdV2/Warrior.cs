@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using SpellFire.Primer.Gui;
+using SpellFire.Well.Util;
 
 namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 {
@@ -15,11 +16,6 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 		private class Warrior : Solution
 		{
 			private ProdMboxV2 mbox;
-
-			private static readonly string[] PartyBuffs =
-			{
-				"Battle Shout",
-			};
 
 			public Warrior(Client client, ProdMboxV2 mbox) : base(client)
 			{
@@ -72,7 +68,21 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 				}
 
 
-				if (me.Player.GetDistance(target) > MeleeAttackRange || me.Player.IsMounted())
+				if (me.Player.GetDistance(target) > MeleeAttackRange)
+				{
+					// navigate to target if it is near any player
+					var nearPlayer = GetNearPlayer(target);
+					if (nearPlayer != null)
+					{
+						long _Guid = 0;
+						Vector3 targetCoords = nearPlayer.Player.Coordinates;
+						me.ControlInterface.remoteControl.CGPlayer_C__ClickToMove(
+							me.Player.GetAddress(), ClickToMoveType.Move, ref _Guid, ref targetCoords, 0f);
+					}
+					return;
+				}
+
+				if (me.Player.IsMounted())
 				{
 					return;
 				}
@@ -96,12 +106,33 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 						{
 							me.CastSpell(revenge);
 						}
+						else if (rage > 10 && !me.HasAura(me.Player, "Battle Shout", me.Player))
+						{
+							me.CastSpell("Battle Shout");
+						}
 						else if (rage > 20)
 						{
-							me.CastSpell("Thunder Clap");
+							if (!me.IsOnCooldown("Thunder Clap"))
+							{
+								me.CastSpell("Thunder Clap");
+							}
+							else if (!me.IsOnCooldown("Shield Slam"))
+							{
+								me.CastSpell("Shield Slam");
+							}
+							else
+							{
+								me.CastSpell("Devastate");
+							}
 						}
 					}
 				}
+			}
+
+			private Client GetNearPlayer(GameObject target)
+			{
+				var targetCoords = target.Coordinates;
+				return mbox.clients.FirstOrDefault(c => c.Player.Coordinates.Distance(targetCoords) <= MeleeAttackRange);
 			}
 
 			public override void RenderRadar(RadarCanvas radarCanvas, Bitmap radarBackBuffer)

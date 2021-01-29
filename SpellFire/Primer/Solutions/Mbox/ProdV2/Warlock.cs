@@ -14,7 +14,7 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 		private class Warlock : Solution
 		{
 			private ProdMboxV2 mbox;
-			private PetType currentPetType;
+			private WarlockPet currentPet;
 
 			public Warlock(Client client, ProdMboxV2 mbox) : base(client)
 			{
@@ -24,11 +24,22 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 				{
 					if (me.GetObjectMgrAndPlayer())
 					{
-						currentPetType = GetCurrentPetType();
-						Console.WriteLine($"Current Warlock pet type: {currentPetType}");
+						try
+						{
+							SetCurrentPet();
+						}
+						catch (Exception e)
+						{
+							Console.WriteLine($"Exception happened while processing GetCurrentPetType:\n{e.Message}");
+						}
+						finally
+						{
+							Console.WriteLine($"Current Warlock pet type: {currentPet.type}");
+						}
 					}
 				});
-				currentPetType = GetCurrentPetType();
+
+				SetCurrentPet();
 			}
 
 			public override void Tick()
@@ -80,11 +91,11 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 					FaceTowards(me, target);
 				}
 
-				if (currentPetType == PetType.Ranged)
+				if (currentPet.type == WarlockPet.PetType.Ranged)
 				{
-					me.ExecLua("PetAttack()");
+					currentPet.CastSpell("Firebolt");
 				}
-				else if (currentPetType == PetType.Melee)
+				else if (currentPet.type == WarlockPet.PetType.Melee)
 				{
 					// navigate pet to target if target is in tank's(master's) range
 					if (mbox.me.Player.GetDistance(target) <= MeleeAttackRange)
@@ -95,38 +106,40 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 
 				if (!me.Player.IsCastingOrChanneling())
 				{
-					me.CastSpell("Shoot");
+					if (me.Player.ManaPct < 10)
+					{
+						if (me.Player.HealthPct > 80)
+						{
+							me.CastSpell("Life Tap");
+						}
+						else
+						{
+							me.CastSpell("Shoot");
+						}
+					}
 
-					bool isImmoUp = me.HasAuraEx(target, "Immolate", me.Player);
-					if(!isImmoUp)
+					if (target.Health > (me.Player.Health * 1.5) && !me.HasAura(target, "Immolate", me.Player))
 					{
 						me.CastSpell("Immolate");
 					}
+					else if (!me.IsOnCooldown("Chaos Bolt"))
+					{
+						me.CastSpell("Chaos Bolt");
+					}
 					else
 					{
-						me.CastSpell("Shadow Bolt");
+						me.CastSpell("Incinerate");
 					}
 				}
 			}
 
-			private PetType GetCurrentPetType()
+			private void SetCurrentPet()
 			{
-				var currentPetFirstAbility = me.ExecLuaAndGetResult(
-					"name, subtext, texture, isToken, isActive, autoCastAllowed, autoCastEnabled = GetPetActionInfo(4)",
-					"name");
+				var abilities = me.ExecLuaAndGetResult(
+"abilities = ''; for i=1, NUM_PET_ACTION_SLOTS do abilities = abilities..GetPetActionInfo(i)..',' end",
+					"abilities");
 				
-				switch (currentPetFirstAbility)
-				{
-					case "Firebolt": // imp
-						return PetType.Ranged;
-					case "Suffering": // voidwalker
-					case "Devour Magic": // felhunter
-					case "Lash of Pain": // succubus
-					case "Intercept": // felguard
-						return PetType.Melee;
-					default:
-						return PetType.None;
-				}
+				currentPet = new WarlockPet(me, abilities);
 			}
 
 
@@ -135,11 +148,57 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 				me.LuaEventListener.Dispose();
 			}
 
-			enum PetType
+			public class WarlockPet
 			{
-				None,
-				Melee,
-				Ranged
+				private readonly Client owner;
+				public readonly PetType type = PetType.None;
+				public readonly List<string> abilities = new List<string>();
+
+				public WarlockPet(Client owner, string abilities)
+				{
+					this.owner = owner;
+					if (abilities == null)
+					{
+						return;
+					}
+
+
+					var absSplit = abilities.Split(',');
+					foreach (var ability in absSplit)
+					{
+						if (!String.IsNullOrEmpty(ability))
+						{
+							this.abilities.Add(ability);
+
+							switch (ability)
+							{
+								case "Firebolt": // imp
+									type = PetType.Ranged;
+									break;
+								case "Suffering": // voidwalker
+								case "Devour Magic": // felhunter
+								case "Lash of Pain": // succubus
+								case "Intercept": // felguard
+									type = PetType.Melee;
+									break;
+								default:
+									break;
+							}
+						}
+					}
+				}
+
+				public enum PetType
+				{
+					None,
+					Melee,
+					Ranged
+				}
+
+				public void CastSpell(string spell)
+				{
+					owner.ExecLua($"CastPetAction({abilities.IndexOf(spell) + 1})");
+				}
 			}
 		}
 	}

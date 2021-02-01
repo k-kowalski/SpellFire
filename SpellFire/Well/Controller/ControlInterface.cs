@@ -130,6 +130,10 @@ namespace SpellFire.Well.Controller
 				[In, Out] ref Int32 threatValue) =>
 				CGUnit_C__CalculateThreatEvent?
 					.Invoke(thisObject, ref otherUnitGUID, ref threatStatus, ref threatPct, ref rawThreatPct, ref threatValue) ?? false;
+
+			public event CommandCallback.TraceLine TraceLineEvent;
+			public byte TraceLine(ref Vector3 start, ref Vector3 end, ref Vector3 contactPoint, ref float distance, UInt32 flags, Int32 a6) =>
+				TraceLineEvent?.Invoke(ref start, ref end, ref contactPoint, ref distance, flags, a6) ?? 0;
 			#endregion
 		}
 	}

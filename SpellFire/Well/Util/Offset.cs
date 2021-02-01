@@ -33,6 +33,7 @@ namespace SpellFire.Well.Util
 			public const Int32 Spell_C__CastSpell = 0x80DA40;
 			public const Int32 Spell_C__HandleTerrainClick = 0x80C340;
 			public const Int32 CGUnit_C__CalculateThreat = 0x7374C0;
+			public const Int32 TraceLine = 0x7A3B70;
 		}
 
 		public static class VirtualFunction

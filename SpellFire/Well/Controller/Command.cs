@@ -86,6 +86,9 @@ namespace SpellFire.Well.Controller
 			[In, Out] ref byte threatPct,
 			[In, Out] ref float rawThreatPct,
 			[In, Out] ref Int32 threatValue);
+
+		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+		public delegate byte TraceLine(ref Vector3 start, ref Vector3 end, ref Vector3 contactPoint, ref float distance, UInt32 flags, Int32 a6);
 	}
 
 	public class CommandHandler : TimelessMarshalByRefObject, IDisposable
@@ -116,6 +119,7 @@ namespace SpellFire.Well.Controller
 		private CommandCallback.Spell_C__CastSpell Spell_C__CastSpell;
 		private CommandCallback.Spell_C__HandleTerrainClick Spell_C__HandleTerrainClick;
 		private CommandCallback.CGUnit_C__CalculateThreat CGUnit_C__CalculateThreat;
+		private CommandCallback.TraceLine TraceLine;
 
 		private CommandCallback.LuaEventCallback eventCallback;
 		private IntPtr luaEventCallbackPtr;
@@ -506,6 +510,20 @@ namespace SpellFire.Well.Controller
 			threatPct = _threatPct;
 			rawThreatPct = _rawThreatPct;
 			threatValue = _threatValue;
+
+			return res;
+		}
+
+		public byte TraceLineHandler(ref Vector3 start, ref Vector3 end, ref Vector3 contactPoint, ref float distance, UInt32 flags, Int32 a6)
+		{
+			Vector3 _start = start;
+			Vector3 _end = end;
+			Vector3 _contactPoint = Vector3.Zero;
+			float _distance = distance;
+			var res = commandQueue.Submit<byte>((() => TraceLine(ref _start, ref _end, ref _contactPoint, ref _distance, flags, a6)));
+
+			contactPoint = _contactPoint;
+			distance = _distance;
 
 			return res;
 		}

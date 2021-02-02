@@ -230,7 +230,7 @@ namespace SpellFire.Primer
 			{
 				while (!client.IsInWorld())
 				{
-				client.RefreshLastHardwareEvent();
+					client.RefreshLastHardwareEvent();
 					client.ControlInterface.remoteControl.FrameScript__Execute(loginScriptFmt, 0, 0);
 					System.Threading.Thread.Sleep(1000);
 				}

@@ -62,9 +62,16 @@ namespace SpellFire.Well.Navigation
 			var path = GetPath(start, end);
 			if (path != null)
 			{
-				if (start.Distance(path[0]) < 1f && path.Count > 1)
+				if (start.Distance(path[0]) < 1f)
 				{
-					return path[1];
+					if (path.Count > 1)
+					{
+						return path[1];
+					}
+					else
+					{
+						return end;
+					}
 				}
 				else
 				{

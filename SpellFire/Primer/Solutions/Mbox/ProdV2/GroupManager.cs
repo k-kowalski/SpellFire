@@ -70,15 +70,19 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 			/* taunt if possible */
 			TryTaunting(unitsTargetingProtectedPlayers.Keys.ElementAt(0));
 
-
+			var tankCoords = tank.Player.Coordinates;
 			var closestThreateningUnit = unitsTargetingProtectedPlayers.Aggregate(
-				(unit1, unit2) => unit1.Key.GetDistance(tank.Player) < unit2.Key.GetDistance(tank.Player) ? unit1 : unit2).Key;
+				(unit1, unit2) => unit1.Key.Coordinates.Distance(tankCoords) < unit2.Key.Coordinates.Distance(tankCoords) ? unit1 : unit2).Key;
 
 			Console.WriteLine($"Detected {tank.ControlInterface.remoteControl.GetUnitName(closestThreateningUnit.GetAddress())} out of {unitsTargetingProtectedPlayers.Count}");
-			/* set unit as tank's target */
-			if (tank.GetTargetGUID() != closestThreateningUnit.GUID)
+			/* set unit as tank's target, if in tank's range */
+			float dist = closestThreateningUnit.Coordinates.Distance(tankCoords);
+			if (dist <= ProdMboxV2.MeleeAttackRange)
 			{
-				tank.ControlInterface.remoteControl.SelectUnit(closestThreateningUnit.GUID);
+				if (tank.GetTargetGUID() != closestThreateningUnit.GUID)
+				{
+					tank.ControlInterface.remoteControl.SelectUnit(closestThreateningUnit.GUID);
+				}
 			}
 		}
 

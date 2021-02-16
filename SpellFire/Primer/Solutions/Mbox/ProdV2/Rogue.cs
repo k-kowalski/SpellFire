@@ -40,12 +40,12 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 					return;
 				}
 
-				LootAround(me);
-
-				if (me.IsOnCooldown("Sinister Strike")) /* global cooldown check */
+				if (me.Player.IsMounted())
 				{
 					return;
 				}
+
+				LootAround(me);
 
 				Int64[] targetGuids = GetRaidTargetGuids(me);
 				var targets = mbox.SelectAllRaidTargetsByPriority(targetGuids, AttackPriorities, me);

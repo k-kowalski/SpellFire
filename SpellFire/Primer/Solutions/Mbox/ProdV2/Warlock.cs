@@ -62,12 +62,12 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 					return;
 				}
 
-				LootAround(me);
-
-				if (me.IsOnCooldown("Shadow Bolt")) /* global cooldown check */
+				if (me.Player.IsMounted())
 				{
 					return;
 				}
+
+				LootAround(me);
 
 				Int64[] targetGuids = GetRaidTargetGuids(me);
 				GameObject target = mbox.SelectRaidTargetByPriority(targetGuids, AttackPriorities, me);

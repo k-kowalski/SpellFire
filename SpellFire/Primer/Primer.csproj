@@ -108,6 +108,8 @@
     <Compile Include="Solutions\Mbox\ProdV2\PriestV2.cs" />
     <Compile Include="Solutions\Mbox\ProdV2\ProdMboxV2.cs" />
     <Compile Include="Solutions\Mbox\ProdV2\Rogue.cs" />
+    <Compile Include="Solutions\Mbox\ProdV2\Scenario.cs" />
+    <Compile Include="Solutions\Mbox\ProdV2\Scenarios\TrialOfTheChampionScenario.cs" />
     <Compile Include="Solutions\Mbox\ProdV2\Shaman.cs" />
     <Compile Include="Solutions\Mbox\ProdV2\Warlock.cs" />
     <Compile Include="Solutions\Mbox\ProdV2\Warrior.cs" />

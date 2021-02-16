@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using SpellFire.Primer.Gui;
+using SpellFire.Primer.Solutions.Mbox.ProdV2.Scenarios;
 using SpellFire.Well.Controller;
 using SpellFire.Well.Lua;
 using SpellFire.Well.Mbox;
@@ -26,6 +27,7 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 		private Solution masterSolution;
 
 		private GroupManager gm;
+		private Scenario scenario;
 
 		private static readonly RaidTarget[] AttackPriorities =
 		{
@@ -39,13 +41,12 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 			RaidTarget.Diamond,
 		};
 
-		private const float HealRange = 40f;
-		private const float RangedAttackRange = 35f;
-		private const float MeleeAttackRange = 5f;
+		public const float HealRange = 40f;
+		public const float RangedAttackRange = 35f;
+		public const float MeleeAttackRange = 5f;
 
 		private const int MaxSlaveFPS = 20;
 		private const int ClientSolutionSleepMs = 200;
-		private const int BigHealthThreshold = 80_000;
 
 		internal bool slavesAI;
 		internal bool masterAI;
@@ -60,7 +61,7 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 
 
 		private GameObject followUnit;
-		private const float followDistance = 5f;
+		private const float followDistance = 5.5f;
 		private const float delayDistance = 2.5f;
 
 
@@ -79,10 +80,17 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 
 			return cmd switch
 			{
-				/* navigation commands */
-				"nav" => new Action<Client, IList<string>>((self, args) =>
+				/* scenarios commands */
+				"scn" => new Action<Client, IList<string>>((self, args) =>
 				{
-					gm?.HandleNavigationCommand(args);
+					if (scenario == null)
+					{
+						scenario = new TrialOfTheChampionScenario(this);
+					}
+					else
+					{
+						scenario.Cmd(args);
+					}
 				}),
 				/* set client's cvar */
 				"cvar" => new Action<Client, IList<string>>(((self, args) =>
@@ -482,6 +490,7 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 			inputMultiplexer.ConditionalBroadcastKeys.AddRange(new[]
 			{
 				Keys.Space,
+				Keys.W,
 				Keys.S,
 				Keys.D1,
 				Keys.D2,
@@ -559,14 +568,14 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 				});
 				slave.LuaEventListener.Bind("PLAYER_REGEN_ENABLED", args =>
 				{
-					/* follow master if all out of combat */
-					if ( ! clients.Where(c => c.Player != null).Any(c => c.Player.IsInCombat()))
-					{
-						if (!followOn)
-						{
-							GetCommand("fw").Invoke(slave, null);
-						}
-					}
+//					/* follow master if all out of combat */
+//					if ( ! clients.Where(c => c.Player != null).Any(c => c.Player.IsInCombat()))
+//					{
+//						if (!followOn)
+//						{
+//							GetCommand("fw").Invoke(slave, new List<string>());
+//						}
+//					}
 				});
 				slave.LuaEventListener.Bind("RESURRECT_REQUEST", args =>
 				{
@@ -630,13 +639,13 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 			me.LuaEventListener.Bind("PLAYER_REGEN_ENABLED", args =>
 			{
 				/* follow master if all out of combat */
-				if (!clients.Where(c => c.Player != null).Any(c => c.Player.IsInCombat()))
-				{
-					if (!followOn)
-					{
-						GetCommand("fw").Invoke(me, null);
-					}
-				}
+//				if (!clients.Where(c => c.Player != null).Any(c => c.Player.IsInCombat()))
+//				{
+//					if (!followOn)
+//					{
+//						GetCommand("fw").Invoke(me, new List<string>());
+//					}
+//				}
 			});
 			me.LuaEventListener.Bind("RESURRECT_REQUEST", args =>
 			{
@@ -672,33 +681,84 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 
 
 			gm = new GroupManager(this);
+
+			// focus master
+			foreach (var slave in Slaves)
+			{
+				slave.ControlInterface.remoteControl.YieldWindowFocus(me.Process.MainWindowHandle);
+			}
 		}
 
 		public override void Tick()
 		{
 			Thread.Sleep(10);
+
 			masterSolution?.Tick();
+
 			if (masterAI)
 			{
 				gm.ManageGroup();
 			}
 
-			if (followOn)
+			FollowTarget();
+			lastFrameFollowOn = followOn;
+
+
+			if (scenario != null)
 			{
-				FollowTarget();
+				if (scenario.scenarioDone)
+				{
+					scenario = null;
+				}
+				else
+				{
+					scenario?.Eval();
+				}
 			}
 		}
 
+		private bool lastFrameFollowOn;
+
 		private void FollowTarget()
 		{
+			IEnumerable<Client> eligibleSlaves;
+			int masterMapId;
+			if (!followOn)
+			{
+				if (lastFrameFollowOn)
+				{
+					// just turned off follow, so stop movement
+					masterMapId = me.Memory.ReadInt32(IntPtr.Zero + Offset.MapId);
+					eligibleSlaves = Slaves
+						.Where(c => c.Memory.ReadInt32(IntPtr.Zero + Offset.MapId) == masterMapId && c.Player != null);
+					foreach (var slave in eligibleSlaves)
+					{
+						if (slave.Player.IsMoving())
+						{
+							slave.ExecLua("MoveForwardStart();MoveForwardStop()");
+						}
+					}
+				}
+
+				return;
+			}
+			else
+			{
+				if (me.Player != null)
+				{
+					followOn = false;
+				}
+			}
+
+
 			if (followUnit == null)
 			{
 				return;
 			}
 
 			var targetCoordinates = followUnit.Coordinates;
-			var masterMapId = me.Memory.ReadInt32(IntPtr.Zero + Offset.MapId);
-			var eligibleSlaves = Slaves
+			masterMapId = me.Memory.ReadInt32(IntPtr.Zero + Offset.MapId);
+			eligibleSlaves = Slaves
 				.Where(c => c.Memory.ReadInt32(IntPtr.Zero + Offset.MapId) == masterMapId && c.Player != null);
 			long _guid = 0;
 			foreach (var slave in eligibleSlaves)
@@ -716,6 +776,15 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 						.ControlInterface
 						.remoteControl
 						.CGPlayer_C__ClickToMove(slave.Player.GetAddress(), ClickToMoveType.Move, ref _guid, ref target, 1f);
+				}
+				else
+				{
+					float angle = slaveCoords.AngleBetween(targetCoordinates);
+					if (!SFUtil.IsFacing(slave.Player.Rotation, angle) && !slave.Player.IsMoving())
+					{
+						slave.ControlInterface.remoteControl.CGPlayer_C__ClickToMove(
+							slave.Player.GetAddress(), ClickToMoveType.Face, ref _guid, ref slaveCoords, angle);
+					}
 				}
 			}
 		}
@@ -1033,12 +1102,15 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 
 
 			long _Guid = 0;
-			Vector3 _Coords = Vector3.Zero;
+			Vector3 playerCoords = c.Player.Coordinates;
 
 
-			float angle = c.Player.Coordinates.AngleBetween(targetObj.Coordinates);
-			c.ControlInterface.remoteControl.CGPlayer_C__ClickToMove(
-				c.Player.GetAddress(), ClickToMoveType.Face, ref _Guid, ref _Coords, angle);
+			float angle = playerCoords.AngleBetween(targetObj.Coordinates);
+			if (!SFUtil.IsFacing(c.Player.Rotation, angle))
+			{
+				c.ControlInterface.remoteControl.CGPlayer_C__ClickToMove(
+					c.Player.GetAddress(), ClickToMoveType.Face, ref _Guid, ref playerCoords, angle);
+			}
 		}
 	}
 }

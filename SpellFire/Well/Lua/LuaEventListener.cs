@@ -78,6 +78,11 @@ namespace SpellFire.Well.Lua
 			eventHandlers.Add(eventName, handler);
 		}
 
+		public void Unbind(string eventName)
+		{
+			eventHandlers.Remove(eventName);
+		}
+
 		private void DispatchLuaEvent(LuaEventArgs luaEventArgs)
 		{
 #if false

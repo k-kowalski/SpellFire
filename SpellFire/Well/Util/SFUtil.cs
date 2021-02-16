@@ -107,5 +107,21 @@ namespace SpellFire.Well.Util
 		{
 			File.WriteAllText(str, fileName);
 		}
+
+		public static float NormalizeRadian(float radian)
+		{
+			while (radian < 0.0)
+				radian += 6.283185f;
+			while (radian > 6.28318548202515)
+				radian -= 6.283185f;
+			return radian;
+		}
+
+		public static bool IsFacing(float firstObjectRotation, float angleBetweenObjects, float threshold = 0.3f)
+		{
+			float angle = SFUtil.NormalizeRadian(angleBetweenObjects);
+			float facing = SFUtil.NormalizeRadian(Math.Abs(angle - firstObjectRotation));
+			return facing <= threshold;
+		}
 	}
 }

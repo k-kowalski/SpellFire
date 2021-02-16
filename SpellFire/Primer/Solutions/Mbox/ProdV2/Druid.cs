@@ -50,12 +50,12 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 					return;
 				}
 
-				LootAround(me);
-
-				if (me.IsOnCooldown("Wrath")) /* global cooldown check */
+				if (me.Player.IsMounted())
 				{
 					return;
 				}
+
+				LootAround(me);
 
 				if (mbox.buffingAI)
 				{

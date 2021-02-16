@@ -59,12 +59,12 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 					return;
 				}
 
-				LootAround(me);
-
-				if (me.IsOnCooldown("Seal of Light")) /* global cooldown check */
+				if (me.Player.IsMounted())
 				{
 					return;
 				}
+
+				LootAround(me);
 
 				if (mbox.buffingAI)
 				{
@@ -102,45 +102,30 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 						me.ExecLua("AttackTarget()");
 					}
 
-					if (mbox.complexRotation)
+					if (!me.IsOnCooldown("Hammer of Wrath") && target.HealthPct < 20)
 					{
-						if (!me.IsOnCooldown("Hammer of Wrath") && target.HealthPct < 20)
-						{
-							me.CastSpell("Hammer of Wrath");
-						}
-
-						if (!me.IsOnCooldown("Judgement of Light"))
-						{
-							me.CastSpell("Judgement of Light");
-						}
-
-						if (!me.IsOnCooldown("Hammer of the Righteous"))
-						{
-							me.CastSpell("Hammer of the Righteous");
-						}
-
-						if (!me.IsOnCooldown("Shield of Righteousness"))
-						{
-							me.CastSpell("Shield of Righteousness");
-						}
-
-						bool isHSUp = me.HasAura(me.Player, "Holy Shield", null);
-						if (!isHSUp)
-						{
-							me.CastSpell("Holy Shield");
-						}
+						me.CastSpell("Hammer of Wrath");
 					}
-					else
-					{
-						if (!me.IsOnCooldown("Hammer of the Righteous"))
-						{
-							me.CastSpell("Hammer of the Righteous");
-						}
 
-						if (!me.IsOnCooldown("Shield of Righteousness"))
-						{
-							me.CastSpell("Shield of Righteousness");
-						}
+					if (!me.IsOnCooldown("Judgement of Light"))
+					{
+						me.CastSpell("Judgement of Light");
+					}
+
+					if (!me.IsOnCooldown("Hammer of the Righteous"))
+					{
+						me.CastSpell("Hammer of the Righteous");
+					}
+
+					if (!me.IsOnCooldown("Shield of Righteousness"))
+					{
+						me.CastSpell("Shield of Righteousness");
+					}
+
+					bool isHSUp = me.HasAura(me.Player, "Holy Shield", null);
+					if (!isHSUp)
+					{
+						me.CastSpell("Holy Shield");
 					}
 				}
 			}

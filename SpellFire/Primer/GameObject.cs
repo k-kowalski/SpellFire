@@ -180,6 +180,15 @@ namespace SpellFire.Primer
 			}
 		}
 
+		public Int64 SummonedGuid
+		{
+			get
+			{
+				IntPtr unitInfo = memory.ReadPointer32(address + Offset.Info);
+				return memory.ReadInt64(unitInfo + Offset.SummonedGuid);
+			}
+		}
+
 		public bool IsCastingOrChanneling() 
 		{
 			return this.CastingSpellId != 0 || this.ChannelSpellId != 0;

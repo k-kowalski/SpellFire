@@ -77,6 +77,10 @@ namespace SpellFire.Well.Util
 		/// <summary>
 		/// info
 		/// </summary>
+		public const Int32 SummonedGuid = 0x8 * 4;
+		/// <summary>
+		/// info
+		/// </summary>
 		public const Int32 DynamicFlags = 0x13C;
 		/// <summary>
 		/// info

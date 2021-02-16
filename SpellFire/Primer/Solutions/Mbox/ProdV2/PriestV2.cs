@@ -56,10 +56,13 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 			{
 				lock (cachedSpellIds)
 				{
-					Console.WriteLine($"[{me.Player.UnitClass}] Refreshing spell ids");
-					foreach (var spellName in cachedSpellIds.Keys)
+					if (me.Player != null)
 					{
-						cachedSpellIds[spellName] = me.GetSpellId(spellName);
+						Console.WriteLine($"[{me.Player.UnitClass}] Refreshing spell ids");
+						foreach (var spellName in cachedSpellIds.Keys)
+						{
+							cachedSpellIds[spellName] = me.GetSpellId(spellName);
+						}
 					}
 				}
 			}
@@ -101,12 +104,12 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 					return;
 				}
 
-				LootAround(me);
-
-				if (me.IsOnCooldown("Smite")) /* global cooldown check */
+				if (me.Player.IsMounted())
 				{
 					return;
 				}
+
+				LootAround(me);
 
 				if (mbox.buffingAI)
 				{
@@ -155,18 +158,55 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 
 				if (!me.Player.IsCastingOrChanneling())
 				{
-					if (LowHealthPlayers.Count > 0)
+					var playersToHeal = LowHealthPlayers.Concat(MidHealthPlayers).ToList();
+					if (playersToHeal.Any())
 					{
-						if (!ShieldPlayers(LowHealthPlayers))
+						if (playersToHeal.Count > 2)
 						{
-							HealLowTarget(GetLowestHealthPlayer(LowHealthPlayers));
+							if (!me.IsOnCooldown("Inner Focus"))
+							{
+								me.CastSpell("Inner Focus");
+							}
+							me.CastSpell("Prayer of Healing");
+						}
+
+						if (!ShieldPlayers(playersToHeal))
+						{
+							HealLowTarget(GetLowestHealthPlayer(playersToHeal));
 						}
 					}
-					else if (MidHealthPlayers.Count > 0)
+				}
+
+
+				/* mana mgmt */
+				if (me.Player.ManaPct < 45 && me.Player.IsInCombat())
+				{
+					if (!me.IsOnCooldown("Shadowfiend"))
 					{
-						if (!ShieldPlayers(MidHealthPlayers))
+						me.CastSpell("Shadowfiend");
+					}
+					else if (me.Player.ManaPct < 25)
+					{
+						/* command Druid to innervate me, if available */
+						var druidClient = mbox.clients.FirstOrDefault(client =>
+							client.Player.UnitClass == UnitClass.Druid);
+						if (druidClient != null)
 						{
-							HealLowTarget(GetLowestHealthPlayer(MidHealthPlayers));
+							if (druidClient.Player.GetDistance(me.Player) <= HealRange &&
+							    druidClient.Player.Health > 0 &&
+							    !druidClient.IsOnCooldown("Innervate"))
+							{
+								druidClient.EnqueuePrioritySpellCast(
+									new SpellCast
+									{
+										Coordinates = null,
+										SpellName = "Innervate",
+										TargetGUID = me.Player.GUID
+									}
+								);
+								Console.WriteLine("Commanding Druid to Innervate!");
+								return;
+							}
 						}
 					}
 				}
@@ -213,19 +253,19 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 				return players.Aggregate((lowest, player) => player.Health < lowest.Health ? player : lowest);
 			}
 
-			private void HealMidTarget(GameObject target)
-			{
-				if (!me.HasAura(target, GetCachedSpellId("Renew"), null))
-				{
-					me.CastSpellOnGuid(GetCachedSpellId("Renew"), target.GUID);
-				}
-			}
-
 			private void HealLowTarget(GameObject target)
 			{
-				if (!me.IsOnCooldown("Penance"))
+				if (target.HealthPct < 20 && !me.IsOnCooldown("Desperate Prayer"))
+				{
+					me.CastSpellOnGuid(GetCachedSpellId("Desperate Prayer"), target.GUID);
+				}
+				else if (!me.IsOnCooldown("Penance"))
 				{
 					me.CastSpellOnGuid(GetCachedSpellId("Penance"), target.GUID);
+				}
+				else if (!me.IsOnCooldown("Prayer of Mending") && target.IsInCombat())
+				{
+					me.CastSpellOnGuid(GetCachedSpellId("Prayer of Mending"), target.GUID);
 				}
 				else
 				{

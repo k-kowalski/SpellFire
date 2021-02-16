@@ -23,8 +23,6 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 		private Dictionary<GameObject, long> unitsTargetingProtectedPlayers = new Dictionary<GameObject, long>();
 		private List<GameObject> unitsTargetingTank = new List<GameObject>();
 
-		private UpdateRaidMarkPacket markPacket = new UpdateRaidMarkPacket();
-
 
 		public Int64[] GroupTargetGuids = new long[10];
 
@@ -41,25 +39,13 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 			navEngine = new NavigationEngine();
 		}
 
-		public void Tick()
+		public void ManageGroup()
 		{
 			SelectThreateningUnits(tank.ObjectManager);
 
 			if (unitsTargetingProtectedPlayers.Any())
 			{
-				/* taunt if possible */
-				TryTaunting(unitsTargetingProtectedPlayers.Keys.ElementAt(0));
-
-
-				var closestThreateningUnit = unitsTargetingProtectedPlayers.Aggregate(
-					(unit1, unit2) => unit1.Key.GetDistance(tank.Player) < unit2.Key.GetDistance(tank.Player) ? unit1 : unit2).Key;
-
-				Console.WriteLine($"Detected {tank.ControlInterface.remoteControl.GetUnitName(closestThreateningUnit.GetAddress())} out of {unitsTargetingProtectedPlayers.Count}");
-				/* set unit as tank's target */
-				if (tank.GetTargetGUID() != closestThreateningUnit.GUID)
-				{
-					tank.ControlInterface.remoteControl.SelectUnit(closestThreateningUnit.GUID);
-				}
+				HandleTankReaction();
 			}
 
 			var threateners = unitsTargetingProtectedPlayers.Keys.ToList();
@@ -77,6 +63,23 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 
 			unitsTargetingProtectedPlayers.Clear();
 			unitsTargetingTank.Clear();
+		}
+
+		private void HandleTankReaction()
+		{
+			/* taunt if possible */
+			TryTaunting(unitsTargetingProtectedPlayers.Keys.ElementAt(0));
+
+
+			var closestThreateningUnit = unitsTargetingProtectedPlayers.Aggregate(
+				(unit1, unit2) => unit1.Key.GetDistance(tank.Player) < unit2.Key.GetDistance(tank.Player) ? unit1 : unit2).Key;
+
+			Console.WriteLine($"Detected {tank.ControlInterface.remoteControl.GetUnitName(closestThreateningUnit.GetAddress())} out of {unitsTargetingProtectedPlayers.Count}");
+			/* set unit as tank's target */
+			if (tank.GetTargetGUID() != closestThreateningUnit.GUID)
+			{
+				tank.ControlInterface.remoteControl.SelectUnit(closestThreateningUnit.GUID);
+			}
 		}
 
 		private void SetGroupTargets(List<GameObject> threateners)

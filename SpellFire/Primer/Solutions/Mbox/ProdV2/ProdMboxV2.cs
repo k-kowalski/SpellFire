@@ -52,10 +52,17 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 		internal bool buffingAI;
 		internal bool radarOn;
 		internal bool complexRotation;
+		internal volatile bool followOn;
 
 		private static long fixateTargetGuid;
 
 		private readonly string UtilScript = File.ReadAllText("Scripts/Util.lua");
+
+
+		private GameObject followUnit;
+		private const float followDistance = 5f;
+		private const float delayDistance = 2.5f;
+
 
 		private Action<Client, IList<string>> GetCommand(string cmd)
 		{
@@ -123,51 +130,36 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 						client.ExecLua("VehicleExit()");
 					}
 				}),
-				/* command all Slaves to follow Master */
+				/* command all Slaves to follow target */
 				"fw" => new Action<Client, IList<string>>((self, args) =>
 				{
-					if (!me.GetObjectMgrAndPlayer())
+					if (!followOn)
 					{
-						return;
-					}
-
-					string masterName = me.ControlInterface.remoteControl.GetUnitName(me.Player.GetAddress());
-
-					string switchArg = args[0];
-
-					foreach (Client slave in Slaves)
-					{
-						if (switchArg.Equals("st"))
+						// about to change to follow-on, set appropriate follow target
+						if (args.Count > 0 && args[0] == "mo")
 						{
-							// break follow
-							if (slave.GetObjectMgrAndPlayer())
+							var targetGuid = self.Memory.ReadInt64(IntPtr.Zero + Offset.MouseoverGUID);
+							if (targetGuid != 0)
 							{
-								var targetGuid = slave.Player.GUID;
-								var targetCoords = slave.Player.Coordinates;
-
-								slave.ControlInterface.remoteControl.CGPlayer_C__ClickToMove(
-									slave.Player.GetAddress(), ClickToMoveType.Move, ref targetGuid, ref targetCoords, 1f);
+								followUnit = self.ObjectManager.First(obj => obj.GUID == targetGuid);
+								self.ExecLua($"print('Follow ordered on guid: {targetGuid}')");
+							}
+							else
+							{
+								self.ExecLua("print('No target selected')");
 							}
 						}
-						else if (switchArg.Equals("fw"))
+						else
 						{
-							if (slave.GetObjectMgrAndPlayer())
-							{
-								if (slave.Player.IsInCombat())
-								{
-									var targetGuid = slave.Player.GUID;
-									var targetCoords = me.Player.Coordinates;
-
-									slave.ControlInterface.remoteControl.CGPlayer_C__ClickToMove(
-										slave.Player.GetAddress(), ClickToMoveType.Move, ref targetGuid, ref targetCoords, 1f);
-								}
-								else
-								{
-									slave.ExecLua($"FollowUnit('{masterName}')");
-								}
-							}
+							// master player as default follow unit
+							followUnit = me.Player;
 						}
 					}
+
+					followOn = !followOn;
+					string state = followOn ? "ON" : "OFF";
+					string col = followOn ? "00FF00" : "FF0000";
+					me.ExecLua($"print('FOLLOW is now |cff{col}{state}|r')");
 				}),
 				/* command selected Slave to cast spell on current Master target */
 				"cs" => new Action<Client, IList<string>>(((self, args) =>
@@ -567,24 +559,12 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 				});
 				slave.LuaEventListener.Bind("PLAYER_REGEN_ENABLED", args =>
 				{
-					/* follow master */
-					if (me.GetObjectMgrAndPlayer())
+					/* follow master if all out of combat */
+					if ( ! clients.Where(c => c.Player != null).Any(c => c.Player.IsInCombat()))
 					{
-						if (slave.GetObjectMgrAndPlayer())
+						if (!followOn)
 						{
-							if (slave.Player.IsInCombat())
-							{
-								var targetGuid = slave.Player.GUID;
-								var targetCoords = me.Player.Coordinates;
-
-								slave.ControlInterface.remoteControl.CGPlayer_C__ClickToMove(
-									slave.Player.GetAddress(), ClickToMoveType.Move, ref targetGuid, ref targetCoords, 1f);
-							}
-							else
-							{
-								var masterName = me.ControlInterface.remoteControl.GetUnitName(me.Player.GetAddress());
-								slave.ExecLua($"FollowUnit('{masterName}')");
-							}
+							GetCommand("fw").Invoke(slave, null);
 						}
 					}
 				});
@@ -647,6 +627,17 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 				slave.ExecLua($"SetCVar('maxfps', {MaxSlaveFPS})");
 			}
 
+			me.LuaEventListener.Bind("PLAYER_REGEN_ENABLED", args =>
+			{
+				/* follow master if all out of combat */
+				if (!clients.Where(c => c.Player != null).Any(c => c.Player.IsInCombat()))
+				{
+					if (!followOn)
+					{
+						GetCommand("fw").Invoke(me, null);
+					}
+				}
+			});
 			me.LuaEventListener.Bind("RESURRECT_REQUEST", args =>
 			{
 				me.ExecLua("AcceptResurrect()");
@@ -679,19 +670,53 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 			this.Active = true;
 			AssignRoutines();
 
-			/* turn on follow initially */
-			GetCommand("fw").Invoke(me, new List<string>(new[] { "fw" }));
-
 
 			gm = new GroupManager(this);
 		}
 
 		public override void Tick()
 		{
+			Thread.Sleep(10);
 			masterSolution?.Tick();
 			if (masterAI)
 			{
-				gm.Tick();
+				gm.ManageGroup();
+			}
+
+			if (followOn)
+			{
+				FollowTarget();
+			}
+		}
+
+		private void FollowTarget()
+		{
+			if (followUnit == null)
+			{
+				return;
+			}
+
+			var targetCoordinates = followUnit.Coordinates;
+			var masterMapId = me.Memory.ReadInt32(IntPtr.Zero + Offset.MapId);
+			var eligibleSlaves = Slaves
+				.Where(c => c.Memory.ReadInt32(IntPtr.Zero + Offset.MapId) == masterMapId && c.Player != null);
+			long _guid = 0;
+			foreach (var slave in eligibleSlaves)
+			{
+				var slaveCoords = slave.Player.Coordinates;
+				var diff = (targetCoordinates - slaveCoords);
+				var distance = diff.Length();
+
+				if (distance > (followDistance + delayDistance))
+				{
+					var adjusted = ((diff * followDistance) / distance);
+					var target = targetCoordinates - adjusted;
+
+					slave
+						.ControlInterface
+						.remoteControl
+						.CGPlayer_C__ClickToMove(slave.Player.GetAddress(), ClickToMoveType.Move, ref _guid, ref target, 1f);
+				}
 			}
 		}
 
@@ -1001,11 +1026,11 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 
 		private static void FaceTowards(Client c, GameObject targetObj)
 		{
-			c.ControlInterface.remoteControl.CGPlayer_C__ClickToMoveStop(c.Player.GetAddress());
 			if (c.Player.IsMoving())
 			{
 				return;
 			}
+
 
 			long _Guid = 0;
 			Vector3 _Coords = Vector3.Zero;

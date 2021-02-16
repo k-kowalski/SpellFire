@@ -31,6 +31,21 @@ namespace SpellFire.Well.Util
 			return new Vector3(left.x - right.x, left.y - right.y, left.z - right.z);
 		}
 
+		public static Vector3 operator +(Vector3 left, Vector3 right)
+		{
+			return new Vector3(left.x + right.x, left.y + right.y, left.z + right.z);
+		}
+
+		public static Vector3 operator /(Vector3 left, float divisor)
+		{
+			return new Vector3(left.x / divisor, left.y / divisor, left.z / divisor);
+		}
+		
+		public static Vector3 operator *(Vector3 left, float multiplier)
+		{
+			return new Vector3(left.x * multiplier, left.y * multiplier, left.z * multiplier);
+		}
+
 		public float Length()
 		{
 			return (float) Math.Sqrt(x*x + y*y + z*z);

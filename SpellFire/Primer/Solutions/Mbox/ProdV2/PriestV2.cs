@@ -27,7 +27,9 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 
 			private static readonly string[] PartyBuffs =
 			{
-				"Power Word: Fortitude",
+				"Prayer of Fortitude",
+				"Prayer of Spirit",
+				"Prayer of Shadow Protection"
 			};
 
 			private static readonly string[] SelfBuffs =
@@ -169,16 +171,7 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 					}
 				}
 
-				if (LowHealthPlayers.Any() || MidHealthPlayers.Any())
-				{
-					return;
-				}
 
-
-				if (me.Player.ManaPct < 90)
-				{
-					return;
-				}
 
 				Int64[] targetGuids = GetRaidTargetGuids(me);
 				GameObject target = mbox.SelectRaidTargetByPriority(targetGuids, AttackPriorities, me);
@@ -203,6 +196,12 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 
 
 				me.ExecLua("PetAttack()");
+
+				if (LowHealthPlayers.Any() || MidHealthPlayers.Any() || me.Player.ManaPct < 90)
+				{
+					return;
+				}
+
 				if (!me.Player.IsCastingOrChanneling())
 				{
 					me.CastSpell("Smite");

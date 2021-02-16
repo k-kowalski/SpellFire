@@ -106,6 +106,15 @@ namespace SpellFire.Primer
 			}
 		}
 
+		public Int32 MaxHealth
+		{
+			get
+			{
+				IntPtr unitInfo = memory.ReadPointer32(address + Offset.Info);
+				return memory.ReadInt32(unitInfo + Offset.MaxHealth);
+			}
+		}
+
 		public Int32 Rage
 		{
 			get

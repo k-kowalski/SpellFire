@@ -1,5 +1,4 @@
 ﻿using SpellFire.Well.Model;
-using SpellFire.Well.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,11 +10,22 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 {
 	public partial class ProdMboxV2 : MultiboxSolution
 	{
-		private class Hunter : Solution
+		private class Druid : Solution
 		{
-			private ProdMboxV2 mbox;
+			private const Int32 EclipseLunar = 48518;
 
-			public Hunter(Client client, ProdMboxV2 mbox) : base(client)
+			private ProdMboxV2 mbox;
+			private static readonly string[] PartyBuffs =
+			{
+				"Gift of the Wild",
+				"Thorns",
+			};
+			private static readonly string[] SelfBuffs =
+			{
+				"Moonkin Form"
+			};
+
+			public Druid(Client client, ProdMboxV2 mbox) : base(client)
 			{
 				this.mbox = mbox;
 			}
@@ -42,9 +52,14 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 
 				LootAround(me);
 
-				if (me.IsOnCooldown("Serpent Sting")) /* global cooldown check */
+				if (me.IsOnCooldown("Wrath")) /* global cooldown check */
 				{
 					return;
+				}
+
+				if (mbox.buffingAI)
+				{
+					BuffUp(me, mbox, PartyBuffs, SelfBuffs);
 				}
 
 				Int64[] targetGuids = GetRaidTargetGuids(me);
@@ -68,62 +83,36 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 					FaceTowards(me, target);
 				}
 
-				// attack with pet, if target is in tank's range [hunter pet is melee]
-				var tank = mbox.me.Player;
-				if (tank.GetDistance(target) <= MeleeAttackRange)
-				{
-					me.ExecLua("PetAttack()");
-				}
-
 				if (!me.Player.IsCastingOrChanneling())
 				{
-					if (!me.Player.IsAutoAttacking())
+					var shouldMF = target.Health > (me.Player.MaxHealth * 2.5) &&
+					               !me.HasAura(target, "Moonfire", me.Player);
+					if (shouldMF)
 					{
-						me.ExecLua("AttackTarget()");
-					}
-
-					if (target.HealthPct > 80 && !me.HasAura(target, "Hunter's Mark", me.Player))
-					{
-						me.CastSpell("Hunter's Mark");
+						me.CastSpell("Moonfire");
 					}
 					else
 					{
-						if (target.Health > (me.Player.MaxHealth * 2.5) && !me.HasAura(target, "Serpent Sting", me.Player))
+						var shouldIS = target.Health > (me.Player.MaxHealth * 2.5) &&
+						               !me.HasAura(target, "Insect Swarm", me.Player);
+						if (shouldIS)
 						{
-							me.CastSpell("Serpent Sting");
+							me.CastSpell("Insect Swarm");
 						}
 						else
 						{
-							var chimShot = "Chimera Shot";
-							var aimedShot = "Aimed Shot";
-							var arcShot = "Arcane Shot";
-							if (!me.IsOnCooldown(chimShot))
+							if (me.HasAura(me.Player, EclipseLunar, me.Player))
 							{
-								me.CastSpell(chimShot);
-							}
-							else if (!me.IsOnCooldown(aimedShot))
-							{
-								me.CastSpell(aimedShot);
-							}
-							else if(!me.IsOnCooldown(arcShot))
-							{
-								me.CastSpell(arcShot);
-							}
-							else if (!me.IsOnCooldown("Kill Command"))
-							{
-								me.CastSpell("Kill Command");
+								me.CastSpell("Starfire");
 							}
 							else
 							{
-								me.CastSpell("Steady Shot");
+								me.CastSpell("Wrath");
 							}
 						}
 					}
-
-					
 				}
 			}
-
 
 			public override void Dispose()
 			{

@@ -10,7 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using SpellFire.Primer.Gui;
-using SpellFire.Primer.Solutions.Mbox.ProdV2.Scenarios;
+using SpellFire.Primer.Solutions.Mbox.ProdV2.Behaviours;
 using SpellFire.Well.Controller;
 using SpellFire.Well.Lua;
 using SpellFire.Well.Mbox;
@@ -27,7 +27,7 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 		private Solution masterSolution;
 
 		private GroupManager gm;
-		private Scenario scenario;
+		private BehaviourTree currentBehaviour;
 
 		private static readonly RaidTarget[] AttackPriorities =
 		{
@@ -80,16 +80,16 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 
 			return cmd switch
 			{
-				/* scenarios commands */
-				"scn" => new Action<Client, IList<string>>((self, args) =>
+				/* behaviours commands */
+				"bhv" => new Action<Client, IList<string>>((self, args) =>
 				{
-					if (scenario == null)
+					if (currentBehaviour == null)
 					{
-						scenario = new TrialOfTheChampionScenario(this);
+						currentBehaviour = new TrialOfTheChampion(this);
 					}
 					else
 					{
-						scenario.Cmd(args);
+						currentBehaviour.Cmd(args);
 					}
 				}),
 				/* set client's cvar */
@@ -704,15 +704,13 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 			lastFrameFollowOn = followOn;
 
 
-			if (scenario != null)
+			if (currentBehaviour != null)
 			{
-				if (scenario.scenarioDone)
+				var res = currentBehaviour.Eval();
+				if (res == BTStatus.Success)
 				{
-					scenario = null;
-				}
-				else
-				{
-					scenario?.Eval();
+					Console.WriteLine("Behaviour successfully concluded.");
+					currentBehaviour = null;
 				}
 			}
 		}
@@ -744,7 +742,7 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 			}
 			else
 			{
-				if (me.Player != null)
+				if (me.Player == null)
 				{
 					followOn = false;
 				}

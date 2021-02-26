@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using SpellFire.Well.Controller;
 using SpellFire.Well.Model;
 using SpellFire.Well.Util;
 
-namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Scenarios
+namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Behaviours
 {
 	public struct PlayerData
 	{
@@ -16,7 +14,7 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Scenarios
 		public int originalWeaponId;
 	}
 
-	public class TrialOfTheChampionScenario : Scenario
+	public class TrialOfTheChampion : BehaviourTree
 	{
 		private const string vehicleName = "Argent Battleworg";
 		private readonly string[] eventStarterNames = {
@@ -24,8 +22,6 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Scenarios
 		};
 		private const int argentLanceId = 46106;
 		private const int mainHandSlotId = 16;
-
-
 
 		private Dictionary<Client, PlayerData> squadData = new Dictionary<Client, PlayerData>();
 		private LinkedList<GameObject> allWarhorses = new LinkedList<GameObject>();
@@ -35,14 +31,13 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Scenarios
 
 		private Vector3 gatherPointAfterMounted = new Vector3(744.708f, 600.2399f, 411.5745f);
 
+		private readonly ProdMboxV2 mbox;
 
-		private int GetMainHandId(Client c)
+		public TrialOfTheChampion(ProdMboxV2 mbox)
 		{
-			return Int32.Parse(c.ExecLuaAndGetResult($"id = GetInventoryItemID('player', {mainHandSlotId})", "id"));
-		}
+			this.mbox = mbox;
 
-		public TrialOfTheChampionScenario(ProdMboxV2 mbox) : base(mbox)
-		{
+			// initialize
 			long _guidForCtm = 0;
 
 			allWarhorses = new LinkedList<GameObject>(mbox.me.ObjectManager.Where(obj =>
@@ -61,8 +56,9 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Scenarios
 				});
 			}
 
-			/* equip lances */
-			scenarioActions.Enqueue(new ScenarioAction((() =>
+			var nodes = new List<BTNode>();
+
+			var equipLances = new LeafAction((() =>
 			{
 				bool allEquipped = true;
 				foreach (var entry in squadData)
@@ -72,12 +68,10 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Scenarios
 					allEquipped &= GetMainHandId(entry.Key) == argentLanceId;
 				}
 
-				return allEquipped;
-			})));
+				return allEquipped ? BTStatus.Success : BTStatus.Running;
+			}));
 
-
-			/* move to vehicles */
-			scenarioActions.Enqueue(new ScenarioAction((() =>
+			var goToVehicles = new LeafAction((() =>
 			{
 				bool allCloseToVehicles = true;
 				foreach (var entry in squadData)
@@ -93,11 +87,8 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Scenarios
 					allCloseToVehicles &= entry.Key.Player.Coordinates.Distance(target) < 5f;
 				}
 
-				return allCloseToVehicles;
-			})));
-
-
-
+				return allCloseToVehicles ? BTStatus.Success : BTStatus.Running;
+			}));
 
 			Func<Client, bool> IsInVehicle = (player) =>
 			{
@@ -106,8 +97,7 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Scenarios
 				return !String.IsNullOrEmpty(res);
 			};
 
-			/* enter vehicles */
-			scenarioActions.Enqueue(new ScenarioAction((() =>
+			var enterVehicles = new LeafAction((() =>
 			{
 				var allEnteredVehicle = true;
 				foreach (var entry in squadData)
@@ -119,16 +109,10 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Scenarios
 					allEnteredVehicle &= IsInVehicle(entry.Key);
 				}
 
-				return allEnteredVehicle;
-			})));
+				return allEnteredVehicle ? BTStatus.Success : BTStatus.Running;
+			}));
 
-
-
-
-
-
-			/* go to event starter npc */
-			scenarioActions.Enqueue(new ScenarioAction((() =>
+			var goToEventStarter = new LeafAction((() =>
 			{
 				var allCloseToStarterNPC = true;
 
@@ -159,12 +143,8 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Scenarios
 					allCloseToStarterNPC &= veh.Coordinates.Distance(target) < 5f;
 				}
 
-				return allCloseToStarterNPC;
-			})));
-
-
-
-
+				return allCloseToStarterNPC ? BTStatus.Success : BTStatus.Running;
+			}));
 
 			mbox.me.LuaEventListener.Bind("GOSSIP_CLOSED", args =>
 			{
@@ -172,8 +152,7 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Scenarios
 				mbox.me.LuaEventListener.Unbind("GOSSIP_CLOSED");
 			});
 
-			/* start event */
-			scenarioActions.Enqueue(new ScenarioAction((() =>
+			var startEvent = new LeafAction((() =>
 			{
 				GameObject targetObj = null;
 				foreach (var eventStarterName in eventStarterNames)
@@ -194,11 +173,10 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Scenarios
 				mbox.me.ExecLua("SelectGossipOption(2)");
 				mbox.me.ExecLua("SelectGossipOption(1)");
 
-				return eventStarted;
-			})));
+				return eventStarted ? BTStatus.Success : BTStatus.Running;
+			}));
 
-			/* mounted combat */
-			scenarioActions.Enqueue(new ScenarioAction((() =>
+			var mountedCombat = new LeafAction((() =>
 			{
 				var allVehiclesDisappeared = true;
 				var threateners = SelectThreateningUnits(mbox.me.ControlInterface, mbox.me.ObjectManager);
@@ -321,9 +299,8 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Scenarios
 					key.ExecLua("CastSpellByName('Charge')");
 				}
 
-				return allVehiclesDisappeared;
-			})));
-
+				return allVehiclesDisappeared ? BTStatus.Success : BTStatus.Running;
+			}));
 
 			Func<Client, int, bool> FinishUpCheck = (player, origWepId) =>
 			{
@@ -337,9 +314,7 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Scenarios
 				return vehicleExited && equippedOriginalItem && atCenter;
 			};
 
-			/* finish-up */
-			/* exit vehicles, equip original weapons, gather at point */
-			scenarioActions.Enqueue(new ScenarioAction((() =>
+			var finishUp = new LeafAction((() =>
 			{
 				bool allFinished = true;
 				foreach (var entry in squadData)
@@ -355,14 +330,16 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Scenarios
 					allFinished &= FinishUpCheck(entry.Key, entry.Value.originalWeaponId);
 				}
 
-				return allFinished;
-			})));
+				return allFinished ? BTStatus.Success : BTStatus.Running;
+			}));
+
+			root = new Sequence(equipLances, goToVehicles, enterVehicles, goToEventStarter, startEvent, mountedCombat, finishUp);
 		}
 
-
-
-
-
+		private int GetMainHandId(Client c)
+		{
+			return Int32.Parse(c.ExecLuaAndGetResult($"id = GetInventoryItemID('player', {mainHandSlotId})", "id"));
+		}
 
 		public string GetName(ControlInterface ci, GameObject unit)
 		{
@@ -395,11 +372,9 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Scenarios
 
 		public override void Cmd(IList<string> args)
 		{
-			if (scenarioActions.Any())
-			{
-				scenarioActions.Dequeue();
-				Console.WriteLine("Popping scenario action");
-			}
+			var rootSequence = root as Sequence;
+			rootSequence.MoveCurrentNode(1);
+			Console.WriteLine($"Moved sequence by 1 node forward");
 		}
 	}
 }

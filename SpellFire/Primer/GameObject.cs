@@ -12,11 +12,17 @@ namespace SpellFire.Primer
 		public GameObject(Memory memory, IntPtr address) : base(memory, address) { }
 
 		public Int64 GUID => memory.ReadInt64(address + Offset.GUID);
-		public GameObjectType Type => memory.ReadStruct<GameObjectType>(address + Offset.Type);
 
-		/*
-		 * TODO: inheritance or maybe try composition
-		 */
+		public UInt32 EntryID
+		{
+			get
+			{
+				IntPtr unitInfo = memory.ReadPointer32(address + Offset.Info);
+				return (UInt32)memory.ReadInt32(unitInfo + Offset.EntryID);
+			}
+		}
+
+		public GameObjectType Type => memory.ReadStruct<GameObjectType>(address + Offset.Type);
 
 		public string WorldObjectName => memory.ReadString(
 			memory.ReadPointer32(memory.ReadPointer32(address + 0x1A4) + 0x90));
@@ -160,6 +166,15 @@ namespace SpellFire.Primer
 				int maxMana = memory.ReadInt32(unitInfo + Offset.MaxPower1);
 
 				return maxMana != 0 ? (currentMana * 100) / maxMana : -1;
+			}
+		}
+
+		public Int32 MaxMana
+		{
+			get
+			{
+				IntPtr unitInfo = memory.ReadPointer32(address + Offset.Info);
+				return memory.ReadInt32(unitInfo + Offset.MaxPower1);
 			}
 		}
 

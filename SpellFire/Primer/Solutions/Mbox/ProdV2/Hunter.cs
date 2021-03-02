@@ -56,7 +56,7 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 
 				LootAround(me);
 
-				if (mbox.buffingAI)
+				if (mbox.buffingAI && !me.Player.IsInCombat() && !me.HasAura(me.Player, "Drink"))
 				{
 					BuffUp(me, mbox, PartyBuffs, SelfBuffs);
 					CheckPetActive();

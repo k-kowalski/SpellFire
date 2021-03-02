@@ -24,35 +24,10 @@ namespace SpellFire.Well.Lua
 			{
 				if (value)
 				{
-					eventGrabDispatchTask = Task.Run(() =>
-					{
-						isTaskOn = true;
-						while (isTaskOn)
-						{
-							var luaEvents = ci.remoteControl.GrabLuaEvents();
-							if (luaEvents != null)
-							{
-								foreach (var luaEvent in luaEvents)
-								{
-									DispatchLuaEvent(luaEvent);
-								}
-							}
-
-							Thread.Sleep(eventPollingIntervalMs);
-						}
-					});
-
-
-
 					ci.remoteControl.InitializeLuaEventFrame();
 				}
 				else
 				{
-					isTaskOn = false;
-					eventGrabDispatchTask.Wait();
-
-
-
 					ci.remoteControl.DestroyLuaEventFrame();
 				}
 
@@ -64,6 +39,27 @@ namespace SpellFire.Well.Lua
 		{
 			eventHandlers = new Dictionary<string, LuaEventHandler>();
 
+			eventGrabDispatchTask = Task.Run(() =>
+			{
+				isTaskOn = true;
+				while (isTaskOn)
+				{
+					if (Active)
+					{
+						var luaEvents = ci.remoteControl.GrabLuaEvents();
+						if (luaEvents != null)
+						{
+							foreach (var luaEvent in luaEvents)
+							{
+								DispatchLuaEvent(luaEvent);
+							}
+						}
+					}
+
+					Thread.Sleep(eventPollingIntervalMs);
+				}
+			});
+
 			this.ci = ci;
 		}
 
@@ -71,6 +67,8 @@ namespace SpellFire.Well.Lua
 		{
 			eventHandlers.Clear();
 			Active = false;
+			isTaskOn = false;
+			eventGrabDispatchTask.Wait();
 		}
 
 		public void Bind(string eventName, LuaEventHandler handler)

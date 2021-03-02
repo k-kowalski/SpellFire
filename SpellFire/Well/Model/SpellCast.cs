@@ -22,5 +22,19 @@ namespace SpellFire.Well.Model
 			"Power Word: Shield",
 			"Ressurection"
 		};
+
+		public override bool Equals(object obj)
+		{
+			//Check for null and compare run-time types.
+			if ((obj == null) || !this.GetType().Equals(obj.GetType()))
+			{
+				return false;
+			}
+			else
+			{
+				SpellCast sc = (SpellCast)obj;
+				return SpellName == sc.SpellName && TargetGUID == sc.TargetGUID;
+			}
+		}
 	}
 }

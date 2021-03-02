@@ -26,8 +26,11 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 		private IList<Solution> slavesSolutions = new List<Solution>();
 		private Solution masterSolution;
 
-		private GroupManager gm;
-		private BehaviourTree currentBehaviour;
+		private BTNode currentBehaviour;
+		private readonly static object BehaviourLocker = new object();
+		private Task behaviourTask;
+
+		public Int64[] GroupTargetGuids = new long[10];
 
 		private static readonly RaidTarget[] AttackPriorities =
 		{
@@ -46,7 +49,7 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 		public const float MeleeAttackRange = 5f;
 
 		private const int MaxSlaveFPS = 20;
-		private const int ClientSolutionSleepMs = 200;
+		private const int ClientSolutionSleepMs = 10;
 
 		internal bool slavesAI;
 		internal bool masterAI;
@@ -54,10 +57,11 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 		internal bool radarOn;
 		internal bool complexRotation;
 		internal volatile bool followOn;
+		private bool lastTickFollowOn;
 
 		private static long fixateTargetGuid;
 
-		private readonly string UtilScript = File.ReadAllText("Scripts/Util.lua");
+		public readonly string UtilScript = File.ReadAllText("Scripts/Util.lua");
 
 
 		private GameObject followUnit;
@@ -65,7 +69,7 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 		private const float delayDistance = 2.5f;
 
 
-		private Action<Client, IList<string>> GetCommand(string cmd)
+		public Action<Client, IList<string>> GetCommand(string cmd)
 		{
 			var command = masterSolution.GetCommand(cmd);
 			if (command != null)
@@ -83,13 +87,11 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 				/* behaviours commands */
 				"bhv" => new Action<Client, IList<string>>((self, args) =>
 				{
-					if (currentBehaviour == null)
+					lock (BehaviourLocker)
 					{
-						currentBehaviour = new TrialOfTheChampion(this);
-					}
-					else
-					{
-						currentBehaviour.Cmd(args);
+						var fullBehaviourName = $"SpellFire.Primer.Solutions.Mbox.ProdV2.Behaviours.{args[0]}";
+						currentBehaviour = Activator.CreateInstance(Type.GetType(fullBehaviourName), this) as BTNode;
+						me.ExecLua($"print('Started behaviour: {args[0]}')");
 					}
 				}),
 				/* set client's cvar */
@@ -679,14 +681,31 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 			this.Active = true;
 			AssignRoutines();
 
-
-			gm = new GroupManager(this);
-
 			// focus master
 			foreach (var slave in Slaves)
 			{
 				slave.ControlInterface.remoteControl.YieldWindowFocus(me.Process.MainWindowHandle);
 			}
+
+			behaviourTask = Task.Run((() =>
+			{
+				while (this.Active)
+				{
+					Thread.Sleep(ClientSolutionSleepMs);
+					lock (BehaviourLocker)
+					{
+						if (currentBehaviour != null)
+						{
+							var res = currentBehaviour.Execute();
+							if (res == BTStatus.Success)
+							{
+								Console.WriteLine("Behaviour concluded successfully.");
+								currentBehaviour = null;
+							}
+						}
+					}
+				}
+			}));
 		}
 
 		public override void Tick()
@@ -695,27 +714,9 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 
 			masterSolution?.Tick();
 
-			if (masterAI)
-			{
-				gm.ManageGroup();
-			}
-
 			FollowTarget();
-			lastFrameFollowOn = followOn;
-
-
-			if (currentBehaviour != null)
-			{
-				var res = currentBehaviour.Eval();
-				if (res == BTStatus.Success)
-				{
-					Console.WriteLine("Behaviour successfully concluded.");
-					currentBehaviour = null;
-				}
-			}
+			lastTickFollowOn = followOn;
 		}
-
-		private bool lastFrameFollowOn;
 
 		private void FollowTarget()
 		{
@@ -723,7 +724,7 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 			int masterMapId;
 			if (!followOn)
 			{
-				if (lastFrameFollowOn)
+				if (lastTickFollowOn)
 				{
 					// just turned off follow, so stop movement
 					masterMapId = me.Memory.ReadInt32(IntPtr.Zero + Offset.MapId);
@@ -803,6 +804,8 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 			{
 				task.Wait();
 			}
+
+			behaviourTask.Wait();
 		}
 
 		private void AssignRoutines()
@@ -1023,7 +1026,7 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 				}
 			}
 
-			foreach (var targetGuid in gm.GroupTargetGuids)
+			foreach (var targetGuid in GroupTargetGuids)
 			{
 				GameObject gameObj = c.ObjectManager.FirstOrDefault(obj => obj.GUID == targetGuid);
 				if (gameObj != null
@@ -1078,7 +1081,7 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 				}
 			}
 
-			foreach (var targetGuid in gm.GroupTargetGuids)
+			foreach (var targetGuid in GroupTargetGuids)
 			{
 				GameObject gameObj = c.ObjectManager.FirstOrDefault(obj => obj.GUID == targetGuid);
 				if (gameObj != null

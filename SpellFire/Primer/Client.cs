@@ -19,7 +19,27 @@ namespace SpellFire.Primer
 	{
 		public Process Process { get; }
 		public Memory Memory { get; }
-		public ControlInterface ControlInterface { get; private set; }
+
+		private ControlInterface _controlInterface;
+		public ControlInterface ControlInterface
+		{
+			get
+			{
+				if (_controlInterface != null)
+				{
+					lock (_controlInterface)
+					{
+						return _controlInterface;
+					}
+				}
+				else
+				{
+					return null;
+				}
+			}
+			private set => _controlInterface = value;
+		}
+
 		public LuaEventListener LuaEventListener { get; private set; }
 		public GameObjectManager ObjectManager { get; private set; }
 		public GameObject Player { get; private set; }
@@ -308,8 +328,15 @@ namespace SpellFire.Primer
 
 		public string ExecLuaAndGetResult(string luaScript, string resultLuaVariable)
 		{
-			ExecLua(luaScript);
-			return ControlInterface.remoteControl.FrameScript__GetLocalizedText(Player.GetAddress(), resultLuaVariable, 0);
+			if (Player != null)
+			{
+				ExecLua(luaScript);
+				return ControlInterface.remoteControl.FrameScript__GetLocalizedText(Player.GetAddress(), resultLuaVariable, 0);
+			}
+			else
+			{
+				return String.Empty;
+			}
 		}
 
 		public void ExecLua(string luaScript)
@@ -331,7 +358,10 @@ namespace SpellFire.Primer
 		{
 			lock (this)
 			{
-				prioritySpellcastsQueue.Enqueue(spellCast);
+				if (!prioritySpellcastsQueue.Contains(spellCast))
+				{
+					prioritySpellcastsQueue.Enqueue(spellCast);
+				}
 			}
 		}
 

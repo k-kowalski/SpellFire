@@ -59,9 +59,16 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 					if (me.Player != null)
 					{
 						Console.WriteLine($"[{me.Player.UnitClass}] Refreshing spell ids");
-						foreach (var spellName in cachedSpellIds.Keys)
+						try
 						{
-							cachedSpellIds[spellName] = me.GetSpellId(spellName);
+							foreach (var spellName in cachedSpellIds.Keys)
+							{
+								cachedSpellIds[spellName] = me.GetSpellId(spellName);
+							}
+						}
+						catch (InvalidOperationException e)
+						{
+							Console.WriteLine("Cannot refresh priest spell id's!'");
 						}
 					}
 				}
@@ -111,7 +118,7 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 
 				LootAround(me);
 
-				if (mbox.buffingAI)
+				if (mbox.buffingAI && !me.Player.IsInCombat() && !me.HasAura(me.Player, "Drink"))
 				{
 					BuffUp(me, mbox, PartyBuffs, SelfBuffs);
 				}

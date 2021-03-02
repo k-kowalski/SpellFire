@@ -9,11 +9,21 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Behaviours
 {
 	using BTFunc = Func<BTStatus>;
 
+	public enum BTStatus
+	{
+		Failed,
+		Success,
+		Running,
+	}
+
 	public abstract class BTNode
 	{
 		public abstract BTStatus Execute();
-
 		public virtual void ResetState() {}
+		public virtual void Cmd(IList<string> args)
+		{
+			Console.WriteLine("Tree's command handler not implemented!");
+		}
 	}
 
 	public class LeafAction : BTNode
@@ -53,18 +63,24 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Behaviours
 	public class Sequence : BTNode
 	{
 		public BTNode[] children;
+		private readonly bool alwaysLoop;
 		public int currentChildIndex;
 
-		public Sequence(params BTNode[] children)
+		public Sequence(bool alwaysLoop, params BTNode[] children)
 		{
 			this.children = children;
+			this.alwaysLoop = alwaysLoop;
 		}
 
 		public override BTStatus Execute()
 		{
 			for (int i = currentChildIndex; i < children.Length; i++)
 			{
-				currentChildIndex = i;
+				if (!alwaysLoop)
+				{
+					currentChildIndex = i;
+				}
+
 				BTStatus status = children[i].Execute();
 
 				if (status != BTStatus.Success)
@@ -135,6 +151,21 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Behaviours
 		}
 	}
 
+	public class Inverter : BTNode
+	{
+		private BTNode node;
+
+		public Inverter(BTNode node)
+		{
+			this.node = node;
+		}
+
+		public override BTStatus Execute()
+		{
+			return BTStatus.Failed;
+		}
+	}
+
 	public class Parallel : BTNode
 	{
 		private readonly int childrenTickInterval;
@@ -193,25 +224,4 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Behaviours
 			}
 		}
 	}
-
-	public enum BTStatus
-	{
-		Failed,
-		Success,
-		Running,
-	}
-
-	public abstract class BehaviourTree
-	{
-		protected BTNode root;
-
-
-		public virtual BTStatus Eval() => root.Execute();
-		public virtual void Cmd(IList<string> args)
-		{
-			Console.WriteLine("Tree's command handler not implemented!");
-		}
-	}
-
-	
 }

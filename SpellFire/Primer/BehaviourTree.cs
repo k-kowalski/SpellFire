@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Behaviours
+namespace SpellFire.Primer
 {
 	using BTFunc = Func<BTStatus>;
 

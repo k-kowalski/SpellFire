@@ -108,7 +108,7 @@
     <Compile Include="Solutions\Mbox\ProdV2\PriestV2.cs" />
     <Compile Include="Solutions\Mbox\ProdV2\ProdMboxV2.cs" />
     <Compile Include="Solutions\Mbox\ProdV2\Rogue.cs" />
-    <Compile Include="Solutions\Mbox\ProdV2\Behaviours\BehaviourTree.cs" />
+    <Compile Include="BehaviourTree.cs" />
     <Compile Include="Solutions\Mbox\ProdV2\Behaviours\TrialOfTheChampion.cs" />
     <Compile Include="Solutions\Mbox\ProdV2\Shaman.cs" />
     <Compile Include="Solutions\Mbox\ProdV2\Warlock.cs" />

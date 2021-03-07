@@ -49,7 +49,7 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 		public const float MeleeAttackRange = 5f;
 
 		private const int MaxSlaveFPS = 20;
-		private const int ClientSolutionSleepMs = 10;
+		private const int ClientSolutionSleepMs = 30;
 
 		internal bool slavesAI;
 		internal bool masterAI;
@@ -187,8 +187,7 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 						targetGuid = me.GetTargetGUID();
 					}
 
-					Client caster = clients.FirstOrDefault(c =>
-						c.ControlInterface.remoteControl.GetUnitName(c.Player.GetAddress()) == casterName);
+					Client caster = clients.FirstOrDefault(c => c.PlayerName == casterName);
 
 					if (caster != null)
 					{
@@ -366,12 +365,12 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 						slave.ExecLua("InteractUnit('mouseover')");
 					}
 				})),
-				/* exit all slaves */
+				/* exec Lua */
 				"ex" => new Action<Client, IList<string>>(((self, args) =>
 				{
 					foreach (Client slave in Slaves)
 					{
-						slave.ExecLua($"Quit()");
+						slave.ExecLua(args[0]);
 					}
 				})),
 				/* click static popup */
@@ -435,33 +434,41 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 				"fg" => new Action<Client, IList<string>>(((self, args) =>
 				{
 					Client client;
+					long targetGuid;
 					if (args.Count > 0 && args[0] == "mo") // optional mouseover
 					{
-						// use tooltip text
-						// this enables range-unlimited switching
-						var getUnitNameFromMouseoverTooltipScript = "if GameTooltip:NumLines() > 0 then name = _G['GameTooltipTextLeft1']:GetText() else name = nil end";
-						var name = self.ExecLuaAndGetResult(getUnitNameFromMouseoverTooltipScript, "name");
-						client = clients.FirstOrDefault(c => c.ControlInterface.remoteControl.GetUnitName(c.Player.GetAddress()) == name);
-
-						if (client == null)
+						targetGuid = self.Memory.ReadInt64(IntPtr.Zero + Offset.MouseoverGUID);
+						if (targetGuid == 0)
 						{
-							Console.WriteLine($"Couldn't find client with player name {name}.");
+							// use tooltip text
+							// this enables range-unlimited switching
+							var getUnitNameFromMouseoverTooltipScript = "if GameTooltip:NumLines() > 0 then name = _G['GameTooltipTextLeft1']:GetText() else name = nil end";
+							var name = self.ExecLuaAndGetResult(getUnitNameFromMouseoverTooltipScript, "name");
+							client = clients.FirstOrDefault(c => c.PlayerName == name);
+
+							if (client == null)
+							{
+								Console.WriteLine($"Couldn't find client with player name {name}.");
+							}
+						}
+						else
+						{
+							client = clients.FirstOrDefault(c => c.Player.GUID == targetGuid);
 						}
 					}
 					else
 					{
-						var targetGuid = self.GetTargetGUID();
+						targetGuid = self.GetTargetGUID();
 						client = clients.FirstOrDefault(c => c.Player.GUID == targetGuid);
-
-						if (client == null)
-						{
-							Console.WriteLine($"Couldn't find client with player guid {targetGuid}.");
-						}
 					}
 
 					if (client != null)
 					{
 						self.ControlInterface.remoteControl.YieldWindowFocus(client.Process.MainWindowHandle);
+					}
+					else
+					{
+						Console.WriteLine($"Couldn't find client with player guid {targetGuid}.");
 					}
 
 
@@ -506,22 +513,19 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 				return;
 			}
 
-			string masterPlayerName = me.ControlInterface.remoteControl.GetUnitName(me.Player.GetAddress());
 			SystemWin32.SendMessage(
 				me.Process.MainWindowHandle,
 				SystemWin32.WM_SETTEXT, IntPtr.Zero,
-				$"@@@@[{masterPlayerName}]@@@@ WoW");
+				$"@@@@[{me.PlayerName}]@@@@ WoW ({me.Process.Id})");
 
 			foreach (Client slave in Slaves)
 			{
 				slave.GetObjectMgrAndPlayer();
 
-				string slavePlayerName = slave.ControlInterface.remoteControl.GetUnitName(slave.Player.GetAddress());
-
 				SystemWin32.SendMessage(
 					slave.Process.MainWindowHandle,
 					SystemWin32.WM_SETTEXT, IntPtr.Zero,
-					$"[{slavePlayerName}] WoW");
+					$"[{slave.PlayerName}] WoW ({slave.Process.Id})");
 
 				/* set event listeners */
 				slave.LuaEventListener.Bind("PARTY_INVITE_REQUEST", args =>
@@ -632,7 +636,7 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 				#endregion
 
 				/* invite slaves to party */
-				me.ExecLua($"InviteUnit('{slavePlayerName}')");
+				me.ExecLua($"InviteUnit('{slave.PlayerName}')");
 
 				/* fps throttle */
 				slave.ExecLua($"SetCVar('maxfps', {MaxSlaveFPS})");
@@ -700,6 +704,7 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2
 							if (res == BTStatus.Success)
 							{
 								Console.WriteLine("Behaviour concluded successfully.");
+								me.ExecLua($"print('Behaviour concluded successfully.')");
 								currentBehaviour = null;
 							}
 						}

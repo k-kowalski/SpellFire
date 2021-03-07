@@ -9,7 +9,7 @@ namespace SpellFire.Well.Lua
 {
 	public class LuaEventListener : IDisposable
 	{
-		private const int eventPollingIntervalMs = 5;
+		private const int eventPollingIntervalMs = 50;
 		private readonly IDictionary<string, LuaEventHandler> eventHandlers;
 		private readonly ControlInterface ci;
 

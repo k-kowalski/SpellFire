@@ -145,14 +145,15 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Behaviours
 				var getTargets = new LeafAction((() =>
 				{
 					mbox.me.ExecLua("print('Running normal combat now')");
+					var units = mbox.me.ObjectManager.Where(obj => obj.Type == GameObjectType.Unit)
+						.Select(unit => new Tuple<string, GameObject>(totch.GetName(mbox.me.ControlInterface, unit), unit));
 					foreach (var championName in GrandChampionsNames)
 					{
-						foreach (var unit in mbox.me.ObjectManager.Where(obj => obj.Type == GameObjectType.Unit))
+						foreach (var unit in units)
 						{
-							var unitName = totch.GetName(mbox.me.ControlInterface, unit);
-							if (unitName == championName)
+							if (unit.Item1 == championName)
 							{
-								GrandChampionsUnits.Add(unit);
+								GrandChampionsUnits.Add(unit.Item2);
 							}
 						}
 					}
@@ -170,7 +171,7 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Behaviours
 						// if have mana, drink until regenerated
 						if (client.Player.MaxMana != 0)
 						{
-							if (client.Player.ManaPct < 90)
+							if (client.Player.ManaPct < 70)
 							{
 								needsRegen = true;
 								if (!mbox.me.HasAura(client.Player, "Drink"))
@@ -278,6 +279,7 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Behaviours
 									.remoteControl
 									.CGPlayer_C__ClickToMove(
 										client.Player.GetAddress(), ClickToMoveType.Move, ref _guidForCtm, ref finalTargetCoords, 1f);
+								continue;
 							}
 
 							// get close, if far
@@ -295,8 +297,9 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Behaviours
 						}
 						else
 						{
+							var tankDist = 4;
 							// as tank, always sit on target
-							var adjusted = ((diff * 4) / distance);
+							var adjusted = ((diff * tankDist) / distance);
 							var finalTargetCoords = targetCoords - adjusted;
 
 							client
@@ -468,7 +471,6 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Behaviours
 						var myVehicle = key.ObjectManager.FirstOrDefault(obj => obj.GUID == squadData[key].warhorseGuid);
 						if (myVehicle == null)
 						{
-							allVehiclesDisappeared &= true;
 							continue;
 						}
 						else
@@ -499,7 +501,7 @@ namespace SpellFire.Primer.Solutions.Mbox.ProdV2.Behaviours
 
 
 						// get to new mount, when low health or warhorse dead
-						if (myVehicle.HealthPct < 20)
+						if (myVehicle.HealthPct < 35)
 						{
 							if (allWarhorses.Any())
 							{

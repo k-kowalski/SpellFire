@@ -43,6 +43,7 @@ namespace SpellFire.Primer
 		public LuaEventListener LuaEventListener { get; private set; }
 		public GameObjectManager ObjectManager { get; private set; }
 		public GameObject Player { get; private set; }
+		public string PlayerName { get; private set; }
 		public ClientLaunchSettings LaunchSettings { get; set; }
 
 		private Queue<SpellCast> prioritySpellcastsQueue = new Queue<SpellCast>();
@@ -114,6 +115,10 @@ namespace SpellFire.Primer
 				ObjectManager = new GameObjectManager(Memory, objectManagerAddress);
 				Player = new GameObject(Memory, ControlInterface.remoteControl.ClntObjMgrGetActivePlayerObj());
 
+				if (PlayerName == null)
+				{
+					PlayerName = ControlInterface.remoteControl.GetUnitName(Player.GetAddress());
+				}
 			}
 			else
 			{
@@ -125,6 +130,7 @@ namespace SpellFire.Primer
 
 				ObjectManager = null;
 				Player = null;
+				PlayerName = null;
 			}
 
 			return isInWorld;
